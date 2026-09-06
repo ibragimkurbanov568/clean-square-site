@@ -266,23 +266,24 @@
   display: block;
 }
 
+/* auto-fit + minmax(…, 1fr), а не фиксированное repeat(N, 1fr):
+   раньше число колонок было завязано на ширину ОКНА (`@media
+   min-width:1200px` → 4 колонки), а не на реальную ширину контейнера —
+   но контейнер этой сетки бывает то ~320/380px (сайдбар «Настройки» в
+   редакторе, ширина которого НЕ растёт после 1200px окна), то до 640px
+   (мастер `/new`, `.nd-container-narrow`). При том же самом широком
+   окне 4 узкие колонки в 380px-сайдбаре обрезали текст чипов («Салон
+   красоты», «Дерзкий») без возможности прокрутки (overflow-x:visible +
+   nowrap-подобное поведение grid-треков `1fr` — они не сжимаются ниже
+   min-content слова). auto-fit сам считает число колонок по реальной
+   ширине контейнера в каждом месте использования, минимум 1fr не
+   меньше 0 — трек может сжаться, а `overflow-wrap: anywhere` на самом
+   чипе (ниже) гарантирует, что даже самое длинное слово («Минималистичный»)
+   при нехватке места переносится, а не вылезает за край. */
 .nd-chip-group__grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
   gap: var(--nd-space-2);
-}
-
-.nd-chip-group__grid--tone {
-  grid-template-columns: repeat(1, 1fr);
-}
-
-@media (min-width: 1200px) {
-  .nd-chip-group__grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-  .nd-chip-group__grid--tone {
-    grid-template-columns: repeat(4, 1fr);
-  }
 }
 
 .nd-chip-group--error .nd-chip {
@@ -301,6 +302,12 @@
   justify-content: center;
   text-align: center;
   min-height: 44px;
+  min-width: 0;
+  /* Подстраховка от горизонтального переполнения при экстремально узкой
+     колонке (auto-fit выше уже почти это гарантирует): даже цельное
+     слово без пробелов при реальной нехватке места переносится
+     посимвольно, а не вылезает за край чипа/сетки. */
+  overflow-wrap: anywhere;
   padding: var(--nd-space-2) var(--nd-space-3);
   border-radius: var(--nd-radius-sm);
   border: 1px solid var(--nd-color-border-strong);
