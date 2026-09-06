@@ -10,12 +10,19 @@
  * отдельно в `src/lib/pageAssembler.ts` (`SITE_THEME_CSS_VARS`) — это
  * не часть контракта `Theme` (в нём только палитра+шрифты для
  * превью-плашки), пересобирать её здесь незачем.
+ *
+ * Два экспорта на разные случаи использования:
+ *  - `THEME_BY_ID` — точечный доступ по `ThemeId` (сборщик документа,
+ *    поиск темы текущего проекта);
+ *  - `THEMES` — массив в порядке сетки образцов `THEME_IDS` (F4,
+ *    `ThemePicker`/карточка проекта на стартовом экране — там нужен
+ *    именно перечисляемый список, а не объект).
  */
 import type { ThemeId } from "../types/project";
 import type { Theme } from "../types/theme";
 import { THEME_IDS } from "../types/theme";
 
-export const THEMES: Readonly<Record<ThemeId, Theme>> = {
+export const THEME_BY_ID: Readonly<Record<ThemeId, Theme>> = {
   atlant: {
     id: "atlant",
     name: "Атлант",
@@ -114,5 +121,5 @@ export const THEMES: Readonly<Record<ThemeId, Theme>> = {
   },
 };
 
-/** Массив тем в порядке сетки образцов (F4), удобный для .map() в UI. */
-export const THEME_LIST: readonly Theme[] = THEME_IDS.map((id) => THEMES[id]);
+/** Массив тем в порядке сетки образцов (F4) — используется `ThemePicker`/карточками проектов. */
+export const THEMES: Theme[] = THEME_IDS.map((id) => THEME_BY_ID[id]);

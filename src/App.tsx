@@ -2,6 +2,9 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import StartScreen from "./routes/StartScreen";
 import WizardScreen from "./routes/WizardScreen";
 import EditorScreen from "./routes/EditorScreen";
+import { ToastProvider } from "./hooks/useToast";
+import { ToastViewport } from "./components/ToastViewport";
+import "./styles/app.css";
 
 /**
  * Три маршрута приложения (docs/02-ux.md, «Навигация и структура»):
@@ -20,13 +23,16 @@ import EditorScreen from "./routes/EditorScreen";
  */
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<StartScreen />} />
-        <Route path="/new" element={<WizardScreen />} />
-        <Route path="/editor/:id" element={<EditorScreen />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<StartScreen />} />
+          <Route path="/new" element={<WizardScreen />} />
+          <Route path="/editor/:id" element={<EditorScreen />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+      <ToastViewport />
+    </ToastProvider>
   );
 }

@@ -1,20 +1,27 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
-/** Универсальный хук подписки на медиа-запрос (используется для раскладки редактора). */
+function subscribe(query: string, callback: () => void): () => void {
+  if (typeof window === "undefined" || !window.matchMedia) return () => {};
+  const mql = window.matchMedia(query);
+  mql.addEventListener("change", callback);
+  return () => mql.removeEventListener("change", callback);
+}
+
+function getSnapshot(query: string): boolean {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia(query).matches;
+}
+
+/**
+ * Универсальный хук подписки на медиа-запрос (используется для раскладки
+ * редактора). Реализован через `useSyncExternalStore` — штатный React-API
+ * для подписки на внешние источники истины (браузерный `matchMedia`) без
+ * `useEffect` + `setState`.
+ */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState<boolean>(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return false;
-    return window.matchMedia(query).matches;
-  });
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mql = window.matchMedia(query);
-    const handler = (event: MediaQueryListEvent) => setMatches(event.matches);
-    setMatches(mql.matches);
-    mql.addEventListener("change", handler);
-    return () => mql.removeEventListener("change", handler);
-  }, [query]);
-
-  return matches;
+  return useSyncExternalStore(
+    (callback) => subscribe(query, callback),
+    () => getSnapshot(query),
+    () => false,
+  );
 }

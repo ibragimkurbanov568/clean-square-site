@@ -27,7 +27,6 @@ import type {
   GenerateSectionContentInput,
 } from "../types/generator";
 import { SECTION_LIBRARY } from "./sectionLibrary";
-import { createId } from "../lib/id";
 
 /* ===================================================================== */
 /* 0. Детерминированный посевной выбор варианта                          */
@@ -407,7 +406,7 @@ const TONE_VOICE: Readonly<Record<ToneId, ToneVoice>> = {
     aboutTitle: ["О компании", "Кто мы"],
     aboutBody: (i) => [
       `Мы — ${i.noun}, которая ценит точность и ответственность в каждой детали. Наша цель — стабильный результат, а не разовое впечатление.`,
-      `Наша ${i.nounGenitive} команда придерживается высоких профессиональных стандартов и работает на долгосрочное доверие ${i.audience}.`,
+      `Команда, стоящая за этой ${i.noun}, придерживается высоких профессиональных стандартов и работает на долгосрочное доверие ${i.audience}.`,
     ],
     servicesTitle: ["Услуги", "Что мы предлагаем"],
     servicesBody: (i) => [
@@ -460,7 +459,7 @@ const TONE_VOICE: Readonly<Record<ToneId, ToneVoice>> = {
     aboutTitle: ["О нас", "Немного о нас"],
     aboutBody: (i) => [
       `Мы — небольшая ${i.noun}, для которой ${i.audience} — не просто клиенты, а хорошие знакомые. Стараемся, чтобы каждому было тепло и удобно.`,
-      `Наша ${i.nounGenitive} команда собралась вокруг общей идеи — делать своё дело с душой и вниманием к деталям.`,
+      `Мы — команда, которая стоит за этой ${i.noun}: собрались вокруг общей идеи и делаем своё дело с душой и вниманием к деталям.`,
     ],
     servicesTitle: ["Чем мы можем помочь", "Наши услуги"],
     servicesBody: () => [
@@ -511,7 +510,7 @@ const TONE_VOICE: Readonly<Record<ToneId, ToneVoice>> = {
     aboutTitle: ["Мы не как все", "О команде"],
     aboutBody: (i) => [
       `Мы — ${i.noun}, которая устала от скучных стандартов индустрии и решила делать по-своему. Результат говорит сам за себя.`,
-      `Никакой воды и шаблонов: наша ${i.nounGenitive} команда работает на результат, а не на видимость процесса.`,
+      `Никакой воды и шаблонов: команда за этой ${i.noun} работает на результат, а не на видимость процесса.`,
     ],
     servicesTitle: ["Что мы делаем", "Наши фишки"],
     servicesBody: () => [
@@ -579,27 +578,45 @@ const TONE_VOICE: Readonly<Record<ToneId, ToneVoice>> = {
 /* 3. Построение элементов списка                                        */
 /* ===================================================================== */
 
-function buildItems(values: readonly string[], max = 8): SectionListItem[] {
-  return values.slice(0, max).map((primary) => ({ id: createId(), primary }));
+/**
+ * Детерминированный id элемента списка: выведен из seed+соли, а НЕ из
+ * `crypto.randomUUID()` — иначе `generateSectionContent` перестала бы
+ * быть чистой функцией и нарушила бы правило детерминизма F3 (см.
+ * шапку файла). Настоящий случайный `createId()` уместен только для
+ * идентификаторов самих секций/проектов (см. `src/lib/projectFactory.ts`),
+ * не для содержимого, которое обязано быть воспроизводимым.
+ */
+function itemId(seed: string, salt: string, index: number): string {
+  return `item-${hashString(`${seed}::${salt}::${index}`).toString(36)}`;
+}
+
+function buildItems(values: readonly string[], seed: string, salt: string, max = 8): SectionListItem[] {
+  return values.slice(0, max).map((primary, index) => ({ id: itemId(seed, salt, index), primary }));
 }
 
 function buildPairItems(
   values: readonly { name: string; price: string }[],
+  seed: string,
+  salt: string,
   max = 8,
 ): SectionListItem[] {
-  return values.slice(0, max).map(({ name, price }) => ({ id: createId(), primary: name, secondary: price }));
+  return values
+    .slice(0, max)
+    .map(({ name, price }, index) => ({ id: itemId(seed, salt, index), primary: name, secondary: price }));
 }
 
 function buildTestimonialItems(
   authors: readonly { name: string; role: string }[],
   focuses: readonly string[],
   tone: ToneVoice,
+  seed: string,
+  salt: string,
 ): SectionListItem[] {
   return authors.map((author, index) => {
     const focus = focuses[index % focuses.length];
     const quote = tone.quoteWrap(focus);
     return {
-      id: createId(),
+      id: itemId(seed, salt, index),
       primary: `${author.name}, ${author.role}`,
       secondary: quote,
     };
@@ -632,30 +649,30 @@ function buildContent(
       return {
         title: pick(tone.servicesTitle, seed, "services.title"),
         body: pick(tone.servicesBody(industry), seed, "services.body"),
-        items: buildItems(industry.services),
+        items: buildItems(industry.services, seed, "services.items"),
       };
     case "features":
       return {
         title: pick(tone.featuresTitle, seed, "features.title"),
         body: pick(tone.featuresBody(industry), seed, "features.body"),
-        items: buildItems(industry.features),
+        items: buildItems(industry.features, seed, "features.items"),
       };
     case "pricing":
       return {
         title: pick(tone.pricingTitle, seed, "pricing.title"),
         body: pick(tone.pricingBody(industry), seed, "pricing.body"),
-        items: buildPairItems(industry.pricingPlans),
+        items: buildPairItems(industry.pricingPlans, seed, "pricing.items"),
       };
     case "testimonials":
       return {
         title: pick(tone.testimonialsTitle, seed, "testimonials.title"),
-        items: buildTestimonialItems(industry.testimonialAuthors, industry.testimonialFocus, tone),
+        items: buildTestimonialItems(industry.testimonialAuthors, industry.testimonialFocus, tone, seed, "testimonials.items"),
       };
     case "gallery":
       return {
         title: pick(tone.galleryTitle, seed, "gallery.title"),
         body: pick(tone.galleryBody(industry), seed, "gallery.body"),
-        items: buildItems(industry.galleryCaptions),
+        items: buildItems(industry.galleryCaptions, seed, "gallery.items"),
       };
     case "cta":
       return {

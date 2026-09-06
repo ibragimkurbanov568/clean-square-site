@@ -150,7 +150,7 @@ export function setSectionVisibility(project: Project, sectionId: string, visibl
 export function updateSectionText(
   project: Project,
   sectionId: string,
-  patch: Pick<Section, "title" | "body" | "items" | "ctaText">,
+  patch: Partial<Pick<Section, "title" | "body" | "items" | "ctaText">>,
 ): Project {
   const sections = project.sections.map((section) =>
     section.id === sectionId ? { ...section, ...patch, isCustomText: true } : section,

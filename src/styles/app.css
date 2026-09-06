@@ -1256,6 +1256,10 @@
 }
 
 .nd-editor__header-download {
+  display: inline-flex;
+}
+
+.nd-preview-toolbar__download {
   display: none;
 }
 
@@ -1319,6 +1323,10 @@
   }
 
   .nd-editor__header-download {
+    display: none;
+  }
+
+  .nd-preview-toolbar__download {
     display: inline-flex;
   }
 
@@ -1355,5 +1363,100 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+}
+
+/* ==========================================================
+   18. СТАРТОВЫЙ ЭКРАН
+   ========================================================== */
+.nd-start__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nd-space-4);
+  margin-bottom: var(--nd-space-6);
+}
+
+.nd-start__brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nd-space-3);
+  flex-wrap: wrap;
+}
+
+.nd-start__tagline {
+  color: var(--nd-color-text-muted);
+  max-width: 60ch;
+}
+
+.nd-start__toolbar {
+  display: flex;
+  gap: var(--nd-space-3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.nd-start__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--nd-space-4);
+}
+
+@media (min-width: 1200px) {
+  .nd-start__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.nd-start__skeleton-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--nd-space-4);
+}
+
+@media (min-width: 1200px) {
+  .nd-start__skeleton-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.nd-start__banner-wrap {
+  margin-bottom: var(--nd-space-5);
+}
+
+/* ==========================================================
+   19. МАСТЕР СОЗДАНИЯ
+   ========================================================== */
+.nd-wizard-header {
+  display: flex;
+  align-items: center;
+  gap: var(--nd-space-3);
+  padding: var(--nd-space-4);
+  border-bottom: 1px solid var(--nd-color-border);
+  background: var(--nd-color-surface);
+}
+
+.nd-wizard-body {
+  padding: var(--nd-space-6) var(--nd-space-4) var(--nd-space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nd-space-6);
+  flex: 1;
+}
+
+.nd-wizard-footer {
+  position: sticky;
+  bottom: 0;
+  padding: var(--nd-space-4);
+  background: var(--nd-color-surface);
+  border-top: 1px solid var(--nd-color-border);
+}
+
+@media (min-width: 1200px) {
+  .nd-wizard-footer {
+    position: static;
+    border-top: none;
+    background: transparent;
+    padding: 0;
   }
 }
