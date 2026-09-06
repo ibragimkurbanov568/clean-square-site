@@ -1,0 +1,413 @@
+/*
+ * NoesDize — токены редактора (Уровень 1, «шкура приложения»)
+ * ---------------------------------------------------------------
+ * Пространство имён: ВСЕ переменные здесь начинаются с --nd-.
+ * Это токены интерфейса самого NoesDize (панели, кнопки, поля,
+ * диалоги, тосты) — они красят ТОЛЬКО chrome редактора.
+ *
+ * Сюда НЕЛЬЗЯ добавлять переменные --site-* (это токены тем
+ * собираемых сайтов, они живут в src/styles/site-themes.css
+ * и применяются только внутри кадра предпросмотра/экспорта).
+ * Компоненты интерфейса редактора обязаны ссылаться только на
+ * var(--nd-...). Компоненты, которые рендерят сайт пользователя
+ * внутри кадра предпросмотра, обязаны ссылаться только на
+ * var(--site-...). Ни один селектор в этом файле не должен
+ * пересекаться с кадром предпросмотра (см. .nd-preview-frame —
+ * это лишь нейтральная «рамка окна браузера», её собственный фон
+ * и тень — токены --nd-*, а содержимое внутри уже переключается
+ * на --site-* через атрибут [data-site-theme] на самом кадре).
+ *
+ * Направление: нейтральный, функциональный рабочий инструмент —
+ * холодные графитовые нейтрали + один акцент (индиго-фиолетовый),
+ * как в профессиональных редакторах (Figma/Linear-класс), чтобы
+ * интерфейс не спорил по яркости с произвольной темой сайта,
+ * которая крутится в кадре предпросмотра рядом.
+ */
+
+/* ==========================================================
+   1. ТОКЕНЫ — СВЕТЛАЯ ТЕМА (база, без медиа-условий)
+   ========================================================== */
+:root {
+  color-scheme: light;
+
+  /* --- Цвет: поверхности --- */
+  --nd-color-bg: #f6f6fa;
+  --nd-color-surface: #ffffff;
+  --nd-color-surface-raised: #ffffff;
+  --nd-color-surface-sunken: #ececf3;
+  --nd-color-overlay-scrim: rgba(17, 17, 26, 0.48);
+
+  /* --- Цвет: границы --- */
+  --nd-color-border: #dedee7;
+  --nd-color-border-strong: #8f8fa3;
+
+  /* --- Цвет: текст --- */
+  --nd-color-text: #17171f;
+  --nd-color-text-muted: #5b5b6b;
+  --nd-color-text-disabled: #a6a6b5;
+  --nd-color-text-on-accent: #ffffff;
+
+  /* --- Цвет: единственный акцент и его состояния --- */
+  --nd-color-accent: #5b48ee;
+  --nd-color-accent-hover: #4c3ad9;
+  --nd-color-accent-active: #4030be;
+  --nd-color-accent-ink: #ffffff;
+  --nd-color-accent-subtle: #eeebff;
+
+  /* --- Цвет: статусы --- */
+  --nd-color-success: #12805c;
+  --nd-color-success-bg: #e3f5ec;
+  --nd-color-warning: #9a5b00;
+  --nd-color-warning-bg: #fcefd8;
+  --nd-color-danger: #c22b3f;
+  --nd-color-danger-ink: #ffffff;
+  --nd-color-danger-bg: #fbe8ea;
+
+  /* --- Нейтральная «зона предпросмотра» (не тема сайта!) ---
+     Панель вокруг кадра предпросмотра всегда нейтральна —
+     независимо от темы сайта внутри кадра, см. UX §«Визуальное
+     отделение предпросмотра». */
+  --nd-preview-surround-bg: #eceef2;
+  --nd-preview-frame-border: #d7d9e2;
+  --nd-preview-chrome-bg: #f3f4f7;
+  --nd-preview-chrome-dot: #cfd1db;
+
+  /* --- Типографика: шрифты (системные, без внешнего CDN) --- */
+  --nd-font-sans:
+    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  --nd-font-mono:
+    ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo,
+    monospace;
+
+  /* --- Типографика: шкала из 6 размеров --- */
+  --nd-text-xs: 0.75rem; /* 12px — счётчики символов, подписи */
+  --nd-text-sm: 0.875rem; /* 14px — вторичный текст, кнопки */
+  --nd-text-base: 1rem; /* 16px — основной текст */
+  --nd-text-lg: 1.125rem; /* 18px — заголовки строк, подзаголовки */
+  --nd-text-xl: 1.5rem; /* 24px — заголовки панелей */
+  --nd-text-2xl: 2rem; /* 32px — заголовки экранов */
+  --nd-line-height-tight: 1.2;
+  --nd-line-height-base: 1.5;
+  --nd-font-weight-regular: 400;
+  --nd-font-weight-medium: 500;
+  --nd-font-weight-semibold: 600;
+
+  /* --- Отступы: шкала из 8 значений --- */
+  --nd-space-1: 4px;
+  --nd-space-2: 8px;
+  --nd-space-3: 12px;
+  --nd-space-4: 16px;
+  --nd-space-5: 24px;
+  --nd-space-6: 32px;
+  --nd-space-7: 48px;
+  --nd-space-8: 64px;
+
+  /* --- Радиусы --- */
+  --nd-radius-sm: 6px;
+  --nd-radius-md: 10px;
+  --nd-radius-lg: 16px;
+  --nd-radius-full: 999px;
+
+  /* --- Тени (светлая тема: тёмный полупрозрачный чёрный) --- */
+  --nd-shadow-sm: 0 1px 2px rgba(23, 23, 31, 0.08);
+  --nd-shadow-md: 0 4px 12px rgba(23, 23, 31, 0.1);
+  --nd-shadow-lg: 0 16px 40px rgba(23, 23, 31, 0.16);
+
+  /* --- Движение: 150–250мс, только opacity/transform --- */
+  --nd-motion-fast: 150ms;
+  --nd-motion-base: 200ms;
+  --nd-motion-slow: 250ms;
+  --nd-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --- Фокус --- */
+  --nd-focus-ring-color: var(--nd-color-accent);
+  --nd-focus-ring-width: 2px;
+  --nd-focus-ring-offset: 2px;
+
+  /* --- Z-индексы --- */
+  --nd-z-dropdown: 20;
+  --nd-z-sticky: 30;
+  --nd-z-overlay: 40;
+  --nd-z-modal: 50;
+  --nd-z-toast: 60;
+}
+
+/* ==========================================================
+   2. ТОКЕНЫ — ТЁМНАЯ ТЕМА ПО СИСТЕМНОЙ НАСТРОЙКЕ
+   Срабатывает только если пользователь не выбрал вручную
+   светлую тему (data-theme="light" отсутствует).
+   ========================================================== */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --nd-color-bg: #121218;
+    --nd-color-surface: #1b1b24;
+    --nd-color-surface-raised: #23232f;
+    --nd-color-surface-sunken: #0d0d12;
+    --nd-color-overlay-scrim: rgba(0, 0, 0, 0.6);
+
+    --nd-color-border: #2e2e3b;
+    --nd-color-border-strong: #6e6e86;
+
+    --nd-color-text: #ededf3;
+    --nd-color-text-muted: #a8a8ba;
+    --nd-color-text-disabled: #6b6b7d;
+    --nd-color-text-on-accent: #14141c;
+
+    --nd-color-accent: #8f7fff;
+    --nd-color-accent-hover: #a594ff;
+    --nd-color-accent-active: #7a69e6;
+    --nd-color-accent-ink: #14141c;
+    --nd-color-accent-subtle: #2a2447;
+
+    --nd-color-success: #34d399;
+    --nd-color-success-bg: #103829;
+    --nd-color-warning: #fbbf63;
+    --nd-color-warning-bg: #3a2e14;
+    --nd-color-danger: #ff6b81;
+    --nd-color-danger-ink: #14141c;
+    --nd-color-danger-bg: #3a1620;
+
+    --nd-preview-surround-bg: #0a0a0e;
+    --nd-preview-frame-border: #2a2a38;
+    --nd-preview-chrome-bg: #17171f;
+    --nd-preview-chrome-dot: #34343f;
+
+    --nd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --nd-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
+    --nd-shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* ==========================================================
+   3. ТОКЕНЫ — ТЁМНАЯ ТЕМА ПО РУЧНОМУ ПЕРЕКЛЮЧАТЕЛЮ
+   Работает независимо от системной настройки (data-theme="dark"
+   на <html>/<body>), чтобы ручной тумблер темы редактора
+   действовал в обе стороны.
+   ========================================================== */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --nd-color-bg: #121218;
+  --nd-color-surface: #1b1b24;
+  --nd-color-surface-raised: #23232f;
+  --nd-color-surface-sunken: #0d0d12;
+  --nd-color-overlay-scrim: rgba(0, 0, 0, 0.6);
+
+  --nd-color-border: #2e2e3b;
+  --nd-color-border-strong: #6e6e86;
+
+  --nd-color-text: #ededf3;
+  --nd-color-text-muted: #a8a8ba;
+  --nd-color-text-disabled: #6b6b7d;
+  --nd-color-text-on-accent: #14141c;
+
+  --nd-color-accent: #8f7fff;
+  --nd-color-accent-hover: #a594ff;
+  --nd-color-accent-active: #7a69e6;
+  --nd-color-accent-ink: #14141c;
+  --nd-color-accent-subtle: #2a2447;
+
+  --nd-color-success: #34d399;
+  --nd-color-success-bg: #103829;
+  --nd-color-warning: #fbbf63;
+  --nd-color-warning-bg: #3a2e14;
+  --nd-color-danger: #ff6b81;
+  --nd-color-danger-ink: #14141c;
+  --nd-color-danger-bg: #3a1620;
+
+  --nd-preview-surround-bg: #0a0a0e;
+  --nd-preview-frame-border: #2a2a38;
+  --nd-preview-chrome-bg: #17171f;
+  --nd-preview-chrome-dot: #34343f;
+
+  --nd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --nd-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
+  --nd-shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.6);
+}
+
+/* :root[data-theme="light"] не требует отдельного блока: это
+   уже поведение по умолчанию, объявленное в :root — присвоение
+   атрибута лишь не даёт медиа-запросу выше переопределить его. */
+
+/* ==========================================================
+   4. СБРОС
+   ========================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+
+ul[class],
+ol[class] {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+img,
+picture,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+}
+
+/* ==========================================================
+   5. БАЗОВАЯ ТИПОГРАФИКА ИНТЕРФЕЙСА (--nd-*)
+   ========================================================== */
+body {
+  background: var(--nd-color-bg);
+  color: var(--nd-color-text);
+  font-family: var(--nd-font-sans);
+  font-size: var(--nd-text-base);
+  font-weight: var(--nd-font-weight-regular);
+  line-height: var(--nd-line-height-base);
+  -webkit-font-smoothing: antialiased;
+}
+
+.nd-heading-xl {
+  font-size: var(--nd-text-2xl);
+  font-weight: var(--nd-font-weight-semibold);
+  line-height: var(--nd-line-height-tight);
+  letter-spacing: -0.01em;
+}
+
+.nd-heading-lg {
+  font-size: var(--nd-text-xl);
+  font-weight: var(--nd-font-weight-semibold);
+  line-height: var(--nd-line-height-tight);
+}
+
+.nd-heading-md {
+  font-size: var(--nd-text-lg);
+  font-weight: var(--nd-font-weight-semibold);
+  line-height: var(--nd-line-height-tight);
+}
+
+.nd-text-muted {
+  color: var(--nd-color-text-muted);
+}
+
+.nd-text-sm {
+  font-size: var(--nd-text-sm);
+}
+
+.nd-text-xs {
+  font-size: var(--nd-text-xs);
+}
+
+/* ==========================================================
+   6. ФОКУС (доступность)
+   Единый видимый индикатор фокуса для всего интерфейса
+   редактора. Не используется внутри кадра предпросмотра —
+   там свой фокус-стиль на токенах --site-*.
+   ========================================================== */
+.nd-focusable:focus {
+  outline: none;
+}
+
+.nd-focusable:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: var(--nd-focus-ring-width) solid var(--nd-focus-ring-color);
+  outline-offset: var(--nd-focus-ring-offset);
+  border-radius: var(--nd-radius-sm);
+}
+
+/* Кадр предпросмотра — нейтральная «рамка окна браузера».
+   Сам он и его подпись используют ТОЛЬКО --nd-*, содержимое
+   внутри (сайт) переключается на --site-* через атрибут
+   data-site-theme на дочернем элементе кадра. */
+.nd-preview-surround {
+  background: var(--nd-preview-surround-bg);
+}
+
+.nd-preview-frame {
+  background: var(--nd-color-surface);
+  border: 1px solid var(--nd-preview-frame-border);
+  border-radius: var(--nd-radius-lg);
+  box-shadow: var(--nd-shadow-lg);
+  overflow: hidden;
+}
+
+.nd-preview-frame__chrome {
+  display: flex;
+  align-items: center;
+  gap: var(--nd-space-2);
+  padding: var(--nd-space-2) var(--nd-space-3);
+  background: var(--nd-preview-chrome-bg);
+  border-bottom: 1px solid var(--nd-preview-frame-border);
+}
+
+.nd-preview-frame__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--nd-radius-full);
+  background: var(--nd-preview-chrome-dot);
+}
+
+/* ==========================================================
+   7. РЕАКЦИЯ НА prefers-reduced-motion
+   Общесистемное правило: покадровые/декоративные анимации
+   появления выключаются; переходы состояний (hover/focus)
+   получают близкую к нулю длительность.
+   ========================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
