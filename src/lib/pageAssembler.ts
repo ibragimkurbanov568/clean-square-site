@@ -19,10 +19,12 @@ import { escapeHtml, sectionRendererRegistry } from "./sectionRenderers";
 
 /* ===================================================================== */
 /* 1. Транскрипция --site-* переменных для каждой темы                    */
-/* Источник: src/styles/site-themes.css (НЕ ТРОГАТЬ — оригинал шага 3).   */
-/* Копия дословная: значения не редактируются, только переносятся сюда,  */
-/* потому что экспортированный документ не может ссылаться на внешний    */
-/* CSS-файл (F7: ноль внешних ссылок) и должен нести тему инлайново.     */
+/* Источник: src/styles/site-themes.css. Копия дословная — значения      */
+/* здесь и там должны совпадать 1:1 (включая --site-hero-ink и           */
+/* поправленные --site-gradient-end у «Ремесла»/«Карнавала», см. шаг     */
+/* интеграции в docs/07-integration.md), потому что экспортированный     */
+/* документ не может ссылаться на внешний CSS-файл (F7: ноль внешних     */
+/* ссылок) и должен нести тему инлайново.                                */
 /* ===================================================================== */
 
 const SITE_THEME_CSS_VARS: Readonly<Record<ThemeId, string>> = {
@@ -41,6 +43,7 @@ const SITE_THEME_CSS_VARS: Readonly<Record<ThemeId, string>> = {
     --site-radius-sm: 2px; --site-radius-md: 4px; --site-radius-lg: 6px; --site-space-unit: 6px;
     --site-shadow-sm: 0 1px 2px rgba(19, 27, 46, 0.08); --site-shadow-md: 0 6px 16px rgba(19, 27, 46, 0.1);
     --site-gradient-angle: 160deg; --site-gradient-start: #1e4b8c; --site-gradient-end: #10233f;
+    --site-hero-ink: #ffffff;
     --site-glass-bg: rgba(255, 255, 255, 0.6); --site-glass-border: rgba(19, 27, 46, 0.12); --site-glass-blur: 10px;
   `,
   remeslo: `
@@ -57,7 +60,8 @@ const SITE_THEME_CSS_VARS: Readonly<Record<ThemeId, string>> = {
     --site-text-lg: 1.375rem; --site-text-xl: 1.875rem; --site-text-2xl: 2.75rem;
     --site-radius-sm: 8px; --site-radius-md: 14px; --site-radius-lg: 22px; --site-space-unit: 8px;
     --site-shadow-sm: 0 2px 6px rgba(59, 42, 30, 0.1); --site-shadow-md: 0 10px 24px rgba(59, 42, 30, 0.14);
-    --site-gradient-angle: 135deg; --site-gradient-start: #b5502e; --site-gradient-end: #d9a441;
+    --site-gradient-angle: 135deg; --site-gradient-start: #b5502e; --site-gradient-end: #7a5417;
+    --site-hero-ink: #ffffff;
     --site-glass-bg: rgba(255, 250, 241, 0.65); --site-glass-border: rgba(59, 42, 30, 0.14); --site-glass-blur: 8px;
   `,
   impulse: `
@@ -76,6 +80,7 @@ const SITE_THEME_CSS_VARS: Readonly<Record<ThemeId, string>> = {
     --site-shadow-sm: 0 0 0 1px rgba(51, 230, 180, 0.08);
     --site-shadow-md: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 24px rgba(51, 230, 180, 0.12);
     --site-gradient-angle: 120deg; --site-gradient-start: #0b0e12; --site-gradient-end: #16324a;
+    --site-hero-ink: #e9f3ef;
     --site-glass-bg: rgba(18, 24, 33, 0.55); --site-glass-border: rgba(51, 230, 180, 0.25); --site-glass-blur: 14px;
   `,
   vozdukh: `
@@ -93,6 +98,7 @@ const SITE_THEME_CSS_VARS: Readonly<Record<ThemeId, string>> = {
     --site-radius-sm: 4px; --site-radius-md: 8px; --site-radius-lg: 14px; --site-space-unit: 10px;
     --site-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06); --site-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
     --site-gradient-angle: 180deg; --site-gradient-start: #ffffff; --site-gradient-end: #f0f0f0;
+    --site-hero-ink: #1a1a1a;
     --site-glass-bg: rgba(255, 255, 255, 0.7); --site-glass-border: rgba(26, 26, 26, 0.1); --site-glass-blur: 12px;
   `,
   karnaval: `
@@ -109,7 +115,8 @@ const SITE_THEME_CSS_VARS: Readonly<Record<ThemeId, string>> = {
     --site-text-lg: 1.5rem; --site-text-xl: 2.125rem; --site-text-2xl: 3rem;
     --site-radius-sm: 14px; --site-radius-md: 22px; --site-radius-lg: 32px; --site-space-unit: 10px;
     --site-shadow-sm: 0 3px 10px rgba(208, 27, 107, 0.14); --site-shadow-md: 0 14px 30px rgba(208, 27, 107, 0.18);
-    --site-gradient-angle: 135deg; --site-gradient-start: #d01b6b; --site-gradient-end: #e7a400;
+    --site-gradient-angle: 135deg; --site-gradient-start: #d01b6b; --site-gradient-end: #7c5600;
+    --site-hero-ink: #ffffff;
     --site-glass-bg: rgba(255, 255, 255, 0.55); --site-glass-border: rgba(208, 27, 107, 0.2); --site-glass-blur: 10px;
   `,
   barhat: `
@@ -128,6 +135,7 @@ const SITE_THEME_CSS_VARS: Readonly<Record<ThemeId, string>> = {
     --site-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.45);
     --site-shadow-md: 0 18px 40px rgba(0, 0, 0, 0.55), 0 0 20px rgba(201, 162, 39, 0.1);
     --site-gradient-angle: 150deg; --site-gradient-start: #14110e; --site-gradient-end: #2c2210;
+    --site-hero-ink: #f3ecdd;
     --site-glass-bg: rgba(30, 26, 21, 0.55); --site-glass-border: rgba(201, 162, 39, 0.28); --site-glass-blur: 14px;
   `,
 };
@@ -187,8 +195,12 @@ const BASE_CSS = `
   .site-hero--effects {
     background: linear-gradient(var(--site-gradient-angle), var(--site-gradient-start), var(--site-gradient-end));
   }
+  /* --site-hero-ink (не --site-accent-ink!): заголовок и подзаголовок
+     hero лежат на градиенте из двух РАЗНЫХ цветов (--site-gradient-start/
+     -end), а не на ровной заливке --site-accent — им нужен свой,
+     отдельно подобранный под оба конца градиента токен контраста. */
   .site-hero--effects .site-heading-xl,
-  .site-hero--effects .site-hero__subtitle { color: var(--site-accent-ink); }
+  .site-hero--effects .site-hero__subtitle { color: var(--site-hero-ink); }
   .site-hero--effects .site-hero__glass {
     background: var(--site-glass-bg);
     border: 1px solid var(--site-glass-border);

@@ -86,7 +86,9 @@ export function SectionRow({
           <span className="nd-section-row__type-icon" aria-hidden="true">
             <SectionTypeIcon name={definition.icon} />
           </span>
-          <span className="nd-section-row__name">{definition.labelRu}</span>
+          <span className="nd-section-row__name" title={definition.labelRu}>
+            {definition.labelRu}
+          </span>
           <div className="nd-section-row__actions">
             <IconButton
               aria-label={section.visible ? "Скрыть секцию" : "Показать секцию"}

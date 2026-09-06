@@ -11,7 +11,7 @@ import type { SectionLibrary, SectionTypeDefinition } from "../types/generator";
 export const SECTION_LIBRARY: SectionLibrary = {
   hero: {
     type: "hero",
-    labelRu: "Hero",
+    labelRu: "Обложка",
     descriptionRu: "Первый экран сайта: крупный заголовок, короткий подзаголовок и кнопка призыва к действию.",
     icon: "layout-hero",
     hasBody: true,
@@ -85,7 +85,7 @@ export const SECTION_LIBRARY: SectionLibrary = {
   cta: {
     type: "cta",
     labelRu: "Призыв к действию",
-    descriptionRu: "CTA — финальный блок с призывом связаться или оставить заявку.",
+    descriptionRu: "Призыв к действию — финальный блок с призывом связаться или оставить заявку.",
     icon: "megaphone",
     hasBody: true,
     hasItems: false,

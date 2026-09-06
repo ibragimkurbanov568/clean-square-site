@@ -218,7 +218,7 @@ export default function EditorScreen() {
 
   const handleExport = () => {
     if (!heroVisible) {
-      showToast("Добавьте секцию Hero перед экспортом");
+      showToast("Добавьте секцию «Обложка» перед экспортом");
       return;
     }
     const result = exportProjectToHtml(project);
@@ -236,7 +236,7 @@ export default function EditorScreen() {
     showToast(`Готово! Файл «${result.filename}» скачан.`);
   };
 
-  const exportTitle = heroVisible ? undefined : "Добавьте видимую секцию Hero, чтобы включить экспорт";
+  const exportTitle = heroVisible ? undefined : "Добавьте видимую секцию «Обложка», чтобы включить экспорт";
 
   return (
     <div className="nd-editor">

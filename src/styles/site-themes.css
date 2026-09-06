@@ -37,11 +37,18 @@
  * в каждой теме). Радиус и типографическая шкала прописаны в
  * каждой теме явно, потому что именно они формируют характер.
  *
- * Декоративные токены (--site-gradient-*, --site-glass-*) не
- * несут текста и не обязаны проходить контраст сами по себе —
- * это фон под контентом; сам контент поверх них всегда красится
- * токеном --site-text или --site-accent-ink, для которых контраст
- * проверен и указан в docs/03-design-system.md.
+ * Декоративные токены (--site-gradient-*, --site-glass-*) не несут
+ * текста сами по себе, но заголовок и подзаголовок hero рисуются
+ * ПОВЕРХ градиента (--site-gradient-start → --site-gradient-end),
+ * а не поверх ровной заливки --site-accent — поэтому для них есть
+ * отдельный токен --site-hero-ink, подобранный так, чтобы контраст
+ * к ОБОИМ концам градиента был не ниже 4.5:1 (WCAG AA), а не только
+ * к --site-accent (для которого это гарантирует --site-accent-ink).
+ * У «Ремесла» и «Карнавала» --site-gradient-end затемнён относительно
+ * исходного --site-accent-2 ровно настолько, чтобы это стало
+ * математически достижимо (у двух разных по светлоте концов градиента
+ * не может быть общего читаемого сплошного цвета текста, если один
+ * конец светлый, а другой тёмный — доказательство в docs/07-integration.md).
  */
 
 /* ==========================================================
@@ -92,6 +99,7 @@
   --site-gradient-angle: 160deg;
   --site-gradient-start: #1e4b8c;
   --site-gradient-end: #10233f;
+  --site-hero-ink: #ffffff;
   --site-glass-bg: rgba(255, 255, 255, 0.6);
   --site-glass-border: rgba(19, 27, 46, 0.12);
   --site-glass-blur: 10px;
@@ -144,7 +152,12 @@
 
   --site-gradient-angle: 135deg;
   --site-gradient-start: #b5502e;
-  --site-gradient-end: #d9a441;
+  /* Затемнено относительно --site-accent-2 (#d9a441): исходный светлый
+     золотой конец (относительная яркость 0.417) физически не мог дать
+     контраст 4.5:1 ни с одним сплошным цветом текста одновременно с
+     тёмным началом градиента (0.158) — см. docs/07-integration.md. */
+  --site-gradient-end: #7a5417;
+  --site-hero-ink: #ffffff;
   --site-glass-bg: rgba(255, 250, 241, 0.65);
   --site-glass-border: rgba(59, 42, 30, 0.14);
   --site-glass-blur: 8px;
@@ -200,6 +213,7 @@
   --site-gradient-angle: 120deg;
   --site-gradient-start: #0b0e12;
   --site-gradient-end: #16324a;
+  --site-hero-ink: #e9f3ef;
   --site-glass-bg: rgba(18, 24, 33, 0.55);
   --site-glass-border: rgba(51, 230, 180, 0.25);
   --site-glass-blur: 14px;
@@ -252,6 +266,7 @@
   --site-gradient-angle: 180deg;
   --site-gradient-start: #ffffff;
   --site-gradient-end: #f0f0f0;
+  --site-hero-ink: #1a1a1a;
   --site-glass-bg: rgba(255, 255, 255, 0.7);
   --site-glass-border: rgba(26, 26, 26, 0.1);
   --site-glass-blur: 12px;
@@ -303,7 +318,10 @@
 
   --site-gradient-angle: 135deg;
   --site-gradient-start: #d01b6b;
-  --site-gradient-end: #e7a400;
+  /* Затемнено относительно --site-accent-2 (#e7a400) по той же причине,
+     что и у «Ремесла» — см. комментарий там и docs/07-integration.md. */
+  --site-gradient-end: #7c5600;
+  --site-hero-ink: #ffffff;
   --site-glass-bg: rgba(255, 255, 255, 0.55);
   --site-glass-border: rgba(208, 27, 107, 0.2);
   --site-glass-blur: 10px;
@@ -357,6 +375,7 @@
   --site-gradient-angle: 150deg;
   --site-gradient-start: #14110e;
   --site-gradient-end: #2c2210;
+  --site-hero-ink: #f3ecdd;
   --site-glass-bg: rgba(30, 26, 21, 0.55);
   --site-glass-border: rgba(201, 162, 39, 0.28);
   --site-glass-blur: 14px;
