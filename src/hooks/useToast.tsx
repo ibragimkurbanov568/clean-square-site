@@ -1,25 +1,7 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-
-export interface ToastItem {
-  id: string;
-  message: string;
-}
-
-interface ToastContextValue {
-  toasts: ToastItem[];
-  showToast: (message: string) => void;
-  dismissToast: (id: string) => void;
-}
-
-const ToastContext = createContext<ToastContextValue | null>(null);
+import { ToastContext } from "./toastContext";
+import type { ToastItem } from "./toastContext";
 
 const TOAST_LIFETIME_MS = 4000;
 
@@ -53,20 +35,4 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 
   return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>;
-}
-
-export function useToast(): { showToast: (message: string) => void } {
-  const ctx = useContext(ToastContext);
-  if (!ctx) {
-    throw new Error("useToast должен использоваться внутри <ToastProvider>");
-  }
-  return { showToast: ctx.showToast };
-}
-
-export function useToastList(): { toasts: ToastItem[]; dismissToast: (id: string) => void } {
-  const ctx = useContext(ToastContext);
-  if (!ctx) {
-    throw new Error("useToastList должен использоваться внутри <ToastProvider>");
-  }
-  return { toasts: ctx.toasts, dismissToast: ctx.dismissToast };
 }

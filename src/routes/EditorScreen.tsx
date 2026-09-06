@@ -23,7 +23,7 @@ import { useProjectStore } from "../hooks/useProjectStore";
 import { useAutosave } from "../hooks/useAutosave";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useReducedMotion } from "../hooks/useReducedMotion";
-import { useToast } from "../hooks/useToast";
+import { useToast } from "../hooks/useToastHooks";
 import { IconButton } from "../components/IconButton";
 import { Button } from "../components/Button";
 import { IconBack, IconDownload, IconPencil } from "../components/Icons";
@@ -79,9 +79,12 @@ export default function EditorScreen() {
 
   useEffect(() => {
     if (!id) return;
+    // Чтение localStorage синхронно, но нарочно оставлено в эффекте (не в
+    // ленивом инициализаторе useState) — см. пояснение в StartScreen.tsx.
     try {
       const loaded = store.loadProject(id);
       if (!loaded) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setStatus("not-found");
         return;
       }

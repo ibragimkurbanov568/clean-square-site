@@ -24,3 +24,32 @@ if (typeof window !== "undefined" && !window.matchMedia) {
     dispatchEvent: () => false,
   });
 }
+
+/**
+ * jsdom не реализует `ResizeObserver`. Нужен кадру предпросмотра
+ * (`src/hooks/useContainerWidth.ts`, F5) для расчёта коэффициента
+ * `transform: scale`. Тестовая заглушка не эмулирует реальные события
+ * ресайза — этого достаточно для рендер-тестов компонентов, где ширина
+ * контейнера не проверяется напрямую.
+ */
+if (typeof window !== "undefined" && !("ResizeObserver" in window)) {
+  class ResizeObserverStub {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  }
+  // @ts-expect-error -- минимальная тестовая заглушка, не полная реализация DOM-интерфейса.
+  window.ResizeObserver = ResizeObserverStub;
+}
+
+/**
+ * jsdom не реализует `URL.createObjectURL`/`revokeObjectURL`. Нужен
+ * экспорту (F7, `src/routes/EditorScreen.tsx`) для скачивания собранного
+ * `.html`-файла через `Blob` + `<a download>`.
+ */
+if (typeof URL !== "undefined" && typeof URL.createObjectURL !== "function") {
+  URL.createObjectURL = () => "blob:mock-url";
+}
+if (typeof URL !== "undefined" && typeof URL.revokeObjectURL !== "function") {
+  URL.revokeObjectURL = () => {};
+}

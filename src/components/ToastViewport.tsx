@@ -1,4 +1,4 @@
-import { useToastList } from "../hooks/useToast";
+import { useToastList } from "../hooks/useToastHooks";
 
 /**
  * Плавающий список тостов (docs/03-design-system.md, §3.5).

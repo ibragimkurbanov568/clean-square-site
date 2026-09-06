@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateSectionContent } from "./textGenerator";
+import { INDUSTRY_CONTENT_FOR_TESTS, generateSectionContent } from "./textGenerator";
 import type { IndustryId, SectionType, ToneId } from "../types/project";
 
 const INDUSTRIES: IndustryId[] = ["cafe", "it", "beauty", "shop", "consulting", "education", "other"];
@@ -110,5 +110,86 @@ describe("generateSectionContent — соответствие SectionTypeDefinit
   it("testimonials даёт пары имя/цитата", () => {
     const content = generateSectionContent({ type: "testimonials", industry: "beauty", tone: "bold", seed: "s" });
     expect(content.items?.every((item) => item.secondary && item.secondary.length > 0)).toBe(true);
+  });
+});
+
+/**
+ * Регресс-тест на грамматику (падежи и род при подстановке названия
+ * отрасли/аудитории в шаблоны). Раньше `noun` в именительном падеже
+ * подставлялся в позиции, требующие винительного/творительного, а
+ * прилагательные и местоимения не согласовывались по роду с
+ * существительным отрасли (например «Добро пожаловать в нашу
+ * магазин», «команда, которая стоит за этой магазин», «Мы — магазин,
+ * которая ценит…», «Присоединяйтесь к гостей»). Тест прогоняет ВСЕ 7
+ * отраслей на ВСЕХ 4 тонах (hero/about/cta — единственные типы секций,
+ * куда подставляется существительное отрасли или аудитория рядом с
+ * согласуемым словом) и проверяет отсутствие заведомо неграмматичных
+ * сочетаний. На коде до исправления падает; после исправления —
+ * проходит.
+ */
+describe("generateSectionContent — согласование рода/падежа отрасли и аудитории (регресс-тест)", () => {
+  const GRAMMAR_TYPES: SectionType[] = ["hero", "about", "cta"];
+
+  function collectText(industry: IndustryId, tone: ToneId): string {
+    return GRAMMAR_TYPES.map((type) => {
+      const content = generateSectionContent({ type, industry, tone, seed: `grammar-${industry}-${tone}` });
+      return [content.title, content.body ?? "", content.ctaText ?? ""].join(" ");
+    })
+      .join(" \n ")
+      .toLowerCase();
+  }
+
+  for (const industryId of INDUSTRIES) {
+    const industry = INDUSTRY_CONTENT_FOR_TESTS[industryId];
+    const noun = industry.noun.toLowerCase();
+
+    for (const tone of TONES) {
+      it(`${industryId}/${tone}: нет заведомо неграмматичных сочетаний вокруг названия отрасли`, () => {
+        const text = collectText(industryId, tone);
+
+        // «в нашу магазин» — винительный женского рода перед существительным
+        // мужского рода. Для существительных мужского рода после «в нашу»
+        // не должно быть именительной формы вовсе (нужно «в наш магазин»).
+        if (industry.gender === "m") {
+          expect(text).not.toContain(`в нашу ${noun}`);
+          // «небольшая магазин» — прилагательное женского рода при
+          // существительном мужского рода (нужно «небольшой магазин»).
+          expect(text).not.toContain(`небольшая ${noun}`);
+        }
+
+        // «за этой <именительный падеж>» — после «за этой»/«за этим» может
+        // идти только творительный падеж; именительная форма здесь всегда
+        // ошибка, независимо от рода отрасли.
+        expect(text).not.toContain(`за этой ${noun}`);
+        expect(text).not.toContain(`за этим ${noun}`);
+
+        // «<noun>, который/которая» — согласование относительного
+        // местоимения с родом отрасли, когда оно стоит сразу после
+        // подставленного существительного через запятую.
+        const wrongRelative = industry.gender === "m" ? "которая" : "который";
+        expect(text).not.toContain(`${noun}, ${wrongRelative}`);
+
+        // Аудитория в родительном падеже там, где нужен дательный
+        // («Присоединяйтесь к гостей» вместо «к гостям»).
+        const audienceGenitive = industry.audienceGenitive.toLowerCase();
+        const audienceDative = industry.audienceDative.toLowerCase();
+        if (audienceGenitive !== audienceDative) {
+          expect(text).not.toContain(`к ${audienceGenitive},`);
+        }
+
+        // Аудитория в родительном падеже там, где нужно подлежащее в
+        // именительном («Гостей выбирают нас» вместо «Гости выбирают нас»).
+        const audienceNominative = industry.audienceNominative.toLowerCase();
+        if (audienceGenitive !== audienceNominative) {
+          expect(text).not.toContain(`${audienceGenitive} выбирают`);
+        }
+      });
+    }
+  }
+
+  it("демонстрационная проверка на конкретном примере: 'shop' даёт правильные формы", () => {
+    const hero = generateSectionContent({ type: "hero", industry: "shop", tone: "friendly", seed: "demo" });
+    const combined = `${hero.title} ${hero.body ?? ""}`;
+    expect(combined).not.toMatch(/в нашу магазин/);
   });
 });

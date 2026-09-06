@@ -137,49 +137,53 @@ export function IconDownload(props: IconProps) {
   );
 }
 
-/** Иконка типа секции по общему ключу словаря (SectionTypeDefinition.icon). */
+/**
+ * Иконка типа секции по ключу словаря `SectionTypeDefinition.icon`
+ * (src/content/sectionLibrary.ts, шаг 5): "layout-hero" | "info" | "grid" |
+ * "star" | "tag" | "quote" | "image" | "megaphone" | "map-pin" | "footer".
+ */
 export function SectionTypeIcon({ name, ...rest }: { name: string } & IconProps) {
   switch (name) {
-    case "hero":
+    case "layout-hero":
       return (
         <svg {...base} {...rest}>
           <rect x="3" y="4" width="18" height="12" rx="1" />
           <path d="M7 20h10M12 16v4" />
         </svg>
       );
-    case "about":
+    case "info":
       return (
         <svg {...base} {...rest}>
           <circle cx="12" cy="8" r="3" />
           <path d="M5 21a7 7 0 0 1 14 0" />
         </svg>
       );
-    case "services":
+    case "grid":
       return (
         <svg {...base} {...rest}>
           <path d="M14.7 6.3a4 4 0 1 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4Z" />
         </svg>
       );
-    case "features":
+    case "star":
       return (
         <svg {...base} {...rest}>
           <path d="M12 2l2.9 6.3L21 9l-5 4.6L17.4 21 12 17.6 6.6 21 8 13.6 3 9l6.1-.7Z" />
         </svg>
       );
-    case "pricing":
+    case "tag":
       return (
         <svg {...base} {...rest}>
           <path d="M12 1v22" />
           <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
         </svg>
       );
-    case "testimonials":
+    case "quote":
       return (
         <svg {...base} {...rest}>
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" />
         </svg>
       );
-    case "gallery":
+    case "image":
       return (
         <svg {...base} {...rest}>
           <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -187,14 +191,14 @@ export function SectionTypeIcon({ name, ...rest }: { name: string } & IconProps)
           <path d="M21 15l-5-5L5 21" />
         </svg>
       );
-    case "cta":
+    case "megaphone":
       return (
         <svg {...base} {...rest}>
           <circle cx="12" cy="12" r="9" />
           <path d="M9 12h6M12 9l3 3-3 3" />
         </svg>
       );
-    case "contacts":
+    case "map-pin":
       return (
         <svg {...base} {...rest}>
           <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.4 2.1L8 9.9a16 16 0 0 0 6 6l1.4-1.4a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.8 2.2Z" />

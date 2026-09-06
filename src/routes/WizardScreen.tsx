@@ -6,7 +6,7 @@ import { INDUSTRIES } from "../content/industries";
 import { TONES } from "../content/tones";
 import { createProject } from "../lib/projectFactory";
 import { useProjectStore } from "../hooks/useProjectStore";
-import { useToast } from "../hooks/useToast";
+import { useToast } from "../hooks/useToastHooks";
 import { IconButton } from "../components/IconButton";
 import { IconBack } from "../components/Icons";
 import { TextField } from "../components/TextField";
@@ -50,7 +50,7 @@ export default function WizardScreen() {
     }
 
     setSubmitting(true);
-    let existingNames: string[] = [];
+    let existingNames: string[];
     try {
       existingNames = store.listProjects().map((project) => project.name);
     } catch {

@@ -1162,7 +1162,7 @@
   height: 100%;
   border: none;
   display: block;
-  background: #fff;
+  background: var(--nd-color-surface);
 }
 
 .nd-preview-frame__empty {

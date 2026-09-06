@@ -56,17 +56,76 @@ function capitalize(text: string): string {
 }
 
 /* ===================================================================== */
+/* 0.1 Согласование слов по роду отрасли                                 */
+/* Русский язык требует, чтобы местоимения, прилагательные и глаголы     */
+/* прошедшего времени согласовывались в роде/падеже с существительным,   */
+/* которое подставляется в шаблон (см. `IndustryContent.gender`). Здесь  */
+/* собраны все словоформы, которые реально используются в шаблонах ниже —*/
+/* никакого универсального морфологического движка не нужно, достаточно */
+/* конечного списка пар «мужской/женский» для конкретных слов текста.    */
+/* ===================================================================== */
+
+/** «который/которая» в нужном падеже — согласуется с родом отрасли. */
+const REL_PRONOUN: Record<Gender, { nominative: string; genitive: string; dative: string }> = {
+  f: { nominative: "которая", genitive: "которой", dative: "которой" },
+  m: { nominative: "который", genitive: "которого", dative: "которому" },
+};
+
+/** «этот/эта» в творительном падеже: «за этой кофейней» / «за этим магазином». */
+const THIS_INSTRUMENTAL: Record<Gender, string> = { f: "этой", m: "этим" };
+
+/** «наш/наша» в винительном падеже: «в нашу кофейню» / «в наш магазин». */
+const OUR_ACCUSATIVE: Record<Gender, string> = { f: "нашу", m: "наш" };
+
+/** «небольшой/небольшая». */
+const SMALL_ADJECTIVE: Record<Gender, string> = { f: "небольшая", m: "небольшой" };
+
+/** «устала … и решила» / «устал … и решил» — глаголы прошедшего времени в одной фразе. */
+const TIRED_AND_DECIDED: Record<Gender, string> = {
+  f: "устала от скучных стандартов индустрии и решила",
+  m: "устал от скучных стандартов индустрии и решил",
+};
+
+/**
+ * Благозвучный предлог «с»/«со» перед творительным падежом — перед
+ * стечением согласных («студией», «стандартом») по-русски естественнее
+ * «со», перед одиночной согласной («кофейней», «магазином») — «с».
+ */
+function withS(word: string): string {
+  return /^[сзш][бвгджзклмнпрстфхцчшщ]/i.test(word) ? "со" : "с";
+}
+
+/* ===================================================================== */
 /* 1. Ось «что рассказать»: лексика и факты отрасли                      */
 /* ===================================================================== */
+
+/**
+ * Грамматический род названия отрасли — определяет, какую форму
+ * согласуемых слов («который/которая», «этот/эта», «наш/наша»,
+ * «небольшой/небольшая», глагольные окончания прошедшего времени)
+ * нужно подставить в шаблон вместе с существительным (F3, см. правки
+ * по итогам грамматической проверки текста).
+ */
+type Gender = "f" | "m";
 
 interface IndustryContent {
   /** Название рода деятельности, ед. число, именительный падеж: «кофейня». */
   noun: string;
-  /** Тот же noun в родительном падеже: «кофейни» (для фраз «гости …»). */
+  /** Тот же noun в родительном падеже: «кофейни» (для фраз «услуги кофейни»). */
   nounGenitive: string;
-  /** Как называть посетителей/клиентов: «гостей», «клиентов», «учеников». */
-  audience: string;
-  /** Короткая фраза-обещание для hero, продолжает «Мы предлагаем …». */
+  /** Тот же noun в винительном падеже: «кофейню» (для фраз «в нашу кофейню»). */
+  nounAccusative: string;
+  /** Тот же noun в творительном падеже: «кофейней» (для фраз «за этой кофейней», «с кофейней»). */
+  nounInstrumental: string;
+  /** Грамматический род noun — «f» (кофейня, студия, команда) или «m» (магазин, центр). */
+  gender: Gender;
+  /** Посетители/клиенты во множественном числе, именительный падеж: «гости» (подлежащее — «гости выбирают»). */
+  audienceNominative: string;
+  /** Посетители/клиенты, родительный/винительный падеж: «гостей» (для фраз «для гостей», «в числе гостей»). */
+  audienceGenitive: string;
+  /** Посетители/клиенты, дательный падеж: «гостям» (для фраз «дарим гостям», «к гостям»). */
+  audienceDative: string;
+  /** Короткая фраза-обещание для hero в винительном падеже (объект глагола «предлагаем/дарим»), например «свежую обжарку…». */
   heroFocus: string;
   /** Список услуг/продуктов (для секции «Услуги»). */
   services: readonly string[];
@@ -88,7 +147,12 @@ const INDUSTRY_CONTENT: Readonly<Record<IndustryId, IndustryContent>> = {
   cafe: {
     noun: "кофейня",
     nounGenitive: "кофейни",
-    audience: "гостей",
+    nounAccusative: "кофейню",
+    nounInstrumental: "кофейней",
+    gender: "f",
+    audienceNominative: "гости",
+    audienceGenitive: "гостей",
+    audienceDative: "гостям",
     heroFocus: "свежую обжарку, домашнюю выпечку и атмосферу, в которую хочется возвращаться",
     services: [
       "Кофе на зерне собственной обжарки",
@@ -125,9 +189,14 @@ const INDUSTRY_CONTENT: Readonly<Record<IndustryId, IndustryContent>> = {
   },
   it: {
     noun: "студия разработки",
-    nounGenitive: "студии",
-    audience: "клиентов",
-    heroFocus: "проектируем, разрабатываем и поддерживаем digital-продукты под ключ",
+    nounGenitive: "студии разработки",
+    nounAccusative: "студию разработки",
+    nounInstrumental: "студией разработки",
+    gender: "f",
+    audienceNominative: "клиенты",
+    audienceGenitive: "клиентов",
+    audienceDative: "клиентам",
+    heroFocus: "проектирование, разработку и поддержку digital-продуктов под ключ",
     services: [
       "Веб- и мобильная разработка",
       "Дизайн интерфейсов и UX-исследования",
@@ -168,8 +237,13 @@ const INDUSTRY_CONTENT: Readonly<Record<IndustryId, IndustryContent>> = {
   },
   beauty: {
     noun: "студия красоты",
-    nounGenitive: "студии",
-    audience: "клиентов",
+    nounGenitive: "студии красоты",
+    nounAccusative: "студию красоты",
+    nounInstrumental: "студией красоты",
+    gender: "f",
+    audienceNominative: "клиенты",
+    audienceGenitive: "клиентов",
+    audienceDative: "клиентам",
     heroFocus: "уход, стрижки и процедуры, после которых хочется чаще смотреться в зеркало",
     services: [
       "Стрижки и укладки",
@@ -207,7 +281,12 @@ const INDUSTRY_CONTENT: Readonly<Record<IndustryId, IndustryContent>> = {
   shop: {
     noun: "магазин",
     nounGenitive: "магазина",
-    audience: "покупателей",
+    nounAccusative: "магазин",
+    nounInstrumental: "магазином",
+    gender: "m",
+    audienceNominative: "покупатели",
+    audienceGenitive: "покупателей",
+    audienceDative: "покупателям",
     heroFocus: "товары с быстрой доставкой и честным описанием каждой позиции",
     services: [
       "Доставка по городу и по России",
@@ -244,8 +323,13 @@ const INDUSTRY_CONTENT: Readonly<Record<IndustryId, IndustryContent>> = {
   },
   consulting: {
     noun: "консалтинговая команда",
-    nounGenitive: "команды",
-    audience: "клиентов",
+    nounGenitive: "консалтинговой команды",
+    nounAccusative: "консалтинговую команду",
+    nounInstrumental: "консалтинговой командой",
+    gender: "f",
+    audienceNominative: "клиенты",
+    audienceGenitive: "клиентов",
+    audienceDative: "клиентам",
     heroFocus: "экспертизу и практичные решения для роста вашего бизнеса",
     services: [
       "Стратегический консалтинг",
@@ -282,8 +366,13 @@ const INDUSTRY_CONTENT: Readonly<Record<IndustryId, IndustryContent>> = {
   },
   education: {
     noun: "образовательный центр",
-    nounGenitive: "центра",
-    audience: "учеников",
+    nounGenitive: "образовательного центра",
+    nounAccusative: "образовательный центр",
+    nounInstrumental: "образовательным центром",
+    gender: "m",
+    audienceNominative: "ученики",
+    audienceGenitive: "учеников",
+    audienceDative: "ученикам",
     heroFocus: "программы, после которых знания превращаются в реальный результат",
     services: [
       "Курсы для начинающих и продолжающих",
@@ -326,7 +415,12 @@ const INDUSTRY_CONTENT: Readonly<Record<IndustryId, IndustryContent>> = {
   other: {
     noun: "команда",
     nounGenitive: "команды",
-    audience: "клиентов",
+    nounAccusative: "команду",
+    nounInstrumental: "командой",
+    gender: "f",
+    audienceNominative: "клиенты",
+    audienceGenitive: "клиентов",
+    audienceDative: "клиентам",
     heroFocus: "продукт или услугу, ради которой к вам возвращаются снова",
     services: [
       "Консультация и подбор решения",
@@ -395,7 +489,7 @@ interface ToneVoice {
 const TONE_VOICE: Readonly<Record<ToneId, ToneVoice>> = {
   formal: {
     heroTitle: (i) => [
-      `${capitalize(i.noun)}, которой доверяют ${i.audience}`,
+      `${capitalize(i.noun)}, ${REL_PRONOUN[i.gender].dative} доверяют ${i.audienceNominative}`,
       `${capitalize(i.noun)} с профессиональным подходом к делу`,
     ],
     heroBody: (i) => [
@@ -405,8 +499,8 @@ const TONE_VOICE: Readonly<Record<ToneId, ToneVoice>> = {
     heroCta: ["Оставить заявку", "Узнать подробнее"],
     aboutTitle: ["О компании", "Кто мы"],
     aboutBody: (i) => [
-      `Мы — ${i.noun}, которая ценит точность и ответственность в каждой детали. Наша цель — стабильный результат, а не разовое впечатление.`,
-      `Команда, стоящая за этой ${i.noun}, придерживается высоких профессиональных стандартов и работает на долгосрочное доверие ${i.audience}.`,
+      `Мы — ${i.noun}, ${REL_PRONOUN[i.gender].nominative} ценит точность и ответственность в каждой детали. Наша цель — стабильный результат, а не разовое впечатление.`,
+      `Команда, стоящая за ${THIS_INSTRUMENTAL[i.gender]} ${i.nounInstrumental}, придерживается высоких профессиональных стандартов и работает на долгосрочное доверие ${i.audienceGenitive}.`,
     ],
     servicesTitle: ["Услуги", "Что мы предлагаем"],
     servicesBody: (i) => [
@@ -415,7 +509,7 @@ const TONE_VOICE: Readonly<Record<ToneId, ToneVoice>> = {
     ],
     featuresTitle: ["Наши преимущества", "Почему выбирают нас"],
     featuresBody: (i) => [
-      `${i.audience === "клиентов" ? "Клиенты" : capitalize(i.audience)} выбирают нас за системный подход и предсказуемый результат.`,
+      `${capitalize(i.audienceNominative)} выбирают нас за системный подход и предсказуемый результат.`,
       `Мы придерживаемся следующих принципов работы.`,
     ],
     pricingTitle: ["Тарифы", "Стоимость услуг"],
@@ -430,11 +524,11 @@ const TONE_VOICE: Readonly<Record<ToneId, ToneVoice>> = {
       `Визуальное представление о том, как мы работаем.`,
     ],
     ctaTitle: (i) => [
-      `Готовы обсудить сотрудничество с ${i.nounGenitive}?`,
+      `Готовы обсудить сотрудничество ${withS(i.nounInstrumental)} ${i.nounInstrumental}?`,
       `Свяжитесь с нами, чтобы обсудить задачу`,
     ],
     ctaBody: (i) => [
-      `Оставьте заявку — мы свяжемся с вами и предложим оптимальное решение для ${i.audience}.`,
+      `Оставьте заявку — мы свяжемся с вами и предложим оптимальное решение для ${i.audienceGenitive}.`,
       `Опишите вашу задачу, и мы подготовим предложение в течение рабочего дня.`,
     ],
     ctaButton: ["Оставить заявку", "Записаться на консультацию"],
@@ -449,17 +543,17 @@ const TONE_VOICE: Readonly<Record<ToneId, ToneVoice>> = {
   friendly: {
     heroTitle: (i) => [
       `${capitalize(i.noun)}, где рады каждому`,
-      `Добро пожаловать в нашу ${i.noun.includes("команда") ? "команду" : i.noun}`,
+      `Добро пожаловать в ${OUR_ACCUSATIVE[i.gender]} ${i.nounAccusative}`,
     ],
     heroBody: (i) => [
-      `Мы дарим ${i.audience === "гостей" ? "гостям" : i.audience} ${i.heroFocus}. Заходите — расскажем и покажем всё сами.`,
+      `Мы дарим ${i.audienceDative} ${i.heroFocus}. Заходите — расскажем и покажем всё сами.`,
       `У нас можно получить ${i.heroFocus}, а заодно и хорошее настроение от общения с командой.`,
     ],
     heroCta: ["Давайте познакомимся", "Написать нам"],
     aboutTitle: ["О нас", "Немного о нас"],
     aboutBody: (i) => [
-      `Мы — небольшая ${i.noun}, для которой ${i.audience} — не просто клиенты, а хорошие знакомые. Стараемся, чтобы каждому было тепло и удобно.`,
-      `Мы — команда, которая стоит за этой ${i.noun}: собрались вокруг общей идеи и делаем своё дело с душой и вниманием к деталям.`,
+      `Мы — ${SMALL_ADJECTIVE[i.gender]} ${i.noun}, для ${REL_PRONOUN[i.gender].genitive} ${i.audienceNominative} — не чужие люди, а хорошие знакомые. Стараемся, чтобы каждому было тепло и удобно.`,
+      `Мы — команда, которая стоит за ${THIS_INSTRUMENTAL[i.gender]} ${i.nounInstrumental}: собрались вокруг общей идеи и делаем своё дело с душой и вниманием к деталям.`,
     ],
     servicesTitle: ["Чем мы можем помочь", "Наши услуги"],
     servicesBody: () => [
@@ -484,7 +578,7 @@ const TONE_VOICE: Readonly<Record<ToneId, ToneVoice>> = {
     ],
     ctaTitle: (i) => [
       `Заглянете к нам?`,
-      `Будем рады видеть вас в числе наших ${i.audience}`,
+      `Будем рады видеть вас в числе наших ${i.audienceGenitive}`,
     ],
     ctaBody: () => [
       `Напишите пару слов о том, что вам нужно, — ответим по-дружески быстро.`,
@@ -499,7 +593,7 @@ const TONE_VOICE: Readonly<Record<ToneId, ToneVoice>> = {
   },
   bold: {
     heroTitle: (i) => [
-      `${capitalize(i.noun)}, которая меняет правила`,
+      `${capitalize(i.noun)}, ${REL_PRONOUN[i.gender].nominative} меняет правила`,
       `Мы не как все — и это чувствуется`,
     ],
     heroBody: (i) => [
@@ -509,8 +603,8 @@ const TONE_VOICE: Readonly<Record<ToneId, ToneVoice>> = {
     heroCta: ["Начать прямо сейчас", "Погнали!"],
     aboutTitle: ["Мы не как все", "О команде"],
     aboutBody: (i) => [
-      `Мы — ${i.noun}, которая устала от скучных стандартов индустрии и решила делать по-своему. Результат говорит сам за себя.`,
-      `Никакой воды и шаблонов: команда за этой ${i.noun} работает на результат, а не на видимость процесса.`,
+      `Мы — ${i.noun}, ${REL_PRONOUN[i.gender].nominative} ${TIRED_AND_DECIDED[i.gender]} делать по-своему. Результат говорит сам за себя.`,
+      `Никакой воды и шаблонов: команда за ${THIS_INSTRUMENTAL[i.gender]} ${i.nounInstrumental} работает на результат, а не на видимость процесса.`,
     ],
     servicesTitle: ["Что мы делаем", "Наши фишки"],
     servicesBody: () => [
@@ -535,7 +629,7 @@ const TONE_VOICE: Readonly<Record<ToneId, ToneVoice>> = {
     ],
     ctaTitle: () => [`Хватит сомневаться`, `Пора действовать`],
     ctaBody: (i) => [
-      `Присоединяйтесь к ${i.audience}, которые уже не тратят время на посредственность.`,
+      `Присоединяйтесь к ${i.audienceDative}, которые уже не тратят время на посредственность.`,
       `Одно сообщение — и процесс запущен. Никаких долгих согласований.`,
     ],
     ctaButton: ["Начать прямо сейчас", "Забронировать место"],

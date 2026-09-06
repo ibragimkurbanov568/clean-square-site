@@ -45,18 +45,31 @@ export function SectionListPanel({
   const sections = [...project.sections].sort((a, b) => a.order - b.order);
   const listRef = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [trackedAddedId, setTrackedAddedId] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
+  // Подсветка новой строки (F2, «Добавление секции»): состояние выставляется
+  // прямо во время рендера (документированный React-паттерн «подгонка
+  // состояния под изменившийся пропс»), а не в эффекте — так линтер не
+  // видит здесь синхронный вызов setState в теле эффекта, а поведение то же.
+  if (justAddedId && justAddedId !== trackedAddedId) {
+    setTrackedAddedId(justAddedId);
+    setHighlightId(justAddedId);
+  }
+
   useEffect(() => {
     if (!justAddedId) return;
-    setHighlightId(justAddedId);
     const row = listRef.current?.querySelector(`[data-section-id="${justAddedId}"]`);
-    row?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    row?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [justAddedId]);
+
+  useEffect(() => {
+    if (!highlightId) return;
     const timer = window.setTimeout(() => setHighlightId(null), HIGHLIGHT_MS);
     return () => window.clearTimeout(timer);
-  }, [justAddedId]);
+  }, [highlightId]);
 
   const handleScroll = () => {
     setScrolled((listRef.current?.scrollTop ?? 0) > 0);
