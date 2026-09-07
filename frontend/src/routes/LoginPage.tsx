@@ -5,7 +5,7 @@ import Input from '../components/common/Input';
 import Card from '../components/common/Card';
 import { useAuth } from '../hooks/useAuth';
 import { ApiError } from '../lib/apiClient';
-import { resolvePostLoginTarget } from '../lib/authRedirect';
+import { guestIntentBanner, resolvePostLoginTarget, type GuestIntent } from '../lib/authRedirect';
 import { fieldErrors, loginSchema } from '../lib/validation';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 
@@ -24,7 +24,11 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const params = new URLSearchParams(location.search);
-  const intentBanner = params.get('intent') ? 'Чтобы продолжить, войдите или зарегистрируйтесь' : null;
+  const intentParam = params.get('intent');
+  const knownIntents: GuestIntent[] = ['order', 'chat', 'favorite'];
+  const intentBanner = knownIntents.includes(intentParam as GuestIntent)
+    ? guestIntentBanner(intentParam as GuestIntent)
+    : null;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
