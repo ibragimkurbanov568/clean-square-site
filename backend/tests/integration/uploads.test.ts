@@ -70,6 +70,15 @@ describe('POST /api/uploads/avatar', () => {
     expect(res.status).toBe(400);
   });
 
+  it('SVG отклоняется → 400 (регрессия на XSS через image/svg+xml с <script>, docs/09-audit.md)', async () => {
+    const client = await registerClient(env);
+    const form = new FormData();
+    const maliciousSvg = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(document.cookie)</script></svg>';
+    form.set('file', new File([maliciousSvg], 'avatar.svg', { type: 'image/svg+xml' }));
+    const res = await client.client.request('/api/uploads/avatar', { method: 'POST', body: form });
+    expect(res.status).toBe(400);
+  });
+
   it('без поля file → 400', async () => {
     const client = await registerClient(env);
     const form = new FormData();
@@ -112,6 +121,14 @@ describe('GET /api/media/:key', () => {
   it('несуществующий ключ → 404', async () => {
     const guest = createClient(env);
     const res = await guest.request('/api/media/avatar/does-not-exist.png');
+    expect(res.status).toBe(404);
+  });
+
+  it('ключ вне белого списка публичных префиксов (например аудит-лог) → 404, даже если объект существует (docs/09-audit.md)', async () => {
+    const key = 'audit-log/2026-01-01T00:00:00.000Z-leaked.json';
+    await env.MEDIA.put(key, JSON.stringify({ event: 'secret' }));
+    const guest = createClient(env);
+    const res = await guest.request(`/api/media/${key}`);
     expect(res.status).toBe(404);
   });
 });

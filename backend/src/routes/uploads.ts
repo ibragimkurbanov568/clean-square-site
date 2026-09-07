@@ -17,7 +17,12 @@ import { getCompanyBasicByUserId } from '../lib/queries';
 export const uploadsRouter = new Hono<{ Bindings: Env }>();
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB
-const ALLOWED_MIME_PREFIXES = ['image/'];
+// Белый список конкретных типов растровых изображений — НЕ префикс "image/*". `image/svg+xml`
+// намеренно исключён: SVG может содержать <script>/onload и, будучи открытым напрямую по URL
+// `/api/media/:key` (Content-Type из R2 httpMetadata), выполняется браузером как документ,
+// давая stored XSS с доступом к cookie-сессии на том же origin, что и API (аудит безопасности,
+// docs/09-audit.md, находка №1 — критично, починено).
+const ALLOWED_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
 
 async function extractUploadedFile(
   c: Context<{ Bindings: Env }>,
@@ -38,8 +43,8 @@ async function extractUploadedFile(
   if (file.size > MAX_FILE_BYTES) {
     return { error: 'Файл слишком большой (максимум 5 МБ)' };
   }
-  if (!ALLOWED_MIME_PREFIXES.some((prefix) => file.type.startsWith(prefix))) {
-    return { error: 'Допустимы только изображения' };
+  if (!ALLOWED_MIME_TYPES.has(file.type)) {
+    return { error: 'Допустимы только изображения формата PNG, JPEG, WEBP или GIF' };
   }
   return { file };
 }
@@ -95,15 +100,28 @@ uploadsRouter.post('/uploads/wallpaper', requireAuth(), async (c) => {
   return c.json({ url: result.url });
 });
 
+// Единственный бакет `MEDIA` также используется для аудит-лога (`audit-log/*.json`, допущение
+// 11, см. `lib/queue.ts`) — этот роут отдаёт объекты по ключу без авторизации, поэтому явный
+// белый список префиксов не даёт превратить его в публичный доступ к аудит-логу (который может
+// содержать, например, ссылку восстановления пароля в демо-режиме), даже если ключ где-то
+// случайно засветится. Аудит: docs/09-audit.md, находка №2 — важно, починено.
+const PUBLIC_MEDIA_PREFIXES = ['avatar/', 'cover/', 'wallpaper/'];
+
 /** Отдача объекта из R2 по ключу (публичные аватары/обложки без подписанных URL в MVP). */
 uploadsRouter.get('/media/:key{.+}', async (c) => {
   const key = c.req.param('key');
+  if (!PUBLIC_MEDIA_PREFIXES.some((prefix) => key.startsWith(prefix))) {
+    return apiError(c, 404, 'not_found', 'Файл не найден');
+  }
   const object = await c.env.MEDIA.get(key);
   if (!object) return apiError(c, 404, 'not_found', 'Файл не найден');
 
   const headers = new Headers();
   object.writeHttpMetadata(headers);
   headers.set('etag', object.httpEtag);
+  // Defense-in-depth наравне с MIME-белым списком при загрузке: даже если Content-Type в R2
+  // окажется неожиданным, запрещаем браузеру угадывать/переинтерпретировать тело как HTML/SVG.
+  headers.set('x-content-type-options', 'nosniff');
   return new Response(object.body, { headers });
 });
 

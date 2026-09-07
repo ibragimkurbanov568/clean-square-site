@@ -12,9 +12,27 @@ import { getCompanyBasicById } from '../lib/queries';
 
 export const adminRouter = new Hono<{ Bindings: Env }>();
 
+/**
+ * Сравнение секрета за постоянное время (аудит безопасности, docs/09-audit.md — незначительная
+ * находка): обычный `!==` на строках выходит из цикла на первом несовпадающем байте, давая
+ * теоретический timing-side-channel. Секрет короткий и фиксированной здесь длины сверяется байт
+ * в байт, длина при этом не скрывается — этого достаточно для устранения посимвольной утечки.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const aBytes = enc.encode(a);
+  const bBytes = enc.encode(b);
+  const length = Math.max(aBytes.length, bBytes.length);
+  let diff = aBytes.length ^ bBytes.length;
+  for (let i = 0; i < length; i += 1) {
+    diff |= (aBytes[i] ?? 0) ^ (bBytes[i] ?? 0);
+  }
+  return diff === 0;
+}
+
 adminRouter.use('*', async (c, next) => {
   const secret = c.req.header('x-admin-secret');
-  if (!secret || secret !== c.env.ADMIN_SECRET) {
+  if (!secret || !timingSafeEqual(secret, c.env.ADMIN_SECRET)) {
     return apiError(c, 403, 'forbidden', 'Недействительный административный секрет');
   }
   await next();
