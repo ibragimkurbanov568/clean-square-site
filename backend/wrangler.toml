@@ -1,0 +1,98 @@
+#:schema node_modules/wrangler/config-schema.json
+# CleanLink API — конфигурация Cloudflare Workers.
+# Полное описание биндингов и решений — docs/04-architecture.md, раздел 3 "Инфраструктура".
+#
+# ВАЖНО: значения database_id / KV id / preview_id ниже — плейсхолдеры (нули). Для реального
+# деплоя выполните:
+#   wrangler d1 create cleanlink-db
+#   wrangler kv namespace create SESSIONS
+#   wrangler kv namespace create CACHE
+#   wrangler r2 bucket create cleanlink-media
+#   wrangler queues create cleanlink-order-notifications
+# и подставьте выданные id в этот файл. Для локальной разработки (`wrangler dev`, без --remote)
+# плейсхолдеры не мешают — wrangler эмулирует D1/KV/R2/Queues локально через Miniflare.
+
+name = "cleanlink-api"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+# ------------------------------------------------------------------------------------------
+# D1 — основная реляционная БД (9 таблиц, см. migrations/0001_init.sql)
+# ------------------------------------------------------------------------------------------
+[[d1_databases]]
+binding = "DB"
+database_name = "cleanlink-db"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "../migrations"
+
+# ------------------------------------------------------------------------------------------
+# KV — сессии (refresh-токены/2FA challenge state) и кэш городов для автодополнения (F2)
+# ------------------------------------------------------------------------------------------
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "00000000000000000000000000000000"
+preview_id = "00000000000000000000000000000001"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "00000000000000000000000000000002"
+preview_id = "00000000000000000000000000000003"
+
+# ------------------------------------------------------------------------------------------
+# R2 — фото/видео/обложки/обои (допущения 12, 13)
+# ------------------------------------------------------------------------------------------
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "cleanlink-media"
+preview_bucket_name = "cleanlink-media-preview"
+
+# ------------------------------------------------------------------------------------------
+# Queues — «новый заказ → уведомление компании» (допущение 14). Если Queues недоступны в среде
+# сборки/тестов, обработчик уведомления вызывается синхронно из route-хендлера создания заказа
+# (см. backend/src/lib/queue.ts — единая функция notifyNewOrder используется в обоих режимах).
+# ------------------------------------------------------------------------------------------
+[[queues.producers]]
+binding = "ORDER_QUEUE"
+queue = "cleanlink-order-notifications"
+
+[[queues.consumers]]
+queue = "cleanlink-order-notifications"
+max_batch_size = 10
+max_batch_timeout = 5
+
+# ------------------------------------------------------------------------------------------
+# Workers AI — модерация отзывов / генерация описаний (допущение 6), с rule-based fallback
+# в backend/src/lib/ai.ts, если биндинг недоступен в окружении сборки/тестов.
+# ------------------------------------------------------------------------------------------
+[ai]
+binding = "AI"
+
+# ------------------------------------------------------------------------------------------
+# Durable Objects — РЕЗЕРВ на будущее обновление реалтайм-чата.
+# Решение (см. docs/04-architecture.md §2.4 и допущение 4 ТЗ): в MVP чат работает через
+# REST-поллинг 3-5 сек (backend/src/routes/chats.ts), а не через WebSocket. Биндинг и класс
+# ChatRoom присутствуют в проекте (backend/src/durable-objects/chat-room.ts) как валидный,
+# компилируемый, но не задействованный в роутинге код — чтобы апгрейд на DO+WebSocket
+# в будущем не требовал менять конфигурацию биндингов, а только подключить route.
+# ------------------------------------------------------------------------------------------
+[[durable_objects.bindings]]
+name = "CHAT_ROOM"
+class_name = "ChatRoom"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["ChatRoom"]
+
+# ------------------------------------------------------------------------------------------
+# Переменные окружения без секретов (секреты — через `wrangler secret put` / .dev.vars,
+# см. .dev.vars.example). Значения по умолчанию для локальной разработки.
+# ------------------------------------------------------------------------------------------
+[vars]
+ENVIRONMENT = "development"
+CORS_ORIGIN = "http://localhost:5173"
+RATE_LIMIT_MAX_REQUESTS = "100"
+RATE_LIMIT_WINDOW_SECONDS = "60"

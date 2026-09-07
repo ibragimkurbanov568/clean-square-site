@@ -1,0 +1,527 @@
+/*
+ * CleanLink — дизайн-токены
+ * Источник истины для tailwind.config (colors/spacing/fontSize/borderRadius) и globals.css.
+ * Три темы переключаются атрибутом data-theme на <html>: "dark" | "gradient" | "classic".
+ * Атрибут выставляется инлайн-скриптом ДО первой отрисовки на основе localStorage
+ * (ключ "cleanlink-theme"), поэтому мигания дефолтной темой не происходит — см. docs/02-ux.md,
+ * раздел 6 «Микровзаимодействия».
+ *
+ * Порядок каскада ниже специально устроен так, чтобы ручной переключатель работал в обе
+ * стороны независимо от системной темы ОС:
+ *   1) :root                                   — базовые значения = тема "classic"
+ *   2) @media (prefers-color-scheme: dark)      — применяется, только если data-theme ещё
+ *                                                  не выставлен (страховка на самый первый кадр)
+ *   3) :root[data-theme="..."]                  — явный выбор пользователя, всегда побеждает
+ */
+
+/* ---------------------------------------------------------------------------------------------
+   1. ПРИМИТИВЫ: отступы, радиусы, типографика, длительности — одинаковы для всех тем
+--------------------------------------------------------------------------------------------- */
+:root {
+  /* Шкала отступов (8 значений) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* Радиусы */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 999px;
+
+  /* Типографика */
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.875rem;  /* 14px */
+  --font-size-base: 1rem;    /* 16px */
+  --font-size-lg: 1.25rem;   /* 20px */
+  --font-size-xl: 1.5rem;    /* 24px */
+  --font-size-2xl: 2rem;     /* 32px */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.6;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Движение: 150-250 мс, только opacity/transform (правило дизайн-агента) */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 250ms;
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --scale-hover: 1.05;
+  --scale-active: 0.95;
+  --scroll-reveal-offset: 16px;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   2. ТЕМА ПО УМОЛЧАНИЮ (bare :root) = "classic" — безопасный SSR/no-JS фолбэк
+--------------------------------------------------------------------------------------------- */
+:root {
+  --color-bg: #ffffff;
+  --color-surface: #f8fafc;
+  --color-surface-elevated: #ffffff;
+  --color-surface-hover: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-disabled: #94a3b8;
+
+  --color-accent: #1e3a8a;
+  --color-accent-600: #2b4aa8;
+  --color-accent-700: #1e3a8a;
+  --color-accent-800: #16295c;
+  --color-accent-subtle: rgba(30, 58, 138, 0.08);
+  --color-accent-contrast: #ffffff;
+
+  --color-success: #15803d;
+  --color-success-bg: #dcfce7;
+  --color-warning: #b45309;
+  --color-warning-bg: #fef3c7;
+  --color-error: #b91c1c;
+  --color-error-bg: #fee2e2;
+  --color-info: #1d4ed8;
+  --color-info-bg: #dbeafe;
+  --color-neutral: #475569;
+  --color-neutral-bg: #e2e8f0;
+
+  --color-overlay: rgba(15, 23, 42, 0.5);
+  --color-focus-ring: #1e3a8a;
+  --color-star-filled: #d97706;
+  --color-star-empty: #cbd5e1;
+
+  --gradient-hero: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
+}
+
+/* Системная тёмная тема ОС — используется только пока JS ещё не выставил data-theme
+   (страховка на первый кадр без JS/до гидратации), в обе стороны переопределяется
+   явным выбором ниже. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-bg: #0a0a0f;
+    --color-surface: #1a1a2e;
+    --color-surface-elevated: #22223d;
+    --color-surface-hover: #202038;
+    --color-border: #2a2a45;
+    --color-border-strong: #3a3a5c;
+    --color-text-primary: #f5f4fb;
+    --color-text-secondary: #a8a7c2;
+    --color-text-disabled: #6f6e8a;
+
+    --color-accent: #6c63ff;
+    --color-accent-600: #5951e8;
+    --color-accent-700: #4a41d6;
+    --color-accent-800: #3830a3;
+    --color-accent-subtle: rgba(108, 99, 255, 0.16);
+    --color-accent-contrast: #ffffff;
+
+    --color-success: #34d399;
+    --color-success-bg: rgba(52, 211, 153, 0.14);
+    --color-warning: #fbbf24;
+    --color-warning-bg: rgba(251, 191, 36, 0.14);
+    --color-error: #f87171;
+    --color-error-bg: rgba(248, 113, 113, 0.14);
+    --color-info: #60a5fa;
+    --color-info-bg: rgba(96, 165, 250, 0.14);
+    --color-neutral: #a8a7c2;
+    --color-neutral-bg: rgba(168, 167, 194, 0.12);
+
+    --color-overlay: rgba(5, 5, 10, 0.72);
+    --color-focus-ring: #8078ff;
+    --color-star-filled: #fbbf24;
+    --color-star-empty: #3a3a5c;
+
+    --gradient-hero: linear-gradient(135deg, #1a1a2e 0%, #0a0a0f 100%);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   3. ЯВНЫЕ ТЕМЫ через data-theme — переключатель в шапке всегда побеждает системную/дефолтную
+--------------------------------------------------------------------------------------------- */
+
+/* Тема 1 — "Тёмная" */
+:root[data-theme='dark'] {
+  --color-bg: #0a0a0f;
+  --color-surface: #1a1a2e;
+  --color-surface-elevated: #22223d;
+  --color-surface-hover: #202038;
+  --color-border: #2a2a45;
+  --color-border-strong: #3a3a5c;
+  --color-text-primary: #f5f4fb;
+  --color-text-secondary: #a8a7c2;
+  --color-text-disabled: #6f6e8a;
+
+  --color-accent: #6c63ff;
+  --color-accent-600: #5951e8;
+  --color-accent-700: #4a41d6;
+  --color-accent-800: #3830a3;
+  --color-accent-subtle: rgba(108, 99, 255, 0.16);
+  --color-accent-contrast: #ffffff;
+
+  --color-success: #34d399;
+  --color-success-bg: rgba(52, 211, 153, 0.14);
+  --color-warning: #fbbf24;
+  --color-warning-bg: rgba(251, 191, 36, 0.14);
+  --color-error: #f87171;
+  --color-error-bg: rgba(248, 113, 113, 0.14);
+  --color-info: #60a5fa;
+  --color-info-bg: rgba(96, 165, 250, 0.14);
+  --color-neutral: #a8a7c2;
+  --color-neutral-bg: rgba(168, 167, 194, 0.12);
+
+  --color-overlay: rgba(5, 5, 10, 0.72);
+  --color-focus-ring: #8078ff;
+  --color-star-filled: #fbbf24;
+  --color-star-empty: #3a3a5c;
+
+  --gradient-hero: linear-gradient(135deg, #1a1a2e 0%, #0a0a0f 100%);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* Тема 2 — "Светлая с градиентом" */
+:root[data-theme='gradient'] {
+  --color-bg: #f5f0ff;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #fefcff;
+  --color-surface-hover: #f7f2ff;
+  --color-border: #e4defa;
+  --color-border-strong: #cdbdf0;
+  --color-text-primary: #241f38;
+  --color-text-secondary: #6b6485;
+  --color-text-disabled: #a79fc2;
+
+  --color-accent: #7c3aed;
+  --color-accent-600: #6d28d9;
+  --color-accent-700: #5b21b6;
+  --color-accent-800: #4c1d95;
+  --color-accent-subtle: rgba(124, 58, 237, 0.1);
+  --color-accent-contrast: #ffffff;
+
+  --color-success: #15803d;
+  --color-success-bg: #dcfce7;
+  --color-warning: #b45309;
+  --color-warning-bg: #fef3c7;
+  --color-error: #b91c1c;
+  --color-error-bg: #fee2e2;
+  --color-info: #1d4ed8;
+  --color-info-bg: #dbeafe;
+  --color-neutral: #6b6485;
+  --color-neutral-bg: #ece7f7;
+
+  --color-overlay: rgba(36, 31, 56, 0.45);
+  --color-focus-ring: #7c3aed;
+  --color-star-filled: #f5a623;
+  --color-star-empty: #e4defa;
+
+  --gradient-hero: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+
+  --shadow-sm: 0 1px 2px rgba(36, 31, 56, 0.06);
+  --shadow-md: 0 4px 12px rgba(36, 31, 56, 0.08);
+  --shadow-lg: 0 12px 32px rgba(36, 31, 56, 0.14);
+}
+
+/* Тема 3 — "Классика" */
+:root[data-theme='classic'] {
+  --color-bg: #ffffff;
+  --color-surface: #f8fafc;
+  --color-surface-elevated: #ffffff;
+  --color-surface-hover: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-disabled: #94a3b8;
+
+  --color-accent: #1e3a8a;
+  --color-accent-600: #2b4aa8;
+  --color-accent-700: #1e3a8a;
+  --color-accent-800: #16295c;
+  --color-accent-subtle: rgba(30, 58, 138, 0.08);
+  --color-accent-contrast: #ffffff;
+
+  --color-success: #15803d;
+  --color-success-bg: #dcfce7;
+  --color-warning: #b45309;
+  --color-warning-bg: #fef3c7;
+  --color-error: #b91c1c;
+  --color-error-bg: #fee2e2;
+  --color-info: #1d4ed8;
+  --color-info-bg: #dbeafe;
+  --color-neutral: #475569;
+  --color-neutral-bg: #e2e8f0;
+
+  --color-overlay: rgba(15, 23, 42, 0.5);
+  --color-focus-ring: #1e3a8a;
+  --color-star-filled: #d97706;
+  --color-star-empty: #cbd5e1;
+
+  --gradient-hero: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   4. СБРОС
+--------------------------------------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100dvh;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-regular);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--duration-base) var(--easing-standard),
+    color var(--duration-base) var(--easing-standard);
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   5. БАЗОВАЯ ТИПОГРАФИКА
+--------------------------------------------------------------------------------------------- */
+h1,
+.text-2xl {
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+}
+
+h2,
+.text-xl {
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+}
+
+h3,
+.text-lg {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-semibold);
+}
+
+.text-base {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+}
+
+.text-sm {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.text-xs {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-disabled {
+  color: var(--color-text-disabled);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   6. УТИЛИТЫ ФОКУСА (доступность — Tab-навигация, требование 02-ux.md раздел 7)
+--------------------------------------------------------------------------------------------- */
+:focus {
+  outline: none;
+}
+
+:focus-visible,
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Убирает дефолтный синий контур в полях, сохраняя focus-visible-контур выше */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   7. МИКРОАНИМАЦИИ (hover/active/scroll-reveal/переходы страниц)
+   Точные значения заданы пользователем: hover scale 1.05, active scale 0.95, 150 мс.
+   Используются как обычными CSS-классами (кнопки без Framer Motion), так и как источник
+   значений для variants Framer Motion на фронтенде (см. docs/03-design-system.md, раздел 6).
+--------------------------------------------------------------------------------------------- */
+.interactive-scale {
+  transition: transform var(--duration-fast) var(--easing-standard),
+    box-shadow var(--duration-fast) var(--easing-standard),
+    background-color var(--duration-fast) var(--easing-standard);
+}
+
+.interactive-scale:hover {
+  transform: scale(var(--scale-hover));
+}
+
+.interactive-scale:active {
+  transform: scale(var(--scale-active));
+}
+
+/* Скролл-появление элементов через IntersectionObserver: JS добавляет класс .is-visible,
+   когда элемент с классом .scroll-reveal пересекает viewport (threshold 0.15). */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(var(--scroll-reveal-offset));
+  transition: opacity var(--duration-slow) var(--easing-standard),
+    transform var(--duration-slow) var(--easing-standard);
+}
+
+.scroll-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Переход между страницами (обёртка роутера): fade+slide */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--duration-base) var(--easing-standard),
+    transform var(--duration-base) var(--easing-standard);
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity var(--duration-fast) var(--easing-standard),
+    transform var(--duration-fast) var(--easing-standard);
+}
+
+/* Скелетон загрузки — shimmer на поверхности темы */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-hover) 25%,
+    var(--color-border) 37%,
+    var(--color-surface-hover) 63%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+/* Уважение к prefers-reduced-motion — отключаем transform-анимации, оставляем мгновенные
+   переходы прозрачности вместо scale/slide/shimmer. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .interactive-scale:hover,
+  .interactive-scale:active {
+    transform: none;
+  }
+
+  .scroll-reveal {
+    transform: none;
+  }
+
+  .page-transition-enter,
+  .page-transition-exit-active {
+    transform: none;
+  }
+}

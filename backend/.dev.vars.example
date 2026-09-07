@@ -1,0 +1,24 @@
+# CleanLink backend — локальные секреты для `wrangler dev`.
+# Скопируйте в `.dev.vars` (файл в .gitignore, никогда не коммитится) и заполните реальными
+# значениями. В проде эти же ключи задаются через `wrangler secret put <ИМЯ>`.
+# Полное описание переменных — см. корневой .env.example и docs/04-architecture.md §6.
+
+# --- JWT (F1) ---------------------------------------------------------------------------------
+JWT_ACCESS_SECRET=dev-access-secret-change-me-please-32-chars-min
+JWT_REFRESH_SECRET=dev-refresh-secret-change-me-please-32-chars-min
+
+# --- Шифрование чувствительных полей at rest, AES-256-GCM (допущение 9) --------------------
+# Ровно 32 байта в base64 (openssl rand -base64 32).
+ENCRYPTION_KEY=Q2xlYW5MaW5rRGV2S2V5IUNsZWFuTGlua0RldktleSE=
+
+# --- Восстановление пароля по email (допущение 3) -------------------------------------------
+# Если не задан — включается demo-fallback (ссылка возвращается в ответе API/логах).
+RESEND_API_KEY=
+
+# --- Служебный админ-эндпоинт верификации компаний (допущение 1) ---------------------------
+ADMIN_SECRET=dev-admin-secret-change-me
+
+# --- Workers AI fallback ----------------------------------------------------------------------
+# Не требует ключа — используется биндинг [ai] из wrangler.toml. Переменная ниже форсирует
+# rule-based fallback даже при наличии биндинга (полезно для детерминированных тестов).
+AI_FORCE_FALLBACK=false

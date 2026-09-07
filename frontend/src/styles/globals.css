@@ -1,0 +1,8 @@
+/* Порядок импортов обязателен: сначала токены (CSS custom properties + сброс + утилиты
+   анимаций из docs/tokens/design-tokens.css), затем Tailwind base/components/utilities —
+   см. docs/03-design-system.md §2. */
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

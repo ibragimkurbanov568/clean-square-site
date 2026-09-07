@@ -1,0 +1,4 @@
+# Cloudflare Pages SPA fallback: react-router (client-side routing) needs every
+# unmatched path to resolve to index.html, otherwise deep links (e.g. /companies/123)
+# 404 on direct load/refresh. Vite copies this file from public/ into dist/ as-is.
+/* /index.html 200

@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: Install, lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies (workspaces)
+        run: npm ci
+
+      - name: Lint (backend + frontend)
+        run: npm run lint
+
+      - name: Typecheck (backend + frontend)
+        run: npm run typecheck
+
+      - name: Test (backend + frontend, Vitest)
+        run: npm test
+
+      - name: Build (backend wrangler dry-run + frontend vite build)
+        run: npm run build
+
+      - name: Upload frontend build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 7
