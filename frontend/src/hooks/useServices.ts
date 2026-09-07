@@ -12,6 +12,16 @@ export interface ServiceInput {
 export interface UseServicesResult {
   items: Service[];
   isLoading: boolean;
+  /**
+   * `true`, как только хотя бы одна попытка загрузки завершилась (успехом или ошибкой) для
+   * текущего `companyId`. Нужен отдельно от `isLoading`, потому что `isLoading` стартует с
+   * `false` и синхронно не отражает "ещё не начали загрузку" в том же коммите React, где
+   * `companyId` только что перестал быть `undefined` (см. баг, найденный QA: CompanyPage
+   * ошибочно считал `!isLoading` признаком "услуг нет" и преждевременно сбрасывал гостевой
+   * order-intent, не дождавшись реального ответа сервера — CompanyPage.tsx использует именно
+   * `hasLoaded`, а не `!isLoading`, для этого решения).
+   */
+  hasLoaded: boolean;
   error: string | null;
   reload: () => Promise<void>;
   createService: (input: ServiceInput) => Promise<Service>;
@@ -23,6 +33,7 @@ export interface UseServicesResult {
 export function useServices(companyId: string | undefined): UseServicesResult {
   const [items, setItems] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
@@ -36,10 +47,12 @@ export function useServices(companyId: string | undefined): UseServicesResult {
       setError('Не удалось загрузить услуги');
     } finally {
       setIsLoading(false);
+      setHasLoaded(true);
     }
   }, [companyId]);
 
   useEffect(() => {
+    setHasLoaded(false);
     void reload();
   }, [reload]);
 
@@ -64,5 +77,5 @@ export function useServices(companyId: string | undefined): UseServicesResult {
     setItems((prev) => prev.filter((service) => service.id !== serviceId));
   }, []);
 
-  return { items, isLoading, error, reload, createService, updateService, deleteService };
+  return { items, isLoading, hasLoaded, error, reload, createService, updateService, deleteService };
 }

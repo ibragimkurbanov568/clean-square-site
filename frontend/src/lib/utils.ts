@@ -53,8 +53,19 @@ export function getInitials(name: string): string {
   return trimmed.slice(0, 1).toUpperCase();
 }
 
+/**
+ * URL-параметр `/city/:citySlug` — намеренно НЕ приводит регистр к нижнему (баг, найденный QA:
+ * `toLowerCase()` здесь ломал основной сценарий "3 клика до заказа" целиком — клик по подсказке
+ * города/чипсу «Москва» вёл на `/city/москва`, `unslugifyCity` не восстанавливает исходный
+ * регистр, а бэкенд сравнивает `companies.city` точным `=` без `COLLATE NOCASE` — кириллица не
+ * приводится SQLite к нижнему регистру без ICU-расширения (см. комментарий в
+ * `backend/src/routes/cities.ts`), поэтому `GET /api/companies?city=москва` не находил ни одной
+ * компании, хотя они существуют под `city='Москва'`). Города приходят из
+ * `/api/cities/suggest`/пользовательского ввода уже с корректным регистром — просто кодируем их
+ * как есть, без искажения.
+ */
 export function slugifyCity(city: string): string {
-  return encodeURIComponent(city.trim().toLowerCase());
+  return encodeURIComponent(city.trim());
 }
 
 export function unslugifyCity(slug: string): string {

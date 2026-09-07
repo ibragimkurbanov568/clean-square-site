@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
 import { rateLimit } from '../src/middleware/rateLimit';
 import type { Env } from '../src/types/env';
@@ -67,5 +67,65 @@ describe('middleware/rateLimit', () => {
     expect(a1.status).toBe(200);
     expect(b1.status).toBe(200);
     expect(a2.status).toBe(429);
+  });
+});
+
+// docs/07-integration.md, "Остаточные известные ограничения" §9: восстановление после TTL было
+// проверено только чтением кода (`expirationTtl`), "ждать полные 60 секунд ради формальной
+// проверки было признано неоправданной тратой времени". Здесь закрываем этот пробел детерминированным
+// тестом: KV-фейк честно моделирует истечение `expirationTtl` по показаниям часов, а
+// `vi.useFakeTimers()` перематывает время вперёд без реального ожидания.
+class TtlAwareFakeKv {
+  private store = new Map<string, { value: string; expiresAtMs: number | null }>();
+
+  async get(key: string): Promise<string | null> {
+    const entry = this.store.get(key);
+    if (!entry) return null;
+    if (entry.expiresAtMs !== null && entry.expiresAtMs <= Date.now()) {
+      this.store.delete(key);
+      return null;
+    }
+    return entry.value;
+  }
+
+  async put(key: string, value: string, opts?: { expirationTtl?: number }): Promise<void> {
+    const expiresAtMs = opts?.expirationTtl ? Date.now() + opts.expirationTtl * 1000 : null;
+    this.store.set(key, { value, expiresAtMs });
+  }
+}
+
+describe('middleware/rateLimit — восстановление после истечения окна (TTL)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('после истечения RATE_LIMIT_WINDOW_SECONDS счётчик сбрасывается — 429 снова становится 2xx', async () => {
+    vi.useFakeTimers();
+
+    const app = new Hono<{ Bindings: Env }>();
+    app.get('/test', rateLimit({ key: 'ttl-test' }), (c) => c.json({ ok: true }));
+    const env = {
+      CACHE: new TtlAwareFakeKv(),
+      RATE_LIMIT_MAX_REQUESTS: '2',
+      RATE_LIMIT_WINDOW_SECONDS: '60',
+    } as unknown as Env;
+    const headers = { 'cf-connecting-ip': 'ttl-client' };
+
+    const r1 = await app.request('/test', { headers }, env);
+    const r2 = await app.request('/test', { headers }, env);
+    const r3 = await app.request('/test', { headers }, env);
+    expect(r1.status).toBe(200);
+    expect(r2.status).toBe(200);
+    expect(r3.status).toBe(429);
+
+    // Ещё 59 секунд — окно не истекло, лимит всё ещё действует.
+    vi.advanceTimersByTime(59_000);
+    const stillBlocked = await app.request('/test', { headers }, env);
+    expect(stillBlocked.status).toBe(429);
+
+    // Проходит 61-я секунда с момента первой записи — TTL (60с) истёк, счётчик сброшен.
+    vi.advanceTimersByTime(2_000);
+    const recovered = await app.request('/test', { headers }, env);
+    expect(recovered.status).toBe(200);
   });
 });

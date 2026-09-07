@@ -76,7 +76,13 @@ export default function CompanyPage() {
         intentHandled.current = true;
         setOrderService(service);
         setSearchParams({}, { replace: true });
-      } else if (!services.isLoading) {
+      } else if (services.hasLoaded) {
+        // `hasLoaded` (не `!isLoading`) — намеренно: сразу после того, как `company` становится
+        // доступен, `useServices` ещё не успел даже поставить `isLoading=true` в этом же коммите
+        // React (гонка), из-за чего `!services.isLoading` было ложно истинным и намерение гостя
+        // "Заказать" молча терялось при первом же рендере после логина. `hasLoaded` становится
+        // `true` только после реального завершения запроса — баг найден и починен QA-тестом
+        // tests/CompanyPage.test.tsx.
         intentHandled.current = true;
         setSearchParams({}, { replace: true });
       }
@@ -89,7 +95,7 @@ export default function CompanyPage() {
       setSearchParams({}, { replace: true });
       void toggleFavorite(id);
     }
-  }, [status, id, company, services.items, services.isLoading, searchParams]);
+  }, [status, id, company, services.items, services.hasLoaded, searchParams]);
 
   if (notFound || error) {
     return (

@@ -126,13 +126,22 @@ export async function createTwoFaChallenge(
   return challengeId;
 }
 
-export async function consumeTwoFaChallenge(
+/**
+ * Читает 2FA-челлендж, НЕ удаляя его — ошибочный код не должен сжигать возможность повторной
+ * попытки (баг, найденный QA: `consumeTwoFaChallenge` ранее удалял челлендж до проверки кода,
+ * из-за чего один неверный ввод необратимо ломал вход и требовал заново вводить email/пароль,
+ * хотя UX-текст «Неверный код... попробуйте снова» обещает именно повторную попытку).
+ */
+export async function peekTwoFaChallenge(
   c: AppContext,
   challengeId: string,
 ): Promise<TwoFaChallenge | null> {
-  const key = `2fa-challenge:${challengeId}`;
-  const stored = await c.env.SESSIONS.get(key);
+  const stored = await c.env.SESSIONS.get(`2fa-challenge:${challengeId}`);
   if (!stored) return null;
-  await c.env.SESSIONS.delete(key);
   return JSON.parse(stored) as TwoFaChallenge;
+}
+
+/** Удаляет челлендж — вызывается только после успешной проверки кода (одноразовое использование). */
+export async function deleteTwoFaChallenge(c: AppContext, challengeId: string): Promise<void> {
+  await c.env.SESSIONS.delete(`2fa-challenge:${challengeId}`);
 }

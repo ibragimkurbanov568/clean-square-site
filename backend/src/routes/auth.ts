@@ -21,7 +21,8 @@ import {
   revokeCurrentSession,
   clearSessionCookies,
   createTwoFaChallenge,
-  consumeTwoFaChallenge,
+  peekTwoFaChallenge,
+  deleteTwoFaChallenge,
 } from '../lib/session';
 import {
   registerClientSchema,
@@ -154,7 +155,7 @@ authRouter.post('/login/2fa', rateLimit({ key: 'login' }), async (c) => {
   const input = login2faSchema.parse(await c.req.json());
   const db = c.env.DB;
 
-  const challenge = await consumeTwoFaChallenge(c, input.challengeId);
+  const challenge = await peekTwoFaChallenge(c, input.challengeId);
   if (!challenge) {
     return apiError(c, 401, 'unauthorized', 'Код подтверждения истёк, попробуйте войти снова');
   }
@@ -166,9 +167,13 @@ authRouter.post('/login/2fa', rateLimit({ key: 'login' }), async (c) => {
 
   const secret = await decryptField(user.totp_secret, c.env);
   if (!verifyTotpCode(input.code, secret)) {
+    // Челлендж НЕ удаляется при неверном коде — пользователь может ввести код повторно
+    // (соответствует тексту UX «Неверный код... попробуйте снова», docs/02-ux.md).
     return apiError(c, 401, 'unauthorized', 'Неверный код подтверждения');
   }
 
+  // Код верный — челлендж одноразовый, удаляем сейчас, чтобы его нельзя было переиспользовать.
+  await deleteTwoFaChallenge(c, input.challengeId);
   await issueSession(c, user.id, user.role, challenge.rememberMe);
   const company =
     user.role === 'company' ? await getCompanyBasicByUserId(db, user.id) : null;
