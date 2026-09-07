@@ -13,8 +13,10 @@
     "test:watch": "vitest",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
-    "db:migrate:local": "wrangler d1 execute cleanlink-db --local --file=../migrations/0001_init.sql",
-    "db:migrate:remote": "wrangler d1 execute cleanlink-db --remote --file=../migrations/0001_init.sql"
+    "db:migrate:local": "wrangler d1 execute cleanlink-db --local --file=../migrations/0001_init.sql && wrangler d1 execute cleanlink-db --local --file=../migrations/0002_company_views.sql",
+    "db:migrate:remote": "wrangler d1 execute cleanlink-db --remote --file=../migrations/0001_init.sql && wrangler d1 execute cleanlink-db --remote --file=../migrations/0002_company_views.sql",
+    "db:seed:local": "wrangler d1 execute cleanlink-db --local --file=../migrations/0003_seed_demo_data.sql",
+    "db:seed:remote": "wrangler d1 execute cleanlink-db --remote --file=../migrations/0003_seed_demo_data.sql"
   },
   "dependencies": {
     "hono": "4.13.7",

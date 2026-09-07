@@ -30,11 +30,13 @@ import CompanyReviewsPage from './routes/company/ReviewsPage';
 import CompanyChatsListPage from './routes/company/ChatsListPage';
 import CompanySettingsPage from './routes/company/SettingsPage';
 
+import RequireAuth from './components/layout/RequireAuth';
+import RequireVerifiedCompany from './components/layout/RequireVerifiedCompany';
+
 /**
- * Карта маршрутов — 1:1 с docs/02-ux.md §1 "Карта экранов". Доступ по ролям (guest/client/
- * company_unverified/company_verified) на этом шаге не проверяется — TODO(frontend): обернуть
- * `/account/*` и `/company/*` в защитный компонент на основе useAuth().status/user.role, с
- * редиректом на `/login?returnTo=...` для гостя (docs/02-ux.md §5 "Навигационная схема по ролям").
+ * Карта маршрутов — 1:1 с docs/02-ux.md §1 "Карта экранов". `/account/*` требует роль `client`,
+ * `/company/*` требует роль `company`; разделы, доступные только `company_verified`, обёрнуты в
+ * RequireVerifiedCompany (показывает заглушку вместо 404 для company_unverified).
  */
 export function AppRoutes() {
   return (
@@ -50,7 +52,14 @@ export function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
-      <Route path="/account" element={<AccountLayout />}>
+      <Route
+        path="/account"
+        element={
+          <RequireAuth role="client">
+            <AccountLayout />
+          </RequireAuth>
+        }
+      >
         <Route index element={<AccountOrdersPage />} />
         <Route path="orders" element={<AccountOrdersPage />} />
         <Route path="favorites" element={<AccountFavoritesPage />} />
@@ -60,16 +69,72 @@ export function AppRoutes() {
         <Route path="settings" element={<AccountSettingsPage />} />
       </Route>
 
-      <Route path="/company" element={<CompanyLayout />}>
+      <Route
+        path="/company"
+        element={
+          <RequireAuth role="company">
+            <CompanyLayout />
+          </RequireAuth>
+        }
+      >
         <Route index element={<ModerationPage />} />
         <Route path="profile" element={<CompanyProfilePage />} />
-        <Route path="services" element={<CompanyServicesPage />} />
-        <Route path="promotions" element={<CompanyPromotionsPage />} />
-        <Route path="orders" element={<CompanyOrdersPage />} />
-        <Route path="stats" element={<CompanyStatsPage />} />
-        <Route path="reviews" element={<CompanyReviewsPage />} />
-        <Route path="chats" element={<CompanyChatsListPage />} />
-        <Route path="chats/:chatId" element={<ChatDialogPage />} />
+        <Route
+          path="services"
+          element={
+            <RequireVerifiedCompany>
+              <CompanyServicesPage />
+            </RequireVerifiedCompany>
+          }
+        />
+        <Route
+          path="promotions"
+          element={
+            <RequireVerifiedCompany>
+              <CompanyPromotionsPage />
+            </RequireVerifiedCompany>
+          }
+        />
+        <Route
+          path="orders"
+          element={
+            <RequireVerifiedCompany>
+              <CompanyOrdersPage />
+            </RequireVerifiedCompany>
+          }
+        />
+        <Route
+          path="stats"
+          element={
+            <RequireVerifiedCompany>
+              <CompanyStatsPage />
+            </RequireVerifiedCompany>
+          }
+        />
+        <Route
+          path="reviews"
+          element={
+            <RequireVerifiedCompany>
+              <CompanyReviewsPage />
+            </RequireVerifiedCompany>
+          }
+        />
+        <Route
+          path="chats"
+          element={
+            <RequireVerifiedCompany>
+              <CompanyChatsListPage />
+            </RequireVerifiedCompany>
+          }
+        />
+        <Route
+          path="chats/:chatId"
+          element={
+            <RequireVerifiedCompany>
+              <ChatDialogPage />
+            </RequireVerifiedCompany>
+          }
+        />
         <Route path="settings" element={<CompanySettingsPage />} />
       </Route>
 

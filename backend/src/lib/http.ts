@@ -32,3 +32,16 @@ export function apiError(
 export function notImplemented(c: Context, hint: string) {
   return apiError(c, 501, 'not_implemented', `Ещё не реализовано: ${hint}`);
 }
+
+/** Единый формат пагинации — см. docs/04-architecture.md §4 "Paginated<T>". */
+export interface Paginated<T> {
+  items: T[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+}
+
+export function paginate<T>(items: T[], page: number, limit: number, total: number): Paginated<T> {
+  return { items, page, limit, total, hasMore: page * limit < total };
+}

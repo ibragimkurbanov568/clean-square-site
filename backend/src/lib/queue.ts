@@ -20,6 +20,12 @@ export async function notifyNewOrder(message: OrderNotificationMessage, env: Env
   }
 }
 
+interface CompanyContact {
+  email: string;
+  company_name: string;
+  service_name: string;
+}
+
 /**
  * Реальная обработка уведомления: push (Service Worker на фронтенде слушает по API),
  * email через Resend при наличии ключа (допущение 8), запись аудит-события (допущение 11).
@@ -28,12 +34,39 @@ export async function handleOrderNotification(
   message: OrderNotificationMessage,
   env: Env,
 ): Promise<void> {
-  // TODO(backend): дописать реальную бизнес-логику по контракту docs/04-architecture.md §4.4.
-  // Каркас ниже уже рабочий (не бросает исключений при отсутствии ключей/биндингов).
   await logAuditEvent('order.created.notification', { ...message }, env);
 
-  if (env.RESEND_API_KEY) {
-    // TODO(backend): вызвать Resend API с шаблоном письма компании о новом заказе.
+  let contact: CompanyContact | null = null;
+  if (env.DB) {
+    contact = await env.DB.prepare(
+      `SELECT u.email AS email, c.name AS company_name, s.name AS service_name
+       FROM companies c
+       JOIN users u ON u.id = c.user_id
+       JOIN services s ON s.id = ?
+       WHERE c.id = ?`,
+    )
+      .bind(message.serviceId, message.companyId)
+      .first<CompanyContact>();
+  }
+
+  if (env.RESEND_API_KEY && contact) {
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'CleanLink <no-reply@cleanlink.example.com>',
+          to: contact.email,
+          subject: `Новый заказ: ${contact.service_name}`,
+          html: `<p>У компании «${contact.company_name}» новый заказ на услугу «${contact.service_name}» (№${message.orderId}).</p><p>Откройте панель заказов, чтобы принять его в работу.</p>`,
+        }),
+      });
+    } catch {
+      // Письмо не отправилось — не роняем обработку заказа, аудит-событие уже записано выше.
+    }
   } else {
     // Демо-режим без внешнего email-провайдера — тот же путь кода, другой транспорт.
     console.log('[demo-email] Новый заказ для компании', message.companyId, message);

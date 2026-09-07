@@ -43,15 +43,20 @@ export interface AuthContextValue {
   registerCompany: (input: RegisterCompanyInput) => Promise<CurrentUser>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<{ ok: true; demoResetUrl?: string }>;
+  resetPassword: (token: string, password: string, confirmPassword: string) => Promise<void>;
+  setupTwoFactor: () => Promise<{ secret: string; otpAuthUri: string }>;
+  enableTwoFactor: (code: string) => Promise<void>;
+  disableTwoFactor: () => Promise<void>;
+  updateLocalUser: (patch: Partial<CurrentUser>) => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
 /**
  * AuthProvider — источник правды о текущем пользователе для всего приложения.
- * TODO(frontend): обработка `?intent=order|chat|favorite&companyId=&returnTo=` после успешного
- * логина/регистрации (docs/02-ux.md §3, ветки гостя F5/F6/F8) — сохранить intent перед редиректом
- * на /login и выполнить отложенное действие после успешной авторизации.
+ * Intent-редиректы после логина (?intent=order|chat|favorite&companyId=&returnTo=) обрабатываются
+ * в src/lib/authRedirect.ts и на стороне экранов логина/регистрации/2FA (docs/02-ux.md §3).
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
@@ -74,7 +79,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadCurrentUser]);
 
   const login = useCallback(async (input: LoginInput): Promise<LoginResult> => {
-    // TODO(frontend/backend): контракт POST /api/auth/login — см. docs/04-architecture.md §4.1.
     const result = await apiRequest<LoginResult>('/auth/login', { method: 'POST', body: input });
     if (!result.requiresTwoFactor) setUser(result.user);
     setStatus(result.requiresTwoFactor ? 'unauthenticated' : 'authenticated');
@@ -117,6 +121,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('unauthenticated');
   }, []);
 
+  const forgotPassword = useCallback(async (email: string) => {
+    return apiRequest<{ ok: true; demoResetUrl?: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: { email },
+    });
+  }, []);
+
+  const resetPassword = useCallback(async (token: string, password: string, confirmPassword: string) => {
+    await apiRequest('/auth/reset-password', { method: 'POST', body: { token, password, confirmPassword } });
+  }, []);
+
+  const setupTwoFactor = useCallback(async () => {
+    return apiRequest<{ secret: string; otpAuthUri: string }>('/auth/2fa/setup', { method: 'POST' });
+  }, []);
+
+  const enableTwoFactor = useCallback(async (code: string) => {
+    await apiRequest('/auth/2fa/enable', { method: 'POST', body: { code } });
+    setUser((prev) => (prev ? { ...prev, totpEnabled: true } : prev));
+  }, []);
+
+  const disableTwoFactor = useCallback(async () => {
+    await apiRequest('/auth/2fa/disable', { method: 'POST' });
+    setUser((prev) => (prev ? { ...prev, totpEnabled: false } : prev));
+  }, []);
+
+  const updateLocalUser = useCallback((patch: Partial<CurrentUser>) => {
+    setUser((prev) => (prev ? { ...prev, ...patch } : prev));
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -127,8 +160,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       registerCompany,
       logout,
       refresh: loadCurrentUser,
+      forgotPassword,
+      resetPassword,
+      setupTwoFactor,
+      enableTwoFactor,
+      disableTwoFactor,
+      updateLocalUser,
     }),
-    [user, status, login, verifyTwoFactor, registerClient, registerCompany, logout, loadCurrentUser],
+    [
+      user,
+      status,
+      login,
+      verifyTwoFactor,
+      registerClient,
+      registerCompany,
+      logout,
+      loadCurrentUser,
+      forgotPassword,
+      resetPassword,
+      setupTwoFactor,
+      enableTwoFactor,
+      disableTwoFactor,
+      updateLocalUser,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

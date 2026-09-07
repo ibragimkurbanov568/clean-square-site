@@ -32,8 +32,8 @@ export async function moderateReviewText(
   if (shouldUseFallback(env)) return ruleBasedModeration(text);
 
   try {
-    // TODO(backend): подобрать текстовую модель модерации (`@cf/...`) и распарсить ответ.
-    // Ниже — рабочий вызов-заглушка с безопасным фолбэком при сбое биндинга.
+    // Модель выбрана: '@cf/meta/llama-3.1-8b-instruct' (доступна на бесплатном тарифе Workers
+    // AI). При сбое биндинга/ошибке парсинга ответа — безопасный переход на rule-based fallback.
     const result = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
       messages: [
         {
@@ -73,7 +73,6 @@ export async function generateCompanyDescription(
   }
 
   try {
-    // TODO(backend): реальный вызов генерации текста, безопасный фолбэк ниже при сбое.
     const result = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
       messages: [
         {

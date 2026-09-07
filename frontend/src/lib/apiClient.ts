@@ -42,6 +42,35 @@ function buildUrl(path: string, query?: RequestOptions['query']): string {
   return url.pathname + url.search;
 }
 
+/**
+ * Загрузка файла (аватар/обложка/обои) — multipart/form-data, поле `file`
+ * (docs/04-architecture.md §4.11). Отдельная функция от apiRequest, т.к. Content-Type для
+ * multipart выставляется браузером автоматически (boundary), JSON.stringify не применяется.
+ */
+export async function apiUpload<T>(path: string, file: File | Blob, fieldName = 'file'): Promise<T> {
+  const formData = new FormData();
+  formData.append(fieldName, file, file instanceof File ? file.name : 'upload.png');
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  const isJson = response.headers.get('content-type')?.includes('application/json');
+  const payload = isJson ? await response.json() : null;
+
+  if (!response.ok) {
+    const errorPayload: ApiErrorPayload = payload?.error ?? {
+      code: 'unknown_error',
+      message: 'Не удалось подключиться к серверу. Проверьте интернет и попробуйте снова',
+    };
+    throw new ApiError(response.status, errorPayload);
+  }
+
+  return payload as T;
+}
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const response = await fetch(buildUrl(path, options.query), {
     method: options.method ?? 'GET',
