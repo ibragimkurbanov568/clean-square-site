@@ -25,6 +25,10 @@ pnpm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 
-# env (нет секретов в этом проекте, но на всякий случай)
+# env / секреты
 .env
 .env.local
+.dev.vars
+
+# Cloudflare Workers local dev state (D1/KV/R2 эмуляция Miniflare)
+.wrangler/
