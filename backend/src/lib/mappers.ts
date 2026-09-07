@@ -13,6 +13,24 @@ import type {
   UserRow,
 } from '../db/schema';
 
+/**
+ * `01-spec.md` требует `TEXT (ISO datetime)` для всех временных колонок. Рантайм-код бэкенда
+ * пишет их через `nowIso()` (`new Date().toISOString()`) и они уже приходят в строгом ISO 8601
+ * (`YYYY-MM-DDTHH:MM:SS.sssZ`). Но `migrations/0003_seed_demo_data.sql` и сырые SQL-функции
+ * SQLite (`datetime('now', ...)`, `CURRENT_TIMESTAMP`-дефолты) отдают формат
+ * `YYYY-MM-DD HH:MM:SS` (пробел вместо `T`, без `Z`) — валиден для SQLite, но НЕ является
+ * строгим ISO 8601: `new Date(...)` парсит его в Chrome/Node (нестандартный fallback-парсер
+ * V8), но в Firefox/Safari даёт `Invalid Date`. Нормализуем на выходе API, чтобы контракт
+ * соблюдался независимо от источника строки (сид, будущая миграция, ручной SQL-фикс).
+ */
+export function toIsoDateTime(raw: string): string;
+export function toIsoDateTime(raw: string | null): string | null;
+export function toIsoDateTime(raw: string | null): string | null {
+  if (raw === null) return null;
+  if (raw.includes('T')) return raw; // уже строгий ISO 8601 (nowIso())
+  return `${raw.replace(' ', 'T')}Z`; // SQLite `YYYY-MM-DD HH:MM:SS` (UTC) -> ISO 8601
+}
+
 // --- companies --------------------------------------------------------------------------------
 
 export interface CompanyRowExtra extends CompanyRow {
@@ -63,7 +81,7 @@ export function mapCompany(row: CompanyRowExtra): CompanyDto {
     viewsCount: row.views_count,
     isVerified,
     priceFrom: isVerified ? row.price_from : null,
-    createdAt: row.created_at,
+    createdAt: toIsoDateTime(row.created_at),
   };
 }
 
@@ -121,8 +139,8 @@ export function mapOrder(row: OrderRowExtra): OrderDto {
     serviceName: row.service_name,
     status: row.status,
     totalPrice: row.total_price,
-    createdAt: row.created_at,
-    completedAt: row.completed_at,
+    createdAt: toIsoDateTime(row.created_at),
+    completedAt: toIsoDateTime(row.completed_at),
     hasReview: row.has_review === 1,
   };
 }
@@ -155,7 +173,7 @@ export function mapReview(row: ReviewRowExtra): ReviewDto {
     rating: row.rating,
     text: row.text,
     companyReply: row.company_reply,
-    createdAt: row.created_at,
+    createdAt: toIsoDateTime(row.created_at),
   };
 }
 
@@ -203,7 +221,7 @@ export function mapMessage(row: MessageRow, decryptedText: string): MessageDto {
     chatId: row.chat_id,
     senderId: row.sender_id,
     text: decryptedText,
-    createdAt: row.created_at,
+    createdAt: toIsoDateTime(row.created_at),
     isRead: row.is_read === 1,
   };
 }

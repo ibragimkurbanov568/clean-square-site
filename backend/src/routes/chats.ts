@@ -11,7 +11,7 @@ import { rateLimit } from '../middleware/rateLimit';
 import { paginationQuerySchema, idParamSchema } from '../schemas/common';
 import { execute, newId, nowIso, queryAll, queryOne } from '../db/client';
 import type { ChatRow, MessageRow } from '../db/schema';
-import { mapMessage, type ChatDto } from '../lib/mappers';
+import { mapMessage, toIsoDateTime, type ChatDto } from '../lib/mappers';
 import { encryptField, decryptField } from '../lib/crypto';
 import { getCompanyBasicById, getCompanyBasicByUserId } from '../lib/queries';
 
@@ -56,7 +56,7 @@ async function mapChatRow(row: ChatListRow, viewerRole: 'client' | 'company', en
     companyId: row.company_id,
     peerName: viewerRole === 'client' ? row.company_name : row.client_username,
     peerAvatarUrl: viewerRole === 'client' ? row.company_avatar_url : row.client_avatar_url,
-    lastMessageAt: row.last_message_at,
+    lastMessageAt: toIsoDateTime(row.last_message_at),
     lastMessagePreview: preview,
     unreadCount: row.unread_count,
   };
