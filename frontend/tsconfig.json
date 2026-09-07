@@ -16,7 +16,7 @@
     "esModuleInterop": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": ["vite/client", "vitest/globals"]
+    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"]
   },
   "include": ["src", "tests", "vite.config.ts", "tailwind.config.ts", "postcss.config.js"]
 }

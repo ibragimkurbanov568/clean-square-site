@@ -51,7 +51,6 @@ export function useOrders(options: UseOrdersOptions): UseOrdersResult {
     } finally {
       setIsLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusQuery]);
 
   useEffect(() => {
@@ -74,7 +73,6 @@ export function useOrders(options: UseOrdersOptions): UseOrdersResult {
     } finally {
       setIsLoadingMore(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusQuery, page, hasMore, isLoadingMore]);
 
   const updateStatus = useCallback(async (orderId: string, status: Exclude<OrderStatus, 'created'>) => {

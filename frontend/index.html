@@ -9,6 +9,22 @@
       name="description"
       content="CleanLink — сравнивайте рейтинг, цены и отзывы клининговых компаний и заказывайте уборку в пару кликов."
     />
+    <!-- Базовые теги предпросмотра ссылки (OpenGraph/Twitter) — карточка компании переопределяет
+         title/description на клиенте через useDocumentMeta (src/hooks/useDocumentMeta.ts). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CleanLink" />
+    <meta property="og:title" content="CleanLink — клининговые компании вашего города" />
+    <meta
+      property="og:description"
+      content="Сравнивайте рейтинг, цены и отзывы клининговых компаний и заказывайте уборку в пару кликов."
+    />
+    <meta property="og:image" content="/favicon.svg" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="CleanLink — клининговые компании вашего города" />
+    <meta
+      name="twitter:description"
+      content="Сравнивайте рейтинг, цены и отзывы клининговых компаний и заказывайте уборку в пару кликов."
+    />
     <!--
       Тема применяется к <html> ДО первой отрисовки (F11, docs/02-ux.md §6 "Микровзаимодействия":
       "без мигания дефолтной темой"). Инлайн-скрипт синхронный и выполняется раньше первого

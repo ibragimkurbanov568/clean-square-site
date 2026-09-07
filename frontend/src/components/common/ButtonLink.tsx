@@ -1,4 +1,3 @@
-import { motion, useReducedMotion } from 'framer-motion';
 import { Link, type LinkProps } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import type { ButtonSize, ButtonVariant } from './Button';
@@ -22,23 +21,22 @@ const SIZE_CLASSES: Record<ButtonSize, string> = {
   lg: 'h-12 px-5 text-lg gap-2',
 };
 
-/** Кнопка-ссылка — та же анатомия, что и Button, но рендерится как <Link> (docs/03-design-system.md §7.1). */
+/**
+ * Кнопка-ссылка — та же анатомия, что и Button, но рендерится как <Link> (docs/03-design-system.md
+ * §7.1). Hover/active-scale — через CSS `.interactive-scale` (те же токены 1.05/0.95/150мс), а не
+ * Framer Motion — оборачивание react-router `<Link>` в `motion()` конфликтует по типам событий
+ * (`onAnimationStart` React vs Framer Motion), поведение при этом идентично.
+ */
 export function ButtonLink({ variant = 'secondary', size = 'md', fullWidth, className, ...rest }: ButtonLinkProps) {
-  const prefersReducedMotion = useReducedMotion();
-  const MotionLink = motion.create(Link);
-
   return (
-    <MotionLink
+    <Link
       className={cn(
-        'focus-ring inline-flex items-center justify-center rounded-md font-semibold transition-colors',
+        'interactive-scale focus-ring inline-flex items-center justify-center rounded-md font-semibold transition-colors',
         VARIANT_CLASSES[variant],
         SIZE_CLASSES[size],
         fullWidth ? 'w-full' : '',
         className,
       )}
-      whileHover={!prefersReducedMotion ? { scale: 1.05 } : undefined}
-      whileTap={!prefersReducedMotion ? { scale: 0.95 } : undefined}
-      transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
       {...rest}
     />
   );

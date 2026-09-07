@@ -61,7 +61,6 @@ export default function ProfilePage() {
       .finally(() => setIsLoading(false));
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(load, [companyId]);
 
   const update = (key: keyof typeof form) => (value: string) => setForm((prev) => ({ ...prev, [key]: value }));

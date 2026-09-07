@@ -88,9 +88,7 @@ export default function CompanyPage() {
       intentHandled.current = true;
       setSearchParams({}, { replace: true });
       void toggleFavorite(id);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, id, company, services.items, services.isLoading, searchParams]);
 
   if (notFound || error) {
