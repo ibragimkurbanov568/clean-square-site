@@ -16,10 +16,15 @@
     "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
     "typecheck": "npm run typecheck --workspace=backend && npm run typecheck --workspace=frontend",
     "db:migrate:local": "npm run db:migrate:local --workspace=backend",
-    "db:migrate:remote": "npm run db:migrate:remote --workspace=backend"
+    "db:migrate:remote": "npm run db:migrate:remote --workspace=backend",
+    "db:seed:local": "npm run db:seed:local --workspace=backend",
+    "db:seed:remote": "npm run db:seed:remote --workspace=backend",
+    "deploy": "npm run deploy --workspace=backend",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "concurrently": "9.2.1"
+    "concurrently": "9.2.1",
+    "husky": "^9.1.7"
   },
   "engines": {
     "node": ">=20.0.0"
