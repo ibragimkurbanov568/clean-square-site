@@ -6,7 +6,7 @@ const CONFIG = {
   SAVE_VERSION: 2,
   STEP: 1 / 60,
   MAX_STEPS: 5,
-  VIEW_UNITS: 720,          // видимых игровых единиц по короткой стороне
+  VIEW_UNITS: 580,          // видимых игровых единиц по короткой стороне
   DPR_MAX: 2,
   DAWN: 900,                // 15:00
   BOSS_TIMES: [300, 600, 840],
@@ -358,3 +358,88 @@ const STRINGS = {
     },
   },
 };
+
+// ---- тексты расширения: новые земли, оружие, предметы, враги, Хранители, скины ----
+const STRINGS_EXT = {
+  ru: {
+    ui: { wardrobe: 'Гардероб', equip: 'Надеть', equipped: 'Надето', skinBase: 'Обычный облик', skinsTitle: 'Облики', skinBought: 'Облик куплен' },
+    c: {
+      mirra: ['Мирра, Звонарь', '+10% области', 'Её колокол звонил по каждому павшему. Теперь он звонит по тварям.', 'Разбить 150 ламп суммарно'],
+      grah: ['Грах, Охотник на ведьм', '+25% урона по элитам и боссам', 'Он носит на поясе клыки всех, кого выследил.', 'Убить Пастыря Бездны'],
+    },
+    w: {
+      crossbow: ['Арбалет Инквизитора', 'Тяжёлые болты пробивают врагов насквозь', 'Каждый болт освящён — и заточен.', 'Баллиста', 'Болты взрываются при каждом попадании'],
+      bell: ['Погребальный Колокол', 'Звон расходится кольцом и отбрасывает врагов', 'Он звонит по тем, кто ещё не знает, что мёртв.', 'Набат', 'Три волны звона подряд оглушают врагов'],
+      sickles: ['Серпы Жатвы', 'Серпы разлетаются по спирали', 'Урожай в этом году — кости.', 'Великая Жатва', 'Серпы кружат туда и обратно, а крит лечит'],
+      wisps: ['Блуждающие Огни', 'Огоньки находят врага и взрываются', 'Души заблудших, что ещё хотят помочь.', 'Хор Душ', 'Каждый взрыв рождает три новых огонька'],
+      meteor: ['Звездопад', 'С неба падают раскалённые камни', 'Даже звёзды падают на тварей Бездны.', 'Конец Света', 'Больше метеоров, каждый оставляет пламя'],
+      whip: ['Кнут Искупления', 'Хлёсткий удар в обе стороны', 'Боль очищает. Так говорили в ордене.', 'Бич Божий', 'Длинный удар дважды и лечит Хранителя'],
+    },
+    p: {
+      quiver: ['Колчан Охотника', '+1 пробивание снарядов (ур. 1, 3, 5)', 'Пустой колчан — мёртвый охотник.'],
+      hourglass: ['Песочные Часы', '+5% длительности, −4% перезарядки', 'Песок в них чёрный, как ночь.'],
+      whetstone: ['Точильный Камень', '+4% шанса крита', 'Острый клинок — короткий разговор.'],
+      candle: ['Поминальная Свеча', '+0,3 HP/с', 'Горит за тех, кто не дожил до рассвета.'],
+      starmap: ['Звёздная Карта', '+6% области, +4% урона', 'На ней отмечены звёзды, которых больше нет.'],
+      brand: ['Клеймо Инквизиции', '+12% урона по элитам и боссам', 'Клеймо жжёт только нечистых.'],
+    },
+    e: { frostmonk: 'Ледяной Монах', icehound: 'Ледяная Гончая', plaguedoc: 'Чумной Доктор', leech: 'Гигантская Пиявка', bonecolossus: 'Костяной Колосс', crawler: 'Ползун', werewolf: 'Оборотень', dryad: 'Кровавая Дриада' },
+    ed: { frostmonk: 'Бросает осколки льда издалека', icehound: 'Бросается рывками по снегу', plaguedoc: 'Оставляет лужи заразы', leech: 'Быстрая и живучая стая', bonecolossus: 'Рассыпается на скелетов', crawler: 'Выползает из-под земли', werewolf: 'Стремительные броски', dryad: 'Стреляет шипами веером' },
+    bio: {
+      frost: ['Замёрзший Монастырь', 'Метель: свет слабее на 15%, враги медленнее на 10%', 'Одна победа'],
+      swamp: ['Чумные Топи', 'Трясина замедляет Хранителя', 'Убить 5000 врагов суммарно'],
+      catacombs: ['Костяные Катакомбы', 'Тесная тьма, но больше свечей', 'Продержаться 8 минут'],
+      forest: ['Кровавый Лес', 'Враги быстрее на 10%', 'Победить в двух землях'],
+    },
+    a: {
+      frostWin: ['Сквозь метель', 'Победить в Замёрзшем Монастыре'], swampWin: ['Над трясиной', 'Победить в Чумных Топях'], catacombsWin: ['Из-под земли', 'Победить в Костяных Катакомбах'],
+      forestWin: ['Сквозь чащу', 'Победить в Кровавом Лесу'], allLands: ['Все земли', 'Победить во всех 8 землях'], skin1: ['Новый облик', 'Купить облик'],
+      skins10: ['Модник Бездны', 'Купить 10 обликов'], weaponsAll: ['Оружейник', 'Открыть все 18 видов оружия'], mirraWin: ['Звон на рассвете', 'Победить за Мирру'],
+      grahWin: ['Охота окончена', 'Победить за Граха'], lvl70: ['Живая легенда', 'Достичь 70 уровня за забег'], kills50kRun: ['Резня', 'Убить 20 000 врагов за забег'],
+    },
+    sk: { 'iren:1': 'Угольная ряса', 'iren:2': 'Святая', 'borg:1': 'Болотный', 'borg:2': 'Череполикий', 'veyla:1': 'Лиловая', 'veyla:2': 'Лесная ведьма', 'cassian:1': 'Кровавый обет', 'cassian:2': 'Король-паладин',
+      'nyx:1': 'Полночь', 'nyx:2': 'Маска палача', 'morten:1': 'Ртутный', 'morten:2': 'Рогатый', 'ulrich:1': 'Кардинал', 'ulrich:2': 'Белый экзорцист', 'mirra:1': 'Сумеречная', 'mirra:2': 'Вдова',
+      'grah:1': 'Пепельный', 'grah:2': 'Вождь', 'hollow:1': 'Фиолетовая пустота', 'hollow:2': 'Белый рог' },
+  },
+  en: {
+    ui: { wardrobe: 'Wardrobe', equip: 'Wear', equipped: 'Worn', skinBase: 'Default look', skinsTitle: 'Looks', skinBought: 'Look purchased' },
+    c: {
+      mirra: ['Mirra, the Bell-Ringer', '+10% area', 'Her bell tolled for every fallen. Now it tolls for the beasts.', 'Break 150 lamps in total'],
+      grah: ['Grah, Witch Hunter', '+25% damage to elites and bosses', 'He wears the fangs of everything he tracked.', 'Slay the Shepherd of the Abyss'],
+    },
+    w: {
+      crossbow: ['Inquisitor’s Crossbow', 'Heavy bolts pierce through foes', 'Every bolt is blessed — and sharpened.', 'Ballista', 'Bolts explode on every hit'],
+      bell: ['Funeral Bell', 'A ringing wave knocks foes back', 'It tolls for those who don’t yet know they are dead.', 'Alarm Bell', 'Three waves in a row stun foes'],
+      sickles: ['Harvest Sickles', 'Sickles spiral outward', 'This year’s harvest is bones.', 'Great Harvest', 'Sickles sweep out and back; crits heal'],
+      wisps: ['Will-o’-Wisps', 'Wisps seek a foe and explode', 'Lost souls that still want to help.', 'Choir of Souls', 'Each blast births three new wisps'],
+      meteor: ['Starfall', 'Burning stones fall from the sky', 'Even the stars fall upon the Abyss.', 'End of Days', 'More meteors, each leaves fire behind'],
+      whip: ['Whip of Penance', 'A lash to both sides', 'Pain purifies. So the order said.', 'Scourge of God', 'A long lash hits twice and heals'],
+    },
+    p: {
+      quiver: ['Hunter’s Quiver', '+1 projectile pierce (Lv 1, 3, 5)', 'An empty quiver is a dead hunter.'],
+      hourglass: ['Hourglass', '+5% duration, −4% cooldown', 'Its sand is black as night.'],
+      whetstone: ['Whetstone', '+4% crit chance', 'A sharp blade makes for a short talk.'],
+      candle: ['Memorial Candle', '+0.3 HP/s', 'It burns for those who never saw dawn.'],
+      starmap: ['Star Chart', '+6% area, +4% damage', 'It marks stars that are no more.'],
+      brand: ['Inquisition Brand', '+12% damage to elites and bosses', 'It burns only the unclean.'],
+    },
+    e: { frostmonk: 'Frost Monk', icehound: 'Ice Hound', plaguedoc: 'Plague Doctor', leech: 'Giant Leech', bonecolossus: 'Bone Colossus', crawler: 'Crawler', werewolf: 'Werewolf', dryad: 'Blood Dryad' },
+    ed: { frostmonk: 'Hurls ice shards from afar', icehound: 'Lunges across the snow', plaguedoc: 'Leaves pools of plague', leech: 'A fast, tough swarm', bonecolossus: 'Crumbles into skeletons', crawler: 'Crawls out of the ground', werewolf: 'Swift pounces', dryad: 'Fires fans of thorns' },
+    bio: {
+      frost: ['Frozen Monastery', 'Blizzard: light 15% weaker, enemies 10% slower', 'One win'],
+      swamp: ['Plague Marsh', 'The bog slows the Keeper', 'Kill 5000 enemies in total'],
+      catacombs: ['Bone Catacombs', 'Close darkness, but more candles', 'Survive 8 minutes'],
+      forest: ['Blood Forest', 'Enemies 10% faster', 'Win in two lands'],
+    },
+    a: {
+      frostWin: ['Through the Blizzard', 'Win in the Frozen Monastery'], swampWin: ['Above the Bog', 'Win in the Plague Marsh'], catacombsWin: ['From Below', 'Win in the Bone Catacombs'],
+      forestWin: ['Through the Thicket', 'Win in the Blood Forest'], allLands: ['Every Land', 'Win in all 8 lands'], skin1: ['A New Look', 'Buy a look'],
+      skins10: ['Abyss Fashion', 'Buy 10 looks'], weaponsAll: ['Armourer', 'Discover all 18 weapons'], mirraWin: ['Tolling at Dawn', 'Win as Mirra'],
+      grahWin: ['The Hunt Is Over', 'Win as Grah'], lvl70: ['Living Legend', 'Reach level 70 in a run'], kills50kRun: ['Massacre', 'Kill 20,000 enemies in a run'],
+    },
+    sk: { 'iren:1': 'Ember Robe', 'iren:2': 'Saint', 'borg:1': 'Marsh', 'borg:2': 'Skull-Faced', 'veyla:1': 'Lilac', 'veyla:2': 'Forest Witch', 'cassian:1': 'Blood Oath', 'cassian:2': 'Paladin King',
+      'nyx:1': 'Midnight', 'nyx:2': 'Executioner Mask', 'morten:1': 'Quicksilver', 'morten:2': 'Horned', 'ulrich:1': 'Cardinal', 'ulrich:2': 'White Exorcist', 'mirra:1': 'Twilight', 'mirra:2': 'Widow',
+      'grah:1': 'Ashen', 'grah:2': 'Chieftain', 'hollow:1': 'Violet Void', 'hollow:2': 'White Horn' },
+  },
+};
+for (const lang of ['ru', 'en']) for (const k in STRINGS_EXT[lang]) STRINGS[lang][k] = Object.assign(STRINGS[lang][k] || {}, STRINGS_EXT[lang][k]);

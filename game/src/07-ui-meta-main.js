@@ -20,7 +20,7 @@ const UI = {
   clear() { UI.root.innerHTML = ''; UI.back = null; },
   paint() {
     UI.root.querySelectorAll('canvas[data-icon]').forEach(c => { const g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height); g.drawImage(iconCanvas(c.dataset.icon, 48), 0, 0, c.width, c.height); });
-    UI.root.querySelectorAll('canvas[data-char]').forEach(c => { const g = c.getContext('2d'), sp = Sprites.player[c.dataset.char]; g.clearRect(0, 0, c.width, c.height); g.drawImage(sp.frames[0], 0, 0, c.width, c.height); });
+    UI.root.querySelectorAll('canvas[data-char]').forEach(c => { const g = c.getContext('2d'), sp = playerSprite(c.dataset.char, c.dataset.skin !== undefined ? +c.dataset.skin : ((Game.save.skinSel || {})[c.dataset.char] || 0)); g.clearRect(0, 0, c.width, c.height); g.drawImage(sp.frames[0], -c.width * .1, -c.height * .12, c.width * 1.2, c.height * 1.2); });
     UI.root.querySelectorAll('canvas[data-enemy]').forEach(c => { const g = c.getContext('2d'), sp = Sprites.enemy[c.dataset.enemy]; if (sp) g.drawImage(sp.frames[0], 0, 0, c.width, c.height); });
   },
   ic(id, s = 40, sil = false) { return `<canvas data-icon="${id}" width="${s}" height="${s}" ${sil ? 'style="filter:brightness(0) opacity(.5)"' : ''}></canvas>`; },
@@ -69,7 +69,11 @@ const UI = {
       case 'camp': Game.state = 'CAMP'; UI.camp(); break;
       case 'play': Game.state = 'SELECT'; UI.select(); break;
       case 'altar': UI.altar(); break; case 'heroes': UI.heroes(); break; case 'codex': UI.codex(d.tab || 'w'); break;
-      case 'chronicle': UI.chronicle(); break; case 'trials': UI.trials(); break; case 'daily': UI.daily(); break;
+      case 'chronicle': UI.chronicle(); break;
+      case 'buySkin': { const sk = SKINS[d.id][+d.i]; if (s.ash >= sk.price) { s.ash -= sk.price; (s.skins[d.id] = s.skins[d.id] || []).push(+d.i); s.skinSel[d.id] = +d.i; s.skinsOwned = (s.skinsOwned || 0) + 1;
+        for (const a of ACHIEVEMENTS) if (!s.ach[a.id] && a.check(s, null)) { s.ach[a.id] = 1; s.ash += a.reward; UI.toast(L('achievement') + ': ' + S().a[a.id][0]); }
+        Save.write(); Audio.play('chest'); UI.toast(L('skinBought')); } UI.wardrobe(d.id); break; }
+      case 'wearSkin': s.skinSel[d.id] = +d.i; Save.write(); UI.wardrobe(d.id); break; case 'trials': UI.trials(); break; case 'daily': UI.daily(); break;
       case 'settings': UI.settings(d.from); break;
       case 'selChar': if (s.unlocked.chars.includes(d.id)) { Game.sel.char = d.id; Game.menuChar = d.id; s.lastChar = d.id; UI.select(); } break;
       case 'selBiome': if (s.unlocked.biomes.includes(d.id)) { Game.sel.biome = d.id; UI.select(); } break;
@@ -200,7 +204,16 @@ const UI = {
         <span class="t"><b>${esc(un ? t[0] : L('unknown'))}</b><span class="small">${esc(un ? t[1] : L('unlockHow') + ': ' + t[3])}</span>${un ? `<br><span class="lore">${esc(t[2])}</span>` : ''}</span>${un ? UI.ic(c.weapon, 30) : UI.ic('locked', 30)}</button>`; }).join('');
     UI.show(`<div class="wrap">${UI.header(L('heroes'))}<div class="grid">${tiles}</div></div>`, 'dim');
     UI.root.querySelectorAll('[data-act="selChar"]').forEach(b => b.dataset.act = 'heroPick');
-    UI.root.querySelectorAll('[data-act="heroPick"]').forEach(b => b.addEventListener('click', () => { if (s.unlocked.chars.includes(b.dataset.id)) { Game.menuChar = Game.sel.char = s.lastChar = b.dataset.id; Save.write(); UI.heroes(); } }));
+    UI.root.querySelectorAll('[data-act="heroPick"]').forEach(b => b.addEventListener('click', () => { if (s.unlocked.chars.includes(b.dataset.id)) { Game.menuChar = Game.sel.char = s.lastChar = b.dataset.id; Save.write(); UI.wardrobe(b.dataset.id); } }));
+  },
+  wardrobe(id) {
+    const s = Game.save, T = S(), list = SKINS[id] || [{}], own = (s.skins[id] || []), sel = s.skinSel[id] || 0;
+    const tiles = list.map((sk, i) => { const has = i === 0 || own.includes(i), name = i === 0 ? L('skinBase') : T.sk[id + ':' + i];
+      return `<div class="tile ${sel === i ? 'sel' : ''}" style="cursor:default"><canvas data-char="${id}" data-skin="${i}" width="84" height="84"></canvas><span class="t"><b>${esc(name)}</b>
+        ${sk.flame ? `<span class="small muted">🔥 ${esc(sk.flame)}</span>` : ''}</span>
+        ${sel === i ? `<span class="gold small">${esc(L('equipped'))}</span>` : has ? `<button class="btn small" data-act="wearSkin" data-id="${id}" data-i="${i}">${esc(L('equip'))}</button>`
+          : `<button class="btn small" data-act="buySkin" data-id="${id}" data-i="${i}" ${s.ash >= sk.price ? '' : 'disabled'}>◈ ${sk.price}</button>`}</div>`; }).join('');
+    UI.show(`<div class="wrap" style="max-width:760px">${UI.header(L('wardrobe') + ' · ' + T.c[id][0], 'heroes')}<p class="lore" style="text-align:center;margin-bottom:10px">${esc(T.c[id][2])}</p><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))">${tiles}</div></div>`, 'dim');
   },
   codex(tab) {
     const s = Game.save, T = S();
@@ -218,7 +231,7 @@ const UI = {
     const s = Game.save.stats, fav = Object.entries(s.weaponUse).sort((a, b) => b[1] - a[1])[0];
     const kv = [[L('bestTime'), fmtTime(s.bestTime)], [L('totalRuns'), fmtNum(s.runs)], [L('totalWins'), fmtNum(s.wins)], [L('totalKills'), fmtNum(s.kills)],
       [L('totalEmbers'), fmtNum(s.embers)], [L('totalAsh'), fmtNum(s.ashTotal)], [L('bossesKilled'), Object.keys(s.bosses).length + '/3'],
-      [L('evolutionsFound'), Object.keys(Game.save.codex.evo).length + '/12'], [L('favWeapon'), fav ? S().w[fav[0]][0] : L('none')],
+      [L('evolutionsFound'), Object.keys(Game.save.codex.evo).length + '/' + WEAPONS.length], [L('favWeapon'), fav ? S().w[fav[0]][0] : L('none')],
       [L('totalTime'), Math.floor(s.time / 60) + ' ' + L('minutes')]];
     UI.show(`<div class="wrap" style="max-width:560px">${UI.header(L('chronicle'))}<div class="panel"><div class="kv">${kv.map(([k, v]) => `<span>${esc(k)}</span><span class="gold">${esc(v)}</span>`).join('')}</div></div></div>`, 'dim');
   },
@@ -419,10 +432,10 @@ function boot() {
   const s = Game.save;
   Game.menuChar = s.lastChar && s.unlocked.chars.includes(s.lastChar) ? s.lastChar : 'iren'; Game.sel.char = Game.menuChar;
   Render.init(); UI.init(); UI.applySettings(); Input.init(Render.cv);
+  SS = clamp(Math.round(Render.scale * 1.1 * 4) / 4, 1, 2.5);
   buildAllSprites();
   for (const e of ENEMIES) buildEnemySprite(e.id, e.r);
   for (const id in BOSSES) buildEnemySprite(id, BOSSES[id].r);
-  for (const c of CHARS) buildPlayerSprite(c.id, c.col, c.trim);
   Game.state = 'BOOT'; UI.boot();
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {

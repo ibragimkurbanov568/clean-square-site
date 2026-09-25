@@ -38,7 +38,7 @@ const Render = {
     if (run.blackoutT > 0) return 70;
     if (ch.noLight) return 100;
     const r = p.light / p.lightMax;
-    return (CONFIG.LIGHT_R_MIN + (CONFIG.LIGHT_R_MAX - CONFIG.LIGHT_R_MIN) * r) * p.stats.lightR * (1 - run.eclipseFx * .35);
+    return (CONFIG.LIGHT_R_MIN + (CONFIG.LIGHT_R_MAX - CONFIG.LIGHT_R_MIN) * r) * p.stats.lightR * (BIOME[run.biome].lightR || 1) * (1 - run.eclipseFx * .35);
   },
   pattern(b) { if (!Render.patterns[b]) Render.patterns[b] = Render.g.createPattern(Sprites.ground[b], 'repeat'); return Render.patterns[b]; },
 
@@ -68,7 +68,7 @@ const Render = {
     // декор и лампы
     const now = performance.now() / 1000;
     World.forNear(cx, cy, c => {
-      for (const d of c.decor) if (inView(d.x, d.y, 80)) g.drawImage(d.sp, d.x - d.sp.width / 2, d.y - d.sp.height / 2);
+      for (const d of c.decor) if (inView(d.x, d.y, 80)) { const w = d.sp.width / SS, h = d.sp.height / SS; g.drawImage(d.sp, d.x - w / 2, d.y - h / 2, w, h); }
       for (const l of c.lamps) if (inView(l.x, l.y, 40)) { const br = run.lampsBroken.has(l.key); g.drawImage(br ? Sprites.misc.lampBroken : Sprites.misc.lamp, l.x - 20, l.y - 44); }
     });
     // зоны
@@ -78,6 +78,8 @@ const Render = {
         const k = z.kind === 'rune' ? 1 - z.delay / 2 : 1 - z.delay / .5;
         if (z.kind === 'rune') { g.save(); g.translate(z.x, z.y); g.rotate(now * 2); g.strokeStyle = `rgba(255,50,50,${.4 + k * .5})`; g.lineWidth = 3; g.beginPath(); g.arc(0, 0, z.r * .35, 0, TAU);
           for (let i = 0; i < 5; i++) { const aa = i / 5 * TAU * 2; g.lineTo(Math.cos(aa) * z.r * .35, Math.sin(aa) * z.r * .35); } g.stroke(); g.globalAlpha = .15 + k * .2; g.fillStyle = '#b3261e'; g.beginPath(); g.arc(0, 0, z.r * k, 0, TAU); g.fill(); g.restore(); g.globalAlpha = 1; }
+        else if (z.kind === 'meteor') { const kk = clamp(1 - z.delay / .7, 0, 1); g.fillStyle = `rgba(0,0,0,${.2 + kk * .4})`; g.beginPath(); g.ellipse(z.x, z.y, z.r * kk, z.r * kk * .5, 0, 0, TAU); g.fill();
+          const my = z.y - (1 - kk) * 420, mx = z.x + (1 - kk) * 160; g.drawImage(Sprites.glow.fire, mx - 40, my - 40, 80, 80); vol(g, mx, my, 12, 12, '#6a3a22'); g.strokeStyle = 'rgba(255,160,60,.6)'; g.lineWidth = 6; g.beginPath(); g.moveTo(mx, my); g.lineTo(mx + 60, my - 150); g.stroke(); }
         else if (z.kind === 'strike') { g.strokeStyle = `rgba(255,230,150,${.3 + clamp(k, 0, 1) * .6})`; g.lineWidth = 2; g.beginPath(); g.arc(z.x, z.y, z.r * clamp(k, .1, 1), 0, TAU); g.stroke(); }
         continue;
       }
@@ -113,6 +115,11 @@ const Render = {
       else if (it.kind === 'lampItem') g.drawImage(Sprites.misc.lamp, it.x - 20, it.y - 44);
       else { const sp = Sprites.misc[it.kind]; g.drawImage(sp, it.x - sp.width / 2, it.y - sp.height / 2 + bob); }
     }
+    // тени
+    const shd = Sprites.misc.shadow;
+    for (const e of Enemies.items) { if (!e.active || e.under) continue; const ex = lerp(e.px, e.x, a), ey = lerp(e.py, e.y, a); if (!inView(ex, ey, e.r * 2)) continue; const fly = e.def.beh === 'zigzag' || e.id === 'wisp' || e.id === 'voideye' || e.id === 'banshee' || e.id === 'bishop' || e.id === 'shepherd';
+      g.globalAlpha = fly ? .35 : .8; g.drawImage(shd, ex - e.r * .95, ey + e.r * (fly ? 1.05 : .78), e.r * 1.9, e.r * .6); }
+    g.globalAlpha = .85; g.drawImage(shd, ppx - 15, ppy + 5, 30, 10); g.globalAlpha = 1;
     // враги
     const lr = Render.lightRadius(), lr2 = (lr * .95) ** 2;
     for (const e of Enemies.items) {
@@ -121,14 +128,15 @@ const Render = {
       const d2 = dist2(ex, ey, ppx, ppy);
       if (e.id === 'shade' && d2 > lr2) continue;
       const spr = Sprites.enemy[e.id]; if (!spr) continue;
-      const fr = ((e.anim * (e.def.spd > 90 ? 8 : 4)) | 0) % 2, img = e.flashT > 0 && (!e.big || ((now * 24) | 0) % 2) ? spr.white[fr] : spr.frames[fr];
+      const fr = ((e.anim * (e.def.spd > 90 ? 12 : 7) + e.phase) | 0) % spr.frames.length, img = e.flashT > 0 && (!e.big || ((now * 24) | 0) % 2) ? spr.white[fr] : spr.frames[fr];
       const sc = e.scale * (spr.r ? e.r / e.scale / spr.r : 1), size = spr.size * sc;
       if (e.elite && Render.glow) g.drawImage(Sprites.glow.gold, ex - e.r * 2, ey - e.r * 2, e.r * 4, e.r * 4);
       if (e.boss && Render.glow) g.drawImage(e.id === 'rotmother' ? Sprites.glow.green : Sprites.glow.violet, ex - e.r * 2.2, ey - e.r * 2.2, e.r * 4.4, e.r * 4.4);
       const flip = e.boss ? ppx < ex : (e.vx || (ppx - ex)) < 0;
       if (e.id === 'shade') g.globalAlpha = clamp(1 - Math.sqrt(d2) / lr, .2, 1);
-      if (flip) { g.save(); g.translate(ex, ey); g.scale(-1, 1); g.drawImage(img, -size / 2, -size / 2, size, size); g.restore(); }
-      else g.drawImage(img, ex - size / 2, ey - size / 2, size, size);
+      const sq = 1 + Math.sin(e.anim * 9 + e.phase) * .035; // лёгкое сжатие-растяжение
+      g.setTransform(S * (flip ? -1 : 1) / sq, 0, 0, S * sq, W / 2 + (ex - cx) * S, H / 2 + (ey + size * .3 - cy) * S); g.drawImage(img, -size / 2, -size * .8, size, size);
+      g.setTransform(S, 0, 0, S, W / 2 - cx * S, H / 2 - cy * S);
       g.globalAlpha = 1;
       if (e.frozenT > 0) { g.globalAlpha = .6; g.drawImage(Sprites.glow.ice, ex - e.r * 1.4, ey - e.r * 1.4, e.r * 2.8, e.r * 2.8); g.globalAlpha = 1; }
       if (e.burnT > 0 && Math.random() < .3) emit(ex + rand(-e.r, e.r) * .5, ey - e.r * .3, 1, 0, 20, .4, 3, -60);
@@ -156,11 +164,14 @@ const Render = {
     g.globalCompositeOperation = 'lighter';
     for (const f of FX.items) if (f.active) Render.fx(g, f);
     g.globalCompositeOperation = 'source-over';
+    // туман: рисуется в слой низкого разрешения и растягивается одним вызовом
+    if (Render.q === 'high') Render.fog(cx, cy, now);
     // ---------- тьма ----------
     Render.darkness(cx, cy, ppx, ppy, lr, now);
+    Render.ambient(cx, cy, hw, hh, now);
     // тёплый отсвет факела
     g.setTransform(S, 0, 0, S, W / 2 - cx * S, H / 2 - cy * S);
-    if (!CHAR[run.char].noLight && Render.glow) { g.globalCompositeOperation = 'lighter'; g.globalAlpha = .12 + .04 * noise1(now * 6); g.drawImage(Sprites.glow.fire, ppx - lr * .8, ppy - lr * .8, lr * 1.6, lr * 1.6); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; }
+    if (!CHAR[run.char].noLight && Render.glow) { g.globalCompositeOperation = 'lighter'; g.globalAlpha = .12 + .04 * noise1(now * 6); g.drawImage(Sprites.glow[playerSprite(run.char, run.skin).flame[3]] || Sprites.glow.fire, ppx - lr * .8, ppy - lr * .8, lr * 1.6, lr * 1.6); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; }
     // глаза во тьме
     for (const e of Enemies.items) {
       if (!e.active || e.under) continue; const ex = lerp(e.px, e.x, a), ey = lerp(e.py, e.y, a); if (!inView(ex, ey)) continue;
@@ -186,18 +197,19 @@ const Render = {
   },
 
   player(g, x, y, now) {
-    const run = Game.run, p = run.player, ch = CHAR[run.char], spr = Sprites.player[run.char];
+    const run = Game.run, p = run.player, ch = CHAR[run.char], spr = playerSprite(run.char, run.skin);
     if (run.dyingT > 0) { g.globalAlpha = clamp(run.dyingT / 1.6, 0, 1); }
     if (p.iframes > 0 && run.dyingT <= 0 && ((now * 20) | 0) % 2) g.globalAlpha = .45;
-    const fr = Input.moving ? ((p.anim | 0) % 2) : 0, img = p.hurtT > 0 ? spr.white[fr] : spr.frames[fr], flip = p.fx < 0;
-    g.save(); g.translate(x, y - 4); if (flip) g.scale(-1, 1); g.drawImage(img, -28, -32);
+    const fr = Input.moving ? ((p.anim * .75 | 0) % spr.frames.length) : 0, img = p.hurtT > 0 ? spr.white[fr] : spr.frames[fr], flip = p.fx < 0;
+    const br = Input.moving ? 1 : 1 + Math.sin(now * 2.5) * .02; // дыхание
+    g.save(); g.translate(x, y - 4); g.scale(flip ? -1 : 1, br); g.drawImage(img, -32, -36, 64, 64);
     // пламя факела
-    const tx = 12.5, ty = -23 - 15, fl = noise1(now * 9) * .5 + .5, noL = ch.noLight;
-    const cols = noL ? ['#1a0a2a', '#5a2a9a', '#b394ff'] : ['#b3261e', '#ff7a1a', '#ffe8a0'];
+    const tx = 12.8, ty = -19, fl = noise1(now * 9) * .5 + .5, noL = ch.noLight;
+    const cols = spr.flame;
     const hgt = noL ? 12 : 8 + (p.light / p.lightMax) * 8;
     for (let i = 0; i < 3; i++) { const h = hgt * (1 - i * .28) * (.85 + fl * .3), w = 5.5 - i * 1.5; g.fillStyle = cols[i]; g.beginPath(); g.moveTo(tx - w, ty); g.quadraticCurveTo(tx - w, ty - h * .5, tx + (fl - .5) * 3, ty - h); g.quadraticCurveTo(tx + w, ty - h * .5, tx + w, ty); g.closePath(); g.fill(); }
     g.restore(); g.globalAlpha = 1;
-    if (Math.random() < .35 && run.dyingT <= 0) emit(x + (flip ? -tx : tx), y - 44, 1, noL ? 5 : 1, 20, .6, 2, -80);
+    if (Math.random() < .35 && run.dyingT <= 0) emit(x + (flip ? -tx : tx), y - 30, 1, noL ? 5 : 1, 20, .6, 2, -80);
   },
 
   proj(g, o, now) {
@@ -212,6 +224,11 @@ const Render = {
       case 'dagger': { g.save(); g.translate(o.x, o.y); g.rotate(o.ang); poly(g, [12, 0, 0, -3, -4, 0, 0, 3], '#dfe4ea'); g.fillStyle = '#5a3a2a'; g.fillRect(-10, -1.5, 7, 3); g.restore(); break; }
       case 'ice': { g.save(); g.translate(o.x, o.y); g.rotate(o.ang); if (Render.glow) g.drawImage(Sprites.glow.ice, -18, -18, 36, 36); poly(g, [14, 0, 0, -5, -10, 0, 0, 5], '#dff6ff', '#6ab8ff', 1); g.restore(); break; }
       case 'flask': { g.save(); g.translate(o.x, o.y); g.rotate(o.a); g.drawImage(iconCanvas('flask', 22), -11, -11); g.restore(); break; }
+      case 'bolt': { g.save(); g.translate(o.x, o.y); g.rotate(o.ang); if (o.w.evo && Render.glow) g.drawImage(Sprites.glow.gold, -20, -20, 40, 40); g.fillStyle = '#5a3a1e'; g.fillRect(-16, -1.5, 22, 3); poly(g, [12, 0, 4, -4, 4, 4], '#dfe4ea'); poly(g, [-16, 0, -20, -4, -12, 0, -20, 4], '#8b1a1a'); g.restore(); break; }
+      case 'sickle': { g.save(); g.translate(o.x, o.y); g.rotate(o.ang); g.strokeStyle = o.w.evo ? '#ffd27a' : '#dfe4ea'; g.lineWidth = 4; g.lineCap = 'round'; g.beginPath(); g.arc(0, 0, o.r * .8, -.3, 2.6); g.stroke(); g.strokeStyle = '#5a3a1e'; g.lineWidth = 3; g.beginPath(); g.moveTo(o.r * .75, -o.r * .2); g.lineTo(o.r * 1.1, o.r * .4); g.stroke(); g.restore(); break; }
+      case 'wispbomb': { const fl = .8 + Math.sin(now * 20 + o.x) * .2; g.drawImage(Sprites.glow.green, o.x - 22 * fl, o.y - 22 * fl, 44 * fl, 44 * fl); circ(g, o.x, o.y, 4, '#f0fff0'); break; }
+      case 'bellring': { if (o.n < 0) break; const k = o.life / o.max; g.strokeStyle = `rgba(212,169,74,${.7 * k})`; g.lineWidth = 10; g.beginPath(); g.arc(o.x, o.y, o.r, 0, TAU); g.stroke();
+        g.strokeStyle = `rgba(255,240,200,${.8 * k})`; g.lineWidth = 2; g.beginPath(); g.arc(o.x, o.y, o.r - 6, 0, TAU); g.stroke(); break; }
       case 'wave': { if (o.n < 0) break; const k = o.life / o.max; g.strokeStyle = `rgba(60,20,110,${.8 * k})`; g.lineWidth = 26; g.beginPath(); g.arc(o.x, o.y, o.r, 0, TAU); g.stroke();
         g.strokeStyle = `rgba(180,140,255,${.7 * k})`; g.lineWidth = 3; g.beginPath(); g.arc(o.x, o.y, o.r + 10, 0, TAU); g.stroke(); break; }
     }
@@ -227,6 +244,9 @@ const Render = {
       case 'bolt': { if (!f.pts) break; g.strokeStyle = f.col; g.globalAlpha = k; g.lineWidth = 3; g.beginPath(); g.moveTo(f.pts[0], f.pts[1]);
         for (let i = 2; i < f.pts.length; i += 2) { const mx = (f.pts[i - 2] + f.pts[i]) / 2 + rand(-12, 12), my = (f.pts[i - 1] + f.pts[i + 1]) / 2 + rand(-12, 12); g.lineTo(mx, my); g.lineTo(f.pts[i], f.pts[i + 1]); } g.stroke();
         g.lineWidth = 8; g.globalAlpha = k * .25; g.stroke(); break; }
+      case 'whip': { g.globalAlpha = k; g.strokeStyle = f.col; g.lineWidth = 7 * k + 2; g.lineCap = 'round'; const d = f.a, L0 = f.r;
+        g.beginPath(); g.moveTo(f.x, f.y); g.bezierCurveTo(f.x + d * L0 * .3, f.y - 30 * (1 - k), f.x + d * L0 * .7, f.y + 22 * (1 - k), f.x + d * L0, f.y - 4); g.stroke();
+        g.lineWidth = 2; g.globalAlpha = k * .6; g.stroke(); break; }
       case 'pillar': { g.globalAlpha = k; const w = f.r * .5; const gr = g.createLinearGradient(f.x - w, 0, f.x + w, 0); gr.addColorStop(0, 'rgba(255,240,180,0)'); gr.addColorStop(.5, f.col); gr.addColorStop(1, 'rgba(255,240,180,0)');
         g.fillStyle = gr; g.fillRect(f.x - w, f.y - 500, w * 2, 500); g.drawImage(Sprites.glow.gold, f.x - f.r * 1.3, f.y - f.r * 1.3, f.r * 2.6, f.r * 2.6); break; }
     }
@@ -246,15 +266,41 @@ const Render = {
     if (run.eclipseT > 0) { dg.globalAlpha = 1; } // затмение гасит всё кроме факела
     World.forNear(cx, cy, c => { for (const l of c.lamps) if (!run.lampsBroken.has(l.key)) L(l.x, l.y - 30, 130 + Math.sin(now * 3 + l.x) * 6, .9); });
     for (const it of Items.items) if (it.active) L(it.x, it.y, it.kind === 'chest' ? 120 : it.kind === 'lampItem' ? 140 : 50, .8);
-    for (const z of Zones.items) if (z.active && z.delay <= 0 && (z.kind === 'fire' || z.kind === 'poison')) L(z.x, z.y, z.r * 1.6, z.kind === 'fire' ? .8 : .45);
+    for (const z of Zones.items) if (z.active && (z.delay <= 0 && (z.kind === 'fire' || z.kind === 'poison') || z.kind === 'meteor')) L(z.x, z.y, z.r * 1.6, z.kind === 'poison' ? .45 : .8);
     for (const f of FX.items) if (f.active && (f.kind === 'pillar' || f.kind === 'ring' || f.kind === 'bolt')) { const k = f.life / f.max; if (f.kind === 'bolt' && f.pts) L(f.pts[f.pts.length - 2], f.pts[f.pts.length - 1], 120, k); else L(f.x, f.y, f.r * 1.4, k * .8); }
-    for (const o of Projs.items) if (o.active) { if (o.kind === 'orbit' || o.kind === 'ice' || o.kind === 'flask' || o.kind === 'wolf' || o.kind === 'arrow') L(o.x, o.y, 55, .6); else if (o.kind === 'wave' && o.n >= 0) L(o.x, o.y, o.r, .35); }
+    for (const o of Projs.items) if (o.active) { if (o.kind === 'orbit' || o.kind === 'ice' || o.kind === 'flask' || o.kind === 'wolf' || o.kind === 'arrow' || o.kind === 'wispbomb' || o.kind === 'sickle' || o.kind === 'bolt') L(o.x, o.y, 55, .6); else if ((o.kind === 'wave' || o.kind === 'bellring') && o.n >= 0) L(o.x, o.y, o.r, .35); }
     for (const e of run.bigs) if (e.active) L(e.x, e.y, e.r * 3, .7);
     for (const e of Enemies.items) if (e.active && e.def.glow && !e.big) L(e.x, e.y, e.r * 3.5, .6);
     for (const b of Bullets.items) if (b.active) L(b.x, b.y, 40, .7);
     for (const p of Render.pulses) L(p.x, p.y, 500 * (1 - p.t / .6) + 100, p.t / .6);
     dg.globalAlpha = 1;
     const g = Render.g; g.setTransform(1, 0, 0, 1, 0, 0); g.imageSmoothingEnabled = true; g.drawImage(dc, 0, 0, Render.W, Render.H);
+  },
+
+  fog(cx, cy, now) {
+    const run = Game.run, k = .25, fw = Math.max(8, Math.round(Render.W * k)), fh = Math.max(8, Math.round(Render.H * k));
+    if (!Render.fc || Render.fc.width !== fw || Render.fc.height !== fh) { Render.fc = mkCanvas(fw, fh); Render.fcg = Render.fc.getContext('2d'); Render.fogPat = {}; }
+    const fg = Render.fcg, pat = Render.fogPat[run.biome] || (Render.fogPat[run.biome] = fg.createPattern(Sprites.fog[run.biome], 'repeat')), S = Render.scale * k;
+    fg.setTransform(1, 0, 0, 1, 0, 0); fg.clearRect(0, 0, fw, fh); fg.fillStyle = pat;
+    for (const [a, sp] of [[1, 9], [.6, -14]]) { const ox = now * sp, oy = now * sp * .4; fg.globalAlpha = .55 * a;
+      fg.setTransform(S, 0, 0, S, fw / 2 - (cx - ox) * S, fh / 2 - (cy - oy) * S); fg.fillRect(cx - ox - fw / 2 / S, cy - oy - fh / 2 / S, fw / S, fh / S); }
+    fg.globalAlpha = 1; const g = Render.g; g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(Render.fc, 0, 0, Render.W, Render.H);
+    g.setTransform(Render.scale, 0, 0, Render.scale, Render.W / 2 - cx * Render.scale, Render.H / 2 - cy * Render.scale);
+  },
+
+  ambient(cx, cy, hw, hh, now) {
+    const run = Game.run, bio = BIOME[run.biome], amb = bio.amb; if (!amb) return;
+    const g = Render.g, S = Render.scale, n = Math.round(90 * Render.partMul);
+    if (!Render.ambP || Render.ambB !== run.biome) { Render.ambB = run.biome; Render.ambP = []; for (let i = 0; i < 90; i++) Render.ambP.push({ x: rand(0, 1), y: rand(0, 1), s: rand(.5, 1.6), ph: rand(0, TAU) }); }
+    g.setTransform(1, 0, 0, 1, 0, 0); const W = Render.W, H = Render.H, [col, fall, glow] = amb;
+    if (glow) g.globalCompositeOperation = 'lighter';
+    g.fillStyle = col;
+    for (let i = 0; i < n; i++) { const p = Render.ambP[i];
+      let x = ((p.x * W - cx * S * .9 + Math.sin(now * .7 + p.ph) * 20 * Render.dpr) % W + W) % W, y = ((p.y * H - cy * S * .9 + now * fall * p.s * Render.dpr * 2) % H + H) % H;
+      g.globalAlpha = (glow ? .35 + .35 * Math.sin(now * 3 + p.ph) : .45) * (bio.snow ? 1 : .8); const sz = p.s * Render.dpr * (bio.snow ? 2.2 : 1.6); g.fillRect(x, y, sz, sz); }
+    g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+    // цветокоррекция земли
+    if (Render.q === 'high') { g.globalCompositeOperation = 'soft-light'; g.globalAlpha = .28; g.fillStyle = bio.fogCol; g.fillRect(0, 0, W, H); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; }
   },
 
   overlays(g, now) {
@@ -373,6 +419,6 @@ const Render = {
       if (sp.l <= 0) { Render.sparks.splice(i, 1); continue; } g.globalAlpha = Math.min(1, sp.l); g.fillStyle = '#ffb14a'; g.fillRect(sp.x, sp.y, 2 * d, 2 * d); }
     g.globalAlpha = 1;
     // силуэт Хранителя у огня
-    const pl = Sprites.player[Game.menuChar || 'iren']; if (pl) g.drawImage(pl.frames[0], fx + 70 * s, fy - 50 * s, 56 * s * 1.3, 56 * s * 1.3);
+    const mc = Game.menuChar || 'iren', pl = playerSprite(mc, (Game.save.skinSel || {})[mc] || 0), pf = ((now * 2) | 0) % 2 ? 0 : 0; g.drawImage(pl.frames[pf], fx + 60 * s, fy - 62 * s, 64 * s * 1.3, 64 * s * 1.3);
   },
 };

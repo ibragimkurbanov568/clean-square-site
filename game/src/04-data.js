@@ -1,6 +1,6 @@
 // ==== 9. DATA: characters, weapons, passives, enemies, bosses, biomes, waves ====
 const BASE_STATS = { maxHp: 100, speed: 150, armor: 0, regen: 0, might: 1, area: 1, projSpeed: 1, duration: 1, cooldown: 1, luck: 1,
-  magnet: 1, growth: 1, light: 1, lightR: 1, amount: 0, revival: 0, greed: 1, lifesteal: 0, freeze: 0, dodge: 0, poison: 1, decay: 1 };
+  magnet: 1, growth: 1, light: 1, lightR: 1, amount: 0, revival: 0, greed: 1, lifesteal: 0, freeze: 0, dodge: 0, poison: 1, decay: 1, pierce: 0, crit: 0, bossDmg: 0 };
 
 const CHARS = [
   { id: 'iren', col: '#6a5a8a', trim: '#d4a94a', weapon: 'blade', mod: { lightR: 1.1 }, unlock: () => true },
@@ -10,6 +10,8 @@ const CHARS = [
   { id: 'nyx', col: '#2a2a3a', trim: '#8a3a4a', weapon: 'daggers', mod: { speed: 1.15, dodge: 0.1 }, unlock: s => s.stats.embers >= 5000 },
   { id: 'morten', col: '#6a4a2a', trim: '#ff7a1a', weapon: 'flask', mod: { growth: 1.2 }, unlock: s => Object.keys(s.codex.evo).length >= 10 },
   { id: 'ulrich', col: '#1e1e22', trim: '#c9c0a8', weapon: 'censer', mod: {}, whisperImmune: true, unlock: s => !!s.stats.winNightmare },
+  { id: 'mirra', col: '#5a6a7a', trim: '#c9a44a', weapon: 'bell', mod: { area: 1.1 }, unlock: s => s.stats.lamps >= 150 },
+  { id: 'grah', col: '#4a3a2a', trim: '#8b1a1a', weapon: 'crossbow', mod: { bossDmg: .25 }, unlock: s => !!s.stats.bosses.shepherd },
   { id: 'hollow', col: '#0e0c10', trim: '#5a3a8a', weapon: 'black', mod: { might: 2 }, noLight: true, secret: true,
     unlock: s => ['iren', 'borg', 'veyla', 'cassian', 'nyx', 'morten', 'ulrich'].every(c => s.stats.winsByChar[c]) },
 ];
@@ -40,6 +42,18 @@ const WEAPONS = [
     lv: [{ dmg: 12 }, { area: .2 }, { cd: -.15 }, { amount: 1 }, { dmg: 15 }, { area: .25 }, { dmg: 20, amount: 1 }] },
   { id: 'ice', evoP: 'frost', snd: 'ice', glow: 'ice', base: { dmg: 16, cd: 1.25, amount: 1, speed: 1, pierce: 2, freeze: .25 },
     lv: [{ amount: 1 }, { dmg: 5 }, { pierce: 1 }, { freeze: .1 }, { amount: 1 }, { dmg: 6 }, { pierce: 2, freeze: .15 }] },
+  { id: 'crossbow', evoP: 'quiver', snd: 'crossbow', glow: 'white', base: { dmg: 26, cd: 1.6, amount: 1, speed: 1, pierce: 3 },
+    lv: [{ dmg: 8 }, { amount: 1 }, { pierce: 2 }, { cd: -.15 }, { dmg: 10 }, { amount: 1 }, { dmg: 14, pierce: 2 }] },
+  { id: 'bell', evoP: 'hourglass', snd: 'bell', glow: 'gold', base: { dmg: 18, cd: 3.2, area: 1, amount: 1 },
+    lv: [{ dmg: 6 }, { area: .2 }, { cd: -.15 }, { dmg: 8 }, { area: .2 }, { amount: 1 }, { dmg: 12, cd: -.15 }] },
+  { id: 'sickles', evoP: 'whetstone', snd: 'slash', glow: 'white', base: { dmg: 11, cd: 2.2, amount: 2, area: 1, dur: 1.4 },
+    lv: [{ dmg: 4 }, { amount: 1 }, { dur: .4 }, { dmg: 5 }, { area: .2 }, { amount: 1 }, { dmg: 8, amount: 1 }] },
+  { id: 'wisps', evoP: 'candle', snd: 'arrow', glow: 'green', base: { dmg: 20, cd: 2.4, amount: 2, speed: 1, area: 1 },
+    lv: [{ amount: 1 }, { dmg: 6 }, { area: .2 }, { amount: 1 }, { cd: -.15 }, { dmg: 8 }, { amount: 2 }] },
+  { id: 'meteor', evoP: 'starmap', snd: 'hammer', glow: 'fire', base: { dmg: 38, cd: 3.4, amount: 1, area: 1 },
+    lv: [{ dmg: 10 }, { amount: 1 }, { area: .2 }, { cd: -.15 }, { dmg: 14 }, { amount: 1 }, { dmg: 18, area: .2 }] },
+  { id: 'whip', evoP: 'brand', snd: 'slash', glow: 'red', base: { dmg: 16, cd: 1.35, amount: 1, area: 1 },
+    lv: [{ amount: 1 }, { dmg: 6 }, { area: .2 }, { dmg: 6 }, { cd: -.12 }, { area: .2 }, { dmg: 12 }] },
   { id: 'black', evoP: 'abyssheart', snd: 'black', glow: 'violet', secret: true, base: { dmg: 24, cd: 2.2, area: 1, amount: 1 },
     lv: [{ dmg: 8 }, { area: .2 }, { cd: -.15 }, { dmg: 10 }, { amount: 1 }, { area: .2 }, { dmg: 15 }] },
 ];
@@ -62,6 +76,12 @@ const PASSIVES = [
   { id: 'cuirass', apply: (s, l) => { s.armor += l; } },
   { id: 'phoenix', max: 2, apply: (s, l) => { s.revival += l; } },
   { id: 'crown', apply: (s, l) => { s.growth += .08 * l; s.greed += .08 * l; } },
+  { id: 'quiver', apply: (s, l) => { s.pierce += l >= 5 ? 3 : l >= 3 ? 2 : 1; } },
+  { id: 'hourglass', apply: (s, l) => { s.duration += .05 * l; s.cooldown *= 1 - .04 * l; } },
+  { id: 'whetstone', apply: (s, l) => { s.crit += .04 * l; } },
+  { id: 'candle', apply: (s, l) => { s.regen += .3 * l; } },
+  { id: 'starmap', apply: (s, l) => { s.area += .06 * l; s.might += .04 * l; } },
+  { id: 'brand', apply: (s, l) => { s.bossDmg += .12 * l; } },
   { id: 'abyssheart', secret: true, max: 1, apply: (s, l) => { s.might += .2 * l; s.area += .1 * l; s.decay *= 1.25; } },
 ];
 const PASSIVE = Object.fromEntries(PASSIVES.map(p => [p.id, p]));
@@ -88,6 +108,14 @@ const ENEMIES = [
   { id: 'golem', hp: 180, spd: 38, dmg: 18, r: 24, xp: 10, from: 360, w: 3, beh: 'brood', bio: ['wastes'] },
   { id: 'voideye', hp: 70, spd: 45, dmg: 10, r: 17, xp: 5, from: 180, w: 4, beh: 'ranged3', bio: ['abyss'], glow: 'violet' },
   { id: 'wisp', hp: 40, spd: 60, dmg: 9, r: 12, xp: 3, from: 60, w: 5, beh: 'dash', bio: ['abyss'], glow: 'violet' },
+  { id: 'frostmonk', hp: 55, spd: 50, dmg: 10, r: 16, xp: 4, from: 120, w: 4, beh: 'ranged', bio: ['frost'] },
+  { id: 'icehound', hp: 40, spd: 70, dmg: 11, r: 16, xp: 3, from: 45, w: 5, beh: 'dash', bio: ['frost'] },
+  { id: 'plaguedoc', hp: 70, spd: 48, dmg: 11, r: 16, xp: 5, from: 150, w: 4, beh: 'puddle', bio: ['swamp'], glow: 'green' },
+  { id: 'leech', hp: 20, spd: 76, dmg: 7, r: 13, xp: 2, from: 30, w: 6, beh: 'chase', bio: ['swamp'] },
+  { id: 'bonecolossus', hp: 260, spd: 38, dmg: 20, r: 26, xp: 14, from: 360, w: 2, beh: 'bonebrood', bio: ['catacombs'] },
+  { id: 'crawler', hp: 22, spd: 72, dmg: 9, r: 14, xp: 2, from: 45, w: 5, beh: 'burrow', bio: ['catacombs'] },
+  { id: 'werewolf', hp: 90, spd: 72, dmg: 15, r: 19, xp: 6, from: 150, w: 4, beh: 'dash', bio: ['forest'] },
+  { id: 'dryad', hp: 65, spd: 42, dmg: 10, r: 17, xp: 5, from: 100, w: 3, beh: 'ranged3', bio: ['forest'] },
 ];
 const ENEMY = Object.fromEntries(ENEMIES.map(e => [e.id, e]));
 
@@ -102,8 +130,17 @@ const BIOMES = [
   { id: 'cathedral', dark: [4, 7, 10], fog: 'rgba(120,150,170,', decay: 1, lamps: .7, unlock: s => !!s.stats.winsByBiome.cemetery },
   { id: 'wastes', dark: [10, 5, 3], fog: 'rgba(170,110,80,', decay: 1.3, lamps: .8, hot: true, unlock: s => !!s.stats.winsByBiome.cathedral },
   { id: 'abyss', dark: [7, 3, 12], fog: 'rgba(130,90,190,', decay: 1.1, lamps: .8, gravity: true, unlock: s => !!s.stats.winsByBiome.wastes },
+  { id: 'frost', dark: [8, 10, 14], fog: 'rgba(200,220,240,', decay: 1.1, lamps: 1, lightR: .85, enemySpd: .9, snow: true, unlock: s => s.stats.wins >= 1 },
+  { id: 'swamp', dark: [5, 9, 4], fog: 'rgba(120,160,80,', decay: 1, lamps: .9, bog: true, unlock: s => s.stats.kills >= 5000 },
+  { id: 'catacombs', dark: [8, 6, 4], fog: 'rgba(160,140,110,', decay: .9, lamps: 1.4, lightR: .9, unlock: s => s.stats.bestTime >= 480 },
+  { id: 'forest', dark: [10, 3, 3], fog: 'rgba(160,80,70,', decay: 1, lamps: .9, enemySpd: 1.1, unlock: s => Object.keys(s.stats.winsByBiome).length >= 2 },
 ];
 const BIOME = Object.fromEntries(BIOMES.map(b => [b.id, b]));
+// цвет тумана и атмосферные частицы: [цвет, скорость падения, светится]
+Object.assign(BIOME.cemetery, { fogCol: '#a8b0a0', amb: ['#c8c0b0', 8, false] }); Object.assign(BIOME.cathedral, { fogCol: '#90a8b8', amb: ['#bfe4ff', -6, true] });
+Object.assign(BIOME.wastes, { fogCol: '#a88070', amb: ['#ff9a4a', -18, true] }); Object.assign(BIOME.abyss, { fogCol: '#8a6ab8', amb: ['#c8a8ff', -8, true] });
+Object.assign(BIOME.frost, { fogCol: '#dfeaf2', amb: ['#ffffff', 40, false] }); Object.assign(BIOME.swamp, { fogCol: '#8aa870', amb: ['#c8ff7a', -5, true] });
+Object.assign(BIOME.catacombs, { fogCol: '#a89880', amb: ['#d8ccb0', 6, false] }); Object.assign(BIOME.forest, { fogCol: '#a86a60', amb: ['#ff5a4a', 10, false] });
 
 const META = [
   { id: 'might', max: 5, apply: (s, l) => { s.might += .05 * l; } },
@@ -125,6 +162,20 @@ const META = [
   { id: 'banish', max: 5, apply: () => {} },
 ];
 
+// Скины: цвета плаща/отделки, аксессуар, цвет пламени, цена в пепле
+const SKINS = {
+  iren: [{}, { col: '#7a2a1e', trim: '#ffb14a', price: 300 }, { col: '#d8d0c0', trim: '#d4a94a', acc: 'halo', flame: 'white', price: 1200 }],
+  borg: [{}, { col: '#2a3a2a', trim: '#6a8a5a', price: 300 }, { col: '#3a3432', trim: '#c8c0a8', acc: 'skull', flame: 'green', price: 1200 }],
+  veyla: [{}, { col: '#4a2a4a', trim: '#c080d0', price: 300 }, { col: '#2a3a1a', trim: '#8b1a1a', acc: 'antlers', flame: 'green', price: 1200 }],
+  cassian: [{}, { col: '#3a3a4a', trim: '#8b1a1a', price: 300 }, { col: '#c8b890', trim: '#fff0c0', acc: 'crown', flame: 'white', price: 1200 }],
+  nyx: [{}, { col: '#1a2a3a', trim: '#4fa8ff', price: 300 }, { col: '#1a1a1a', trim: '#c21a1a', acc: 'mask', flame: 'blood', price: 1200 }],
+  morten: [{}, { col: '#3a4a5a', trim: '#4fa8ff', price: 300 }, { col: '#2a1a1a', trim: '#ff7a1a', acc: 'horns', flame: 'blood', price: 1200 }],
+  ulrich: [{}, { col: '#4a1a1a', trim: '#d4a94a', price: 300 }, { col: '#e8e0d0', trim: '#8b1a1a', acc: 'halo', flame: 'blue', price: 1200 }],
+  mirra: [{}, { col: '#3a2a4a', trim: '#b394ff', price: 300 }, { col: '#1a1a22', trim: '#c9c0a8', acc: 'veil', flame: 'violet', price: 1200 }],
+  grah: [{}, { col: '#2a2a2a', trim: '#6a6a6a', price: 300 }, { col: '#3a1a10', trim: '#ffb14a', acc: 'feathers', flame: 'fire', price: 1200 }],
+  hollow: [{}, { col: '#1a0a2a', trim: '#7b4fd6', price: 300 }, { col: '#050505', trim: '#ffffff', acc: 'horns', flame: 'blue', price: 1200 }],
+};
+
 const CURSES = ['swarm', 'fury', 'iron', 'dim', 'fragile', 'noregen', 'elites', 'shortflash', 'fewchoice', 'hunger'];
 
 // Испытания: check(save, r) — r это итоги только что завершённого забега (или null)
@@ -134,7 +185,7 @@ const ACHIEVEMENTS = [
   ['winNight', 800, s => !!s.stats.winNightmare], ['winEvery', 1500, s => CHARS.slice(0, 7).every(c => s.stats.winsByChar[c.id])],
   ['boss1', 150, s => !!s.stats.bosses.rotmother], ['boss2', 300, s => !!s.stats.bosses.bishop], ['boss3', 500, s => !!s.stats.bosses.shepherd],
   ['evo1', 100, s => Object.keys(s.codex.evo).length >= 1], ['evo5', 300, s => Object.keys(s.codex.evo).length >= 5],
-  ['evo10', 600, s => Object.keys(s.codex.evo).length >= 10], ['evoAll', 1500, s => Object.keys(s.codex.evo).length >= 12],
+  ['evo10', 600, s => Object.keys(s.codex.evo).length >= 10], ['evoAll', 1500, s => Object.keys(s.codex.evo).length >= WEAPONS.length],
   ['lvl30', 150, (s, r) => r && r.level >= 30], ['lvl50', 400, (s, r) => r && r.level >= 50],
   ['flash50', 100, s => s.stats.flashes >= 50], ['lamps100', 150, s => s.stats.lamps >= 100], ['embers5k', 200, s => s.stats.embers >= 5000],
   ['noPassWin', 600, (s, r) => r && r.win && r.passives === 0], ['brightWin', 600, (s, r) => r && r.win && r.minLightAfter1 >= .5],
@@ -146,6 +197,10 @@ const ACHIEVEMENTS = [
   ['endless20', 600, (s, r) => r && r.time >= 1200], ['whisper60', 150, (s, r) => r && r.whisperTime >= 60], ['noHit3', 300, (s, r) => r && r.bestNoHit >= 180],
   ['codex100', 2000, s => Codex.percent(s) >= 100], ['ghost', 300, (s, r) => r && r.ghost], ['hollowWin', 1500, s => !!s.stats.winsByChar.hollow],
   ['dmg1m', 400, (s, r) => r && r.totalDmg >= 1e6], ['kills5kRun', 300, (s, r) => r && r.kills >= 5000], ['boss3nm', 1000, s => !!s.stats.shepherdNightmare],
+  ['frostWin', 700, s => !!s.stats.winsByBiome.frost], ['swampWin', 700, s => !!s.stats.winsByBiome.swamp], ['catacombsWin', 700, s => !!s.stats.winsByBiome.catacombs],
+  ['forestWin', 700, s => !!s.stats.winsByBiome.forest], ['allLands', 2500, s => BIOMES.every(b => s.stats.winsByBiome[b.id])], ['skin1', 100, s => s.skinsOwned > 0],
+  ['skins10', 800, s => s.skinsOwned >= 10], ['weaponsAll', 600, s => WEAPONS.every(w => s.codex.w[w.id])], ['mirraWin', 800, s => !!s.stats.winsByChar.mirra],
+  ['grahWin', 800, s => !!s.stats.winsByChar.grah], ['lvl70', 600, (s, r) => r && r.level >= 70], ['kills50kRun', 800, (s, r) => r && r.kills >= 20000],
 ].map(([id, reward, check]) => ({ id, reward, check }));
 
 const Codex = {

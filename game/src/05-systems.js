@@ -65,7 +65,7 @@ const Grid = {
     return out;
   },
 };
-const QA = [], QB = [], QC = [], QD = [];
+const QA = [], QB = [], QC = [], QD = [], QE = [];
 
 // ==== 10. GAME SYSTEMS ====
 const Sys = {};
@@ -83,7 +83,7 @@ Sys.newRun = function (opts) {
     bigs: [], bossIdx: 0, nextElite: CONFIG.ELITE_EVERY, events: {}, bloodMoonT: 0, blackoutT: 0, eclipseT: 0, eclipseFx: 0,
     spawnT: 0, shake: 0, hitstop: 0, slow: 0, slowT: 0, dyingT: 0, dawnT: 0, emberCombo: 0, emberComboT: 0, bigEmber: null,
     lampsBroken: new Set(), chunks: new Map(), camX: 0, camY: 0, tutorialStep: s.tutorial ? 99 : 0, tutT: 0,
-    diffMul: diff, cur: Object.fromEntries((opts.curses || []).map(c => [c, true])),
+    skin: (s.skinSel || {})[opts.char] || 0, diffMul: diff, cur: Object.fromEntries((opts.curses || []).map(c => [c, true])),
     st: { stillTime: 0, moved: false, whisperTime: 0, minLightAfter1: 1, lastHit: 0, bestNoHit: 0, totalDmg: 0, ghost: false, graveKey: '', graveT: 0, flashes: 0, lamps: 0, embers: 0, bosses: {} },
     player: { x: 0, y: 0, px: 0, py: 0, hp: 100, fx: 1, fy: 0, face: 0, iframes: 0, flashCd: 0, invertT: 0, slowT: 0, hurtT: 0, anim: 0, light: CONFIG.LIGHT_MAX, lightMax: CONFIG.LIGHT_MAX, stats: null, revivals: 0, dropT: 0, regenAcc: 0 },
   };
@@ -116,15 +116,18 @@ Sys.weaponStats = function (w) {
   const b = { dmg: d.base.dmg, cd: d.base.cd, area: d.base.area || 1, amount: d.base.amount || 1, speed: d.base.speed || 1, pierce: d.base.pierce || 0,
     dur: d.base.dur || 0, chain: d.base.chain || 0, freeze: d.base.freeze || 0, burn: 0 };
   for (let i = 0; i < w.lv - 1; i++) { const L = d.lv[i]; for (const k in L) { if (k === 'cd') b.cd *= 1 + L[k]; else b[k] += L[k]; } }
+  if (b.pierce) b.pierce += st.pierce;
   b.dmg *= st.might; b.cd *= st.cooldown; b.area *= st.area; b.speed *= st.projSpeed; b.dur *= st.duration; b.amount += st.amount; b.freeze += st.freeze;
   if (w.id === 'poison' || w.id === 'flask') b.dmg *= st.poison;
   if (w.evo) {
     const E = { blade: { dmg: 2.2, area: 1.25 }, shovel: { dmg: 1.4 }, poison: { dmg: 1.5, dur: 1.5, area: 1.3 }, hammer: { dmg: 1.3 }, daggers: { dmg: 1.2 },
-      flask: { dmg: 1.5 }, censer: { dmg: 1.5 }, lightning: { dmg: 1.5 }, arrows: { dmg: 1.4 }, rune: { dmg: 1.5, cd: .7 }, ice: { dmg: 1.5 }, black: { dmg: 1.5 } }[w.id];
+      flask: { dmg: 1.5 }, censer: { dmg: 1.5 }, lightning: { dmg: 1.5 }, arrows: { dmg: 1.4 }, rune: { dmg: 1.5, cd: .7 }, ice: { dmg: 1.5 }, black: { dmg: 1.5 }, crossbow: { dmg: 1.3 }, bell: { dmg: 1.4, area: 1.2 }, sickles: { dmg: 1.4 }, wisps: { dmg: 1.2 }, meteor: { dmg: 1.3 }, whip: { dmg: 1.6, area: 1.4 } }[w.id];
     for (const k in E) b[k] *= E[k];
     if (w.id === 'daggers') b.cd = .11 * st.cooldown;
     if (w.id === 'lightning') b.chain = 10;
     if (w.id === 'censer') b.amount += 3;
+    if (w.id === 'meteor') b.amount += 3;
+    if (w.id === 'sickles') b.amount += 2;
   }
   w.s = b;
   if (w.id === 'censer' || (w.id === 'shovel' && w.evo) || (w.id === 'arrows' && w.evo)) Weapons.resetOrbiters(w);
@@ -231,7 +234,8 @@ Sys.damage = function (e, amt, w, sx, sy, kb = 0, opts) {
   if (!e.active || e.hp <= 0 || e.under) return 0;
   const run = Game.run, p = run.player, st = p.stats;
   let crit = false;
-  if (Math.random() < CONFIG.CRIT_BASE * st.luck) { amt *= CONFIG.CRIT_MULT; crit = true; }
+  if (Math.random() < CONFIG.CRIT_BASE * st.luck + st.crit) { amt *= CONFIG.CRIT_MULT; crit = true; if (w && w.id === 'sickles' && w.evo) Sys.heal(.5); }
+  if (st.bossDmg && (e.elite || e.boss)) amt *= 1 + st.bossDmg;
   if (!CHAR[run.char].noLight) amt *= 1 + CONFIG.LIGHT_DMG_BONUS * (p.light / p.lightMax);
   const def = e.def;
   if ((def.beh === 'shield') && !e.elite) { const fx = p.x - e.x, fy = p.y - e.y, sxv = sx - e.x, syv = sy - e.y, l1 = Math.hypot(fx, fy) || 1, l2 = Math.hypot(sxv, syv) || 1; if ((fx * sxv + fy * syv) / (l1 * l2) > .45) amt *= .5; }
@@ -259,6 +263,7 @@ Sys.kill = function (e, w) {
   const r = Math.random();
   if (r < .004) Sys.item('chicken', e.x, e.y); else if (r < .0055) Sys.item('magnet', e.x, e.y); else if (r < .016) Sys.item('ash', e.x, e.y);
   if (def.beh === 'brood') { const kid = e.id === 'golem' ? 'imp' : 'spiderling', n = e.id === 'golem' ? 3 : 6; for (let i = 0; i < n; i++) { const a = i / n * TAU; Sys.spawnEnemy(kid, e.x + Math.cos(a) * 18, e.y + Math.sin(a) * 18); } }
+  if (def.beh === 'bonebrood') for (let i = 0; i < 4; i++) { const a = i / 4 * TAU; Sys.spawnEnemy('skeleton', e.x + Math.cos(a) * 24, e.y + Math.sin(a) * 24); }
   if (def.beh === 'explode') Sys.hazard('explode', e.x, e.y, 58, .35, 14);
   if (e.elite) { Sys.item('chest', e.x, e.y); run.shake = 10; run.hitstop = .05; Audio.play('explode'); }
   if (run.weapons.some(x => x.id === 'censer' && x.evo) && run.kills % 100 === 0) { Sys.heal(1); Sys.text(run.player.x, run.player.y - 30, '+1', '#6ae07a', 14); }
@@ -294,7 +299,7 @@ Sys.spawnEnemy = function (id, x, y, opt) {
   const min = Math.min(run.t, 1800) / 60, endless = run.endless ? 1 + .3 * (run.t - CONFIG.DAWN) / 60 : 1;
   const hpMul = (1 + CONFIG.ENEMY_HP_PER_MIN * min) * run.diffMul.hp * (run.cur.iron ? 1.4 : 1) * endless;
   e.id = id; e.def = def; e.x = e.px = x; e.y = e.py = y; e.vx = e.vy = e.kx = e.ky = 0; e.r = def.r; e.scale = 1;
-  e.maxHp = e.hp = def.hp * hpMul; e.spd = def.spd * run.diffMul.spd * (run.cur.fury ? 1.15 : 1) * rand(.92, 1.08); e.dmg = def.dmg; e.xp = def.xp;
+  e.maxHp = e.hp = def.hp * hpMul; e.spd = def.spd * run.diffMul.spd * (run.cur.fury ? 1.15 : 1) * (BIOME[run.biome].enemySpd || 1) * rand(.92, 1.08); e.dmg = def.dmg; e.xp = def.xp;
   e.flashT = e.frozenT = e.slowT = e.stunT = e.blindT = e.burnT = e.burnD = 0; e.t = rand(0, 3); e.phase = rand(0, TAU); e.st = 0; e.stT = rand(1.5, 3.5);
   e.elite = false; e.boss = false; e.big = false; e.under = def.beh === 'burrow'; e.split = false; e.march = false; e.anim = rand(0, 1); e.bossData = null;
   if (opt === 'elite') { e.elite = true; e.big = true; e.r *= 1.6; e.scale = 1.6; e.maxHp = e.hp = e.maxHp * 12; e.spd *= .9; e.dmg *= 1.5; e.under = false; run.bigs.push(e); }
@@ -344,7 +349,7 @@ const Director = {
     const ev = run.events;
     for (const et of [150, 450, 780]) if (t >= et && !ev['swarm' + et]) { ev['swarm' + et] = 1; Director.swarm(); }
     for (const et of [400, 700]) if (t >= et && !ev['proc' + et]) { ev['proc' + et] = 1; Director.procession(); }
-    if (t >= 510 && !ev.blood) { ev.blood = 1; run.bloodMoonT = 60; UI.toast(L('bloodMoon')); Audio.play('roar'); }
+    if (t >= 510 && !ev.blood) { ev.blood = 1; run.bloodMoonT = run.biome === 'forest' ? 90 : 60; UI.toast(L('bloodMoon')); Audio.play('roar'); }
     if (run.bloodMoonT > 0) run.bloodMoonT -= dt;
     Music.intensity = t < 120 ? 0 : t < 300 ? 1 : t < 600 ? 2 : 3;
   },
@@ -665,6 +670,44 @@ const Weapons = {
       }
       Audio.play('ice');
     },
+    crossbow(w, s, p) {
+      Grid.query(p.x, p.y, 520, QA); QA.sort((a, b) => dist2(a.x, a.y, p.x, p.y) - dist2(b.x, b.y, p.x, p.y));
+      for (let i = 0; i < s.amount; i++) {
+        const t = QA[i % Math.max(1, QA.length)]; const a = (t ? Math.atan2(t.y - p.y, t.x - p.x) : Math.atan2(p.fy, p.fx)) + (i >= QA.length ? rand(-.2, .2) : 0);
+        const v = 900 * s.speed, o = Weapons.proj('bolt', w, p.x, p.y, Math.cos(a) * v, Math.sin(a) * v, 8, s.dmg, s.pierce, 1); if (o) o.ang = a;
+      }
+      Audio.play('crossbow');
+    },
+    bell(w, s, p) {
+      const n = w.evo ? 3 : s.amount;
+      for (let i = 0; i < n; i++) { const o = Weapons.proj('bellring', w, p.x, p.y, 0, 0, 20, s.dmg, 999, .7 + i * .25); if (o) { o.rad = 210 * s.area; o.n = -i * .25; } }
+      Audio.play('bell');
+    },
+    sickles(w, s, p) {
+      const a0 = rand(0, TAU);
+      for (let i = 0; i < s.amount; i++) { const o = Weapons.proj('sickle', w, p.x, p.y, 0, 0, 14 * s.area, s.dmg, 999, s.dur * (w.evo ? 1.7 : 1)); if (o) { o.a = a0 + i / s.amount * TAU; o.rad = 250 * s.area; } }
+      Audio.play('slash');
+    },
+    wisps(w, s, p) {
+      for (let i = 0; i < s.amount; i++) { const a = rand(0, TAU), o = Weapons.proj('wispbomb', w, p.x + Math.cos(a) * 20, p.y + Math.sin(a) * 20, Math.cos(a) * 120, Math.sin(a) * 120, 9, s.dmg, 0, 4); if (o) { o.target = Weapons.randomNear(p.x, p.y, 480); o.n = 0; } }
+      Audio.play('arrow');
+    },
+    meteor(w, s, p) {
+      for (let i = 0; i < s.amount; i++) {
+        const t = Weapons.randomNear(p.x, p.y, 460); const x = t ? t.x + rand(-20, 20) : p.x + rand(-300, 300), y = t ? t.y + rand(-20, 20) : p.y + rand(-250, 250);
+        const z = Weapons.zone('meteor', w, x, y, 80 * s.area, .25, s.dmg, 1, .7 + i * .12); if (z && w.evo) z.heal = false;
+      }
+    },
+    whip(w, s, p) {
+      const dir = p.fx >= 0 ? 1 : -1, len = 200 * s.area * (w.evo ? 1.4 : 1), sides = s.amount >= 2 ? [dir, -dir] : [dir], hits = w.evo ? 2 : 1;
+      for (const sd of sides) {
+        Sys.fx('whip', p.x, p.y - 6, len, .22, w.evo ? '#ff4a4a' : '#e8c8a8', sd);
+        Grid.query(p.x + sd * len / 2, p.y, len / 2, QA); let healed = 0;
+        for (const e of QA.slice()) { if (Math.abs(e.y - p.y) > 34 * s.area + e.r || (e.x - p.x) * sd < -10) continue;
+          for (let k = 0; k < hits && e.active; k++) Sys.damage(e, s.dmg, w, p.x, p.y, 140); if (w.evo && healed < 3) { Sys.heal(1); healed++; } }
+      }
+      Audio.play('slash');
+    },
     black(w, s, p) {
       const run = Game.run;
       for (let i = 0; i < s.amount; i++) {
@@ -712,17 +755,37 @@ const Proj = {
           o.ang = Math.atan2(o.vy, o.vx); if (Math.random() < .5) emit(o.x, o.y, 1, 8, 10, .3, 2);
           Proj.hitOnce(o); break;
         }
-        case 'dagger': case 'ice': Proj.hitOnce(o); break;
+        case 'dagger': case 'ice': case 'bolt': Proj.hitOnce(o); break;
+        case 'sickle': {
+          const k = 1 - o.life / o.max, R = w.evo ? o.rad * Math.sin(k * Math.PI) : o.rad * easeOut(k);
+          o.a += (w.evo ? 4 : 5) * dt; o.x = p.x + Math.cos(o.a) * (20 + R); o.y = p.y + Math.sin(o.a) * (20 + R); o.ang += dt * 14;
+          Proj.hitArea(o, .3, 80); continue;
+        }
+        case 'wispbomb': {
+          o.n += dt; if (!o.target || !o.target.active) o.target = Weapons.nearest(o.x, o.y, 360, QB);
+          if (o.target && o.n > .25) { const dx = o.target.x - o.x, dy = o.target.y - o.y, l = Math.hypot(dx, dy) || 1, v = 340 * s.speed; o.vx = lerp(o.vx, dx / l * v, .1); o.vy = lerp(o.vy, dy / l * v, .1); }
+          else { o.vx *= .96; o.vy *= .96; }
+          if (Math.random() < .5) emit(o.x, o.y, 1, 3, 10, .3, 2, -20);
+          Grid.query(o.x, o.y, o.r, QB);
+          if (QB.length) {
+            const R = 55 * s.area; Grid.query(o.x, o.y, R, QE); for (const e of QE.slice()) Sys.damage(e, o.dmg, w, o.x, o.y, 120);
+            Sys.fx('ring', o.x, o.y, R, .3, '#9affb0'); emit(o.x, o.y, 8, 3, 140, .4, 3); Render.lightPulse(o.x, o.y);
+            if (w.evo && !o.pierce) for (let i = 0; i < 3; i++) { const a = i / 3 * TAU, c = Weapons.proj('wispbomb', w, o.x, o.y, Math.cos(a) * 200, Math.sin(a) * 200, 7, o.dmg * .5, 1, 2); if (c) { c.n = 0; c.target = null; } }
+            Projs.release(o); continue;
+          }
+          break;
+        }
         case 'flask': {
           const k = 1 - o.life / o.max; o.x = lerp(o.sx, o.tx, k); o.y = lerp(o.sy, o.ty, k) - Math.sin(k * Math.PI) * 80; o.a += dt * 10;
           if (o.life - dt <= 0) { Weapons.zone('fire', w, o.tx, o.ty, 62 * s.area, s.dur, s.dmg); emit(o.tx, o.ty, 10, 0, 160, .5, 3, -60); Projs.release(o); }
           continue;
         }
-        case 'wave': {
+        case 'bellring': case 'wave': {
           o.n += dt; if (o.n < 0) { o.x = p.x; o.y = p.y; continue; }
           const k = Math.min(1, o.n / .55); o.r = 20 + o.rad * easeOut(k);
           Grid.query(o.x, o.y, o.r, QB);
-          for (const e of QB) { if (o.hits.has(e)) continue; const d = Math.hypot(e.x - o.x, e.y - o.y); if (d > o.r - 40 - e.r) { o.hits.set(e, 1); Sys.damage(e, o.dmg, w, o.x, o.y, 120); } }
+          const bell = o.kind === 'bellring';
+          for (const e of QB) { if (o.hits.has(e)) continue; const d = Math.hypot(e.x - o.x, e.y - o.y); if (d > o.r - 40 - e.r) { o.hits.set(e, 1); Sys.damage(e, o.dmg, w, o.x, o.y, bell ? 380 : 120); if (bell && w.evo && e.active) e.stunT = .6; } }
           continue;
         }
       }
@@ -736,6 +799,7 @@ const Proj = {
       const w = o.w; Sys.damage(e, o.dmg, w, o.x - o.vx * .02, o.y - o.vy * .02, o.kind === 'ice' ? 30 : 60);
       if (o.kind === 'ice' && e.active && Math.random() < w.s.freeze) { if (e.boss) e.slowT = 1; else e.frozenT = 1.3 * Game.run.player.stats.duration; }
       if (o.kind === 'dagger' && w.evo) { const n = Weapons.nearest(o.x, o.y, 260, QD); if (n && !o.hits.has(n)) { const a = Math.atan2(n.y - o.y, n.x - o.x), v = Math.hypot(o.vx, o.vy); o.vx = Math.cos(a) * v; o.vy = Math.sin(a) * v; o.ang = a; } }
+      if (o.kind === 'bolt' && w.evo) { Grid.query(o.x, o.y, 60, QE); for (const x of QE.slice()) if (x !== e) Sys.damage(x, o.dmg * .6, w, o.x, o.y, 100); Sys.fx('ring', o.x, o.y, 60, .25, '#ffd27a'); Render.lightPulse(o.x, o.y); }
       emit(o.x, o.y, 2, o.kind === 'ice' ? 4 : 6, 80, .2, 2);
       if (--o.pierce < 0) { Projs.release(o); return; }
     }
@@ -773,6 +837,12 @@ const ZoneSys = {
   },
   trigger(z) {
     const run = Game.run, p = run.player;
+    if (z.kind === 'meteor') {
+      Grid.query(z.x, z.y, z.r, QB); for (const e of QB.slice()) { Sys.damage(e, z.dmg, z.w, z.x, z.y, 220); if (e.active) { e.burnT = 2; e.burnD = z.dmg * .15; } }
+      Sys.fx('ring', z.x, z.y, z.r * 1.2, .45, '#ff9a4a'); emit(z.x, z.y, 24, 0, 260, .7, 4, 80); Render.lightPulse(z.x, z.y); Audio.play('explode'); run.shake = Math.max(run.shake, 6);
+      if (z.w.evo) Weapons.zone('fire', z.w, z.x, z.y, z.r * .7, 2.5, z.dmg * .2);
+      z.life = .01; return;
+    }
     if (z.kind === 'strike' || z.kind === 'rune') {
       Grid.query(z.x, z.y, z.r, QB); let n = 0;
       for (const e of QB.slice()) { Sys.damage(e, z.dmg, z.w, z.x, z.y, 200); n++; }
@@ -845,6 +915,7 @@ const World = {
         if (bio.hot && d.id === 'lava' && dd < 42 * 42) { if (!CHAR[run.char].noLight) p.light = Math.min(p.lightMax, p.light + 8 * dt); if (p.iframes <= 0) Sys.hurtPlayer(4); }
         if (bio.gravity && d.id === 'voidpool' && dd < 200 * 200 && dd > 100) { const l = Math.sqrt(dd); p.x += (d.x - p.x) / l * 45 * dt; p.y += (d.y - p.y) / l * 45 * dt; }
         if (d.id === 'grave' && dd < 60 * 60) nearGrave = d.key;
+        if (bio.bog && d.id === 'bog' && dd < 46 * 46) p.slowZone = true;
       }
     });
     // пасхалка: стоять у одной могилы 60 секунд
