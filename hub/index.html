@@ -119,6 +119,30 @@ body.touch #mini{bottom:auto;top:calc(64px + var(--sat));width:100px;height:100p
 .medal{font:800 .8em var(--head);letter-spacing:.1em}
 .kv{display:grid;grid-template-columns:1fr auto;gap:6px 18px;text-align:left}
 .kv span:nth-child(even){font-weight:700;font-variant-numeric:tabular-nums}
+/* главное меню */
+.menu{position:absolute;inset:0;padding:calc(20px + var(--sat)) calc(20px + var(--sar)) calc(18px + var(--sab)) calc(24px + var(--sal));display:grid;grid-template-columns:minmax(260px,420px) 1fr;grid-template-rows:auto 1fr auto;gap:12px 24px;pointer-events:none;
+  background:linear-gradient(90deg,rgba(5,6,9,.92) 0%,rgba(5,6,9,.6) 32%,rgba(5,6,9,0) 55%)}
+.menu>*{pointer-events:auto}
+.logoT{font:italic 900 clamp(44px,7vw,92px)/.85 var(--head);letter-spacing:.02em;text-shadow:0 4px 30px rgba(255,90,31,.35)}.logoT .a{color:var(--accent)}
+.logoS{font:700 .8em var(--head);letter-spacing:.32em;text-transform:uppercase;color:var(--dim);margin-top:8px}
+.navs{grid-column:1;display:flex;flex-direction:column;gap:4px;align-self:center}
+.nav{position:relative;display:flex;flex-direction:column;align-items:flex-start;background:none;border:0;color:var(--text);text-align:left;cursor:pointer;padding:10px 18px 10px 22px;font:inherit;transform:skewX(-10deg);transition:background .15s,padding .15s}
+.nav>*{transform:skewX(10deg)}.nav b{font:italic 900 clamp(24px,3vw,40px)/1 var(--head);text-transform:uppercase;letter-spacing:.02em}.nav span{font-size:.82em;color:var(--dim);margin-top:4px}
+.nav::before{content:'';position:absolute;left:0;top:10%;bottom:10%;width:5px;background:var(--accent);transform:scaleY(0);transition:transform .15s}
+.nav:hover,.nav:focus-visible{background:linear-gradient(90deg,rgba(255,90,31,.28),rgba(255,90,31,0));padding-left:30px;outline:none}.nav:hover::before,.nav:focus-visible::before{transform:scaleY(1)}
+.nav:hover b,.nav:focus-visible b{color:#fff;text-shadow:0 0 18px rgba(255,90,31,.6)}
+.others{grid-column:1;display:flex;flex-direction:column;gap:6px}
+.mini{background:rgba(20,24,32,.7);border:1px solid var(--line);border-radius:3px;color:var(--text);font:700 .78em var(--head);text-transform:uppercase;letter-spacing:.08em;padding:8px 12px;cursor:pointer;transform:skewX(-8deg)}
+.mini.soon{opacity:.45;cursor:default}.mini em{font-style:normal;color:var(--dim);font-size:.85em}
+.hero{grid-column:2;grid-row:3;justify-self:end;align-self:end;min-width:min(340px,100%);background:rgba(8,10,14,.72);border:1px solid var(--line);border-right:4px solid var(--accent);padding:12px 16px;border-radius:4px;display:flex;flex-direction:column;gap:6px}
+.heroN{font:italic 900 1.8em var(--head);text-transform:uppercase}.heroS{display:flex;gap:16px;color:var(--dim);font-size:.9em}.heroS b{color:var(--text)}
+@media (max-width:760px),(orientation:portrait){.menu{grid-template-columns:1fr;grid-template-rows:auto auto auto 1fr auto;background:linear-gradient(180deg,rgba(5,6,9,.9) 0%,rgba(5,6,9,.55) 55%,rgba(5,6,9,.2) 100%)}.navs,.others,.hero{grid-column:1}.navs{align-self:start}.hero{grid-row:5;justify-self:stretch}.nav b{font-size:26px}}
+/* загрузка */
+.load{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;gap:10px;padding:0 calc(24px + var(--sar)) calc(40px + var(--sab)) calc(24px + var(--sal));
+  background:repeating-linear-gradient(115deg,rgba(255,90,31,.06) 0 40px,transparent 40px 80px),radial-gradient(ellipse at 70% 30%,#1a1f2b,#050608 70%)}
+.loadM{font:700 .9em var(--head);letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}.loadT{font:italic 900 clamp(40px,7vw,86px)/.9 var(--head);text-transform:uppercase}
+.loadBar{height:4px;background:#1a1e27;max-width:520px;overflow:hidden}.loadBar i{display:block;height:100%;width:40%;background:var(--accent);animation:lb 1s linear infinite}@keyframes lb{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
+.loadTip{max-width:60ch;color:var(--dim)}.loadTip b{color:var(--text)}
 /* диалоги и карьера */
 .dlg{position:fixed;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:0 16px calc(24px + var(--sab));background:linear-gradient(0deg,rgba(0,0,0,.85),rgba(0,0,0,0) 60%);cursor:pointer}
 .dlgBox{display:flex;gap:18px;align-items:flex-end;max-width:860px;width:100%;background:rgba(10,12,16,.92);border:1px solid var(--line2);border-left:4px solid var(--accent);border-radius:6px;padding:16px;animation:tin .3s ease-out}
@@ -132,7 +156,9 @@ body.touch #mini{bottom:auto;top:calc(64px + var(--sat));width:100px;height:100p
 .chap{display:flex;flex-direction:column;gap:14px}.chead{display:flex;gap:16px;align-items:center}.chead .face{width:110px}
 .card.ev .evm{font:700 .75em var(--head);letter-spacing:.14em;text-transform:uppercase;color:var(--cyan)}.card.ev.won{opacity:.75}.card.ev.won b::after{content:' ✓';color:var(--good)}
 .card.ev.boss{border-color:var(--accent);background:linear-gradient(135deg,rgba(255,90,31,.18),var(--panel2))}.card[disabled]{opacity:.5;cursor:default}
-@media (max-width:720px){.career{grid-template-columns:1fr}.blist{display:grid;grid-template-columns:repeat(4,1fr)}.bl{grid-template-columns:1fr;justify-items:center;padding:4px}.bl .bn,.bl .rk{display:none}}
+.career>*{min-width:0}
+@media (max-width:720px){.career{grid-template-columns:minmax(0,1fr)}.blist{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}.bltitle{grid-column:1/-1;font-size:1.2em}.bl{grid-template-columns:1fr;justify-items:center;padding:3px;transform:none}.bl>*{transform:none}.bl .bf .face{width:100%}.bl .bn,.bl .rk{display:none}.chead .face{width:80px}}
+.cd{font:italic 900 clamp(80px,16vw,180px)/1 var(--head);color:#fff;text-shadow:0 0 40px rgba(255,90,31,.7);margin-top:12vh;animation:cdp .9s ease-out infinite}.cd.go{color:var(--good);text-shadow:0 0 40px rgba(74,222,128,.7)}@keyframes cdp{from{transform:scale(1.25);opacity:.4}to{transform:scale(1);opacity:1}}
 @media (max-width:720px){.garage{top:auto;height:52%;width:calc(100% - 24px)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -4876,7 +4902,7 @@ const STR = {
     angle: 'угол', paused: 'Пауза', resume: 'Продолжить', restart: 'Заново', toGarage: 'В гараж', toHub: 'В меню', results: 'Итоги',
     earned: 'Заработано', bronze: 'Бронза', silver: 'Серебро', gold: 'Золото', noMedal: 'Без медали', bestLap: 'Лучший круг', newRecord: 'Новый рекорд!',
     quality: 'Графика', qLow: 'Низкая', qMid: 'Средняя', qHigh: 'Высокая', volume: 'Громкость', music: 'Музыка', lang: 'Язык', units: 'Единицы', kmh: 'КМ/Ч', mph: 'MPH',
-    camBumper: 'С бампера', camCine: 'Кино', assist: 'Помощь в контруле', repair: 'Починить бесплатно', damage: 'Повреждения', repaired: 'Машина как новая', tHeads: 'Свет', tExtra: 'Детали', heads: 'Фары', lightCol: 'Цвет света', tails: 'Стопы', exhaust: 'Выхлоп', fenders: 'Расширители', stripes: 'Полосы', stripeCol: 'Цвет полос', free: 'Бесплатно', camHint: 'Камера', wNight: 'Ясная ночь', wSunny: 'Солнечно', tapNext: 'Нажмите, чтобы продолжить', beaten: 'побеждён', career: 'Карьера', theEight: 'Восьмёрка', chapter: 'Глава', bossCar: 'Машина босса', done: 'Пройдено', win2: 'Выиграйте 2 заезда', pinkSlip: 'Машина босса ваша', crownKept: 'Корона ваша. Все заезды можно проходить снова.', needClass: 'Нужна машина класса', bonus: 'Бонус', mCareer: 'Карьера: Восьмёрка', mCareerD: 'Сюжет: 8 глав, 8 боссов, машины на кону', mRace: 'Быстрая гонка', mRaceD: 'Любой режим, любая трасса, соперники и полиция', modeCircuit: 'Кольцо', modeCircuitD: '3 круга против 5 соперников', modeSprint: 'Спринт', modeSprintD: 'Один круг сквозь ночной трафик', modeKO: 'На выбывание', modeKOD: 'Последний на круге выбывает', modeTrap: 'Радары', modeTrapD: 'Сумма скоростей на камерах решает', modeDrag: 'Драг', modeDragD: '402 метра, ручная коробка: E — выше, Q — ниже', modePursuit: 'Погоня', modePursuitD: 'Уйди от полиции и собери награду', police: 'Полиция', koOut: 'выбывает', copDown: 'ПАТРУЛЬ ВЫВЕДЕН', trap: 'РАДАР', trapSum: 'Сумма', launchPerfect: 'ИДЕАЛЬНЫЙ СТАРТ', launchSpin: 'ПРОБУКСОВКА', launchBog: 'ВЯЛЫЙ СТАРТ', shiftPerfect: 'ИДЕАЛЬНОЕ ПЕРЕКЛЮЧЕНИЕ', shiftGood: 'ХОРОШО', shiftLate: 'ПОЗДНО', shiftEarly: 'РАНО', roadblock: 'Впереди блокпост!', backup: 'Подкрепление в пути', bounty: 'Награда', bust: 'Арест', evade: 'Отрыв', pos: 'Позиция', you: 'Вы', shift: 'ПЕРЕДАЧА', busted: 'АРЕСТОВАН', escaped: 'УШЁЛ ОТ ПОГОНИ', place: 'Место', raceWin: 'ПОБЕДА', raceLose: 'ПОРАЖЕНИЕ', catRace: 'Гонки', catDrift: 'Дрифт', eliminated: 'Выбыл', continue: 'Продолжить', driver: 'Гонщик', car: 'Машина', copsDown: 'Патрулей выведено', vinyl: 'Винил', vcol: 'Цвет винила', vcol2: 'Второй цвет', cls: 'Класс', allCls: 'Все', 
+    camBumper: 'С бампера', camCine: 'Кино', assist: 'Помощь в контруле', repair: 'Починить бесплатно', damage: 'Повреждения', repaired: 'Машина как новая', tHeads: 'Свет', tExtra: 'Детали', heads: 'Фары', lightCol: 'Цвет света', tails: 'Стопы', exhaust: 'Выхлоп', fenders: 'Расширители', stripes: 'Полосы', stripeCol: 'Цвет полос', free: 'Бесплатно', camHint: 'Камера', wNight: 'Ясная ночь', wSunny: 'Солнечно', goGo: 'ВПЕРЁД!', duel: 'Дуэль', tagline: 'уличные гонки · тюнинг · погони', mGarage: 'Гараж и тюнинг', mGarageD: '24 машины, винилы, диски, обвесы, мотор', mDriftQ: 'Свободный дрифт, челлендж и время круга', mSetD: 'Графика, звук, камера, управление', otherGames: 'Другие игры клуба', rank: 'Ранг', unranked: 'Вне списка', carsOwned: 'машин', crownShort: 'Корона ваша', tip: 'Совет', tips: ['В погоне остановка рядом с патрулём — это арест. Не сбрасывай скорость.', 'В драге переключайся, когда загорится зелёная надпись ПЕРЕДАЧА.', 'R или кнопка ↺ возвращает машину на трассу.', 'Машина босса достаётся победителю — выигрывай дуэли Восьмёрки.', 'Нитро копится в заносах и само по себе. Жми Shift на прямых.', 'Радары считают сумму скоростей — выходи из поворота на максимальной.', 'Повреждения чинятся в гараже бесплатно.', 'Выбывание: последний на каждом круге вылетает. Не оставайся позади.', 'Камеры переключаются клавишей C — попробуй вид с бампера.'], tapNext: 'Нажмите, чтобы продолжить', beaten: 'побеждён', career: 'Карьера', theEight: 'Восьмёрка', chapter: 'Глава', bossCar: 'Машина босса', done: 'Пройдено', win2: 'Выиграйте 2 заезда', pinkSlip: 'Машина босса ваша', crownKept: 'Корона ваша. Все заезды можно проходить снова.', needClass: 'Нужна машина класса', bonus: 'Бонус', mCareer: 'Карьера: Восьмёрка', mCareerD: 'Сюжет: 8 глав, 8 боссов, машины на кону', mRace: 'Быстрая гонка', mRaceD: 'Любой режим, любая трасса, соперники и полиция', modeCircuit: 'Кольцо', modeCircuitD: '3 круга против 5 соперников', modeSprint: 'Спринт', modeSprintD: 'Один круг сквозь ночной трафик', modeKO: 'На выбывание', modeKOD: 'Последний на круге выбывает', modeTrap: 'Радары', modeTrapD: 'Сумма скоростей на камерах решает', modeDrag: 'Драг', modeDragD: '402 метра, ручная коробка: E — выше, Q — ниже', modePursuit: 'Погоня', modePursuitD: 'Уйди от полиции и собери награду', police: 'Полиция', koOut: 'выбывает', copDown: 'ПАТРУЛЬ ВЫВЕДЕН', trap: 'РАДАР', trapSum: 'Сумма', launchPerfect: 'ИДЕАЛЬНЫЙ СТАРТ', launchSpin: 'ПРОБУКСОВКА', launchBog: 'ВЯЛЫЙ СТАРТ', shiftPerfect: 'ИДЕАЛЬНОЕ ПЕРЕКЛЮЧЕНИЕ', shiftGood: 'ХОРОШО', shiftLate: 'ПОЗДНО', shiftEarly: 'РАНО', roadblock: 'Впереди блокпост!', backup: 'Подкрепление в пути', bounty: 'Награда', bust: 'Арест', evade: 'Отрыв', pos: 'Позиция', you: 'Вы', shift: 'ПЕРЕДАЧА', busted: 'АРЕСТОВАН', escaped: 'УШЁЛ ОТ ПОГОНИ', place: 'Место', raceWin: 'ПОБЕДА', raceLose: 'ПОРАЖЕНИЕ', catRace: 'Гонки', catDrift: 'Дрифт', eliminated: 'Выбыл', continue: 'Продолжить', driver: 'Гонщик', car: 'Машина', copsDown: 'Патрулей выведено', vinyl: 'Винил', vcol: 'Цвет винила', vcol2: 'Второй цвет', cls: 'Класс', allCls: 'Все', 
     camera: 'Камера', camChase: 'Сзади', camFar: 'Дальняя', camHood: 'С капота', controls: 'Управление',
     help: 'W/↑ газ · S/↓ тормоз · A/D руль · Пробел ручник · Shift нитро · C камера (5 видов) · Esc пауза', helpTouch: 'Кнопки на экране: руль слева, газ/тормоз/ручник/нитро справа',
     notEnough: 'Не хватает денег', bought: 'Куплено', lockedCar: 'Сначала купите машину', saved: 'Сохранено',
@@ -4903,7 +4929,7 @@ const STR = {
     angle: 'angle', paused: 'Paused', resume: 'Resume', restart: 'Restart', toGarage: 'Garage', toHub: 'Menu', results: 'Results',
     earned: 'Earned', bronze: 'Bronze', silver: 'Silver', gold: 'Gold', noMedal: 'No medal', bestLap: 'Best lap', newRecord: 'New record!',
     quality: 'Graphics', qLow: 'Low', qMid: 'Medium', qHigh: 'High', volume: 'Volume', music: 'Music', lang: 'Language', units: 'Units', kmh: 'KM/H', mph: 'MPH',
-    camBumper: 'Bumper', camCine: 'Cinematic', assist: 'Countersteer assist', repair: 'Repair for free', damage: 'Damage', repaired: 'Good as new', tHeads: 'Lights', tExtra: 'Parts', heads: 'Headlights', lightCol: 'Light colour', tails: 'Tail lights', exhaust: 'Exhaust', fenders: 'Fenders', stripes: 'Stripes', stripeCol: 'Stripe colour', free: 'Free', camHint: 'Camera', wNight: 'Clear night', wSunny: 'Sunny', tapNext: 'Tap to continue', beaten: 'beaten', career: 'Career', theEight: 'The Eight', chapter: 'Chapter', bossCar: 'Boss car', done: 'Completed', win2: 'Win 2 events', pinkSlip: 'Boss car is yours', crownKept: 'The crown is yours. Every event can be replayed.', needClass: 'Requires a class', bonus: 'Bonus', mCareer: 'Career: The Eight', mCareerD: 'Story: 8 chapters, 8 bosses, cars on the line', mRace: 'Quick Race', mRaceD: 'Any mode, any track, rivals and police', modeCircuit: 'Circuit', modeCircuitD: '3 laps against 5 rivals', modeSprint: 'Sprint', modeSprintD: 'One lap through night traffic', modeKO: 'Knockout', modeKOD: 'Last car each lap is out', modeTrap: 'Speedtrap', modeTrapD: 'Highest total camera speed wins', modeDrag: 'Drag', modeDragD: '402 metres, manual gears: E up, Q down', modePursuit: 'Pursuit', modePursuitD: 'Escape the police and build your bounty', police: 'Police', koOut: 'is out', copDown: 'COP DISABLED', trap: 'SPEEDTRAP', trapSum: 'Total', launchPerfect: 'PERFECT LAUNCH', launchSpin: 'WHEELSPIN', launchBog: 'BOGGED START', shiftPerfect: 'PERFECT SHIFT', shiftGood: 'GOOD', shiftLate: 'LATE', shiftEarly: 'EARLY', roadblock: 'Roadblock ahead!', backup: 'Backup en route', bounty: 'Bounty', bust: 'Bust', evade: 'Evade', pos: 'Position', you: 'You', shift: 'SHIFT', busted: 'BUSTED', escaped: 'ESCAPED', place: 'Place', raceWin: 'VICTORY', raceLose: 'DEFEAT', catRace: 'Races', catDrift: 'Drift', eliminated: 'Out', continue: 'Continue', driver: 'Driver', car: 'Car', copsDown: 'Cops disabled', vinyl: 'Vinyl', vcol: 'Vinyl colour', vcol2: 'Second colour', cls: 'Class', allCls: 'All', 
+    camBumper: 'Bumper', camCine: 'Cinematic', assist: 'Countersteer assist', repair: 'Repair for free', damage: 'Damage', repaired: 'Good as new', tHeads: 'Lights', tExtra: 'Parts', heads: 'Headlights', lightCol: 'Light colour', tails: 'Tail lights', exhaust: 'Exhaust', fenders: 'Fenders', stripes: 'Stripes', stripeCol: 'Stripe colour', free: 'Free', camHint: 'Camera', wNight: 'Clear night', wSunny: 'Sunny', goGo: 'GO!', duel: 'Duel', tagline: 'street racing · tuning · pursuits', mGarage: 'Garage & Tuning', mGarageD: '24 cars, vinyls, rims, body kits, engine', mDriftQ: 'Free drift, challenge and lap time', mSetD: 'Graphics, sound, camera, controls', otherGames: 'Other club games', rank: 'Rank', unranked: 'Unranked', carsOwned: 'cars', crownShort: 'The crown is yours', tip: 'Tip', tips: ['In a pursuit, stopping next to a cop means busted. Keep moving.', 'In drag, shift when the green SHIFT light comes on.', 'R or the ↺ button puts your car back on track.', 'Beat a boss and their car is yours.', 'Nitro refills while drifting and over time. Hit Shift on the straights.', 'Speedtraps add up your speeds — exit corners flat out.', 'Damage is repaired for free in the garage.', 'Knockout: the last car each lap is out. Do not fall behind.', 'Press C to switch cameras — try the bumper view.'], tapNext: 'Tap to continue', beaten: 'beaten', career: 'Career', theEight: 'The Eight', chapter: 'Chapter', bossCar: 'Boss car', done: 'Completed', win2: 'Win 2 events', pinkSlip: 'Boss car is yours', crownKept: 'The crown is yours. Every event can be replayed.', needClass: 'Requires a class', bonus: 'Bonus', mCareer: 'Career: The Eight', mCareerD: 'Story: 8 chapters, 8 bosses, cars on the line', mRace: 'Quick Race', mRaceD: 'Any mode, any track, rivals and police', modeCircuit: 'Circuit', modeCircuitD: '3 laps against 5 rivals', modeSprint: 'Sprint', modeSprintD: 'One lap through night traffic', modeKO: 'Knockout', modeKOD: 'Last car each lap is out', modeTrap: 'Speedtrap', modeTrapD: 'Highest total camera speed wins', modeDrag: 'Drag', modeDragD: '402 metres, manual gears: E up, Q down', modePursuit: 'Pursuit', modePursuitD: 'Escape the police and build your bounty', police: 'Police', koOut: 'is out', copDown: 'COP DISABLED', trap: 'SPEEDTRAP', trapSum: 'Total', launchPerfect: 'PERFECT LAUNCH', launchSpin: 'WHEELSPIN', launchBog: 'BOGGED START', shiftPerfect: 'PERFECT SHIFT', shiftGood: 'GOOD', shiftLate: 'LATE', shiftEarly: 'EARLY', roadblock: 'Roadblock ahead!', backup: 'Backup en route', bounty: 'Bounty', bust: 'Bust', evade: 'Evade', pos: 'Position', you: 'You', shift: 'SHIFT', busted: 'BUSTED', escaped: 'ESCAPED', place: 'Place', raceWin: 'VICTORY', raceLose: 'DEFEAT', catRace: 'Races', catDrift: 'Drift', eliminated: 'Out', continue: 'Continue', driver: 'Driver', car: 'Car', copsDown: 'Cops disabled', vinyl: 'Vinyl', vcol: 'Vinyl colour', vcol2: 'Second colour', cls: 'Class', allCls: 'All', 
     camera: 'Camera', camChase: 'Chase', camFar: 'Far', camHood: 'Hood', controls: 'Controls',
     help: 'W/↑ throttle · S/↓ brake · A/D steer · Space handbrake · Shift nitro · C camera (5 views) · Esc pause', helpTouch: 'On-screen buttons: steering left, gas/brake/handbrake/nitro right',
     notEnough: 'Not enough money', bought: 'Purchased', lockedCar: 'Buy the car first', saved: 'Saved',
@@ -6018,8 +6044,8 @@ const RMODES = {
   drag: { laps: 0, ai: 3, drag: 402 },
   pursuit: { laps: 0, ai: 0, police: true, traffic: 6 },
 };
-const RACER_NAMES = ['Кобра', 'Шёпот', 'Ронин', 'Искра', 'Вандал', 'Мираж', 'Тень', 'Фантом', 'Дизель', 'Ведьма', 'Сокол', 'Хан', 'Лис', 'Бритва', 'Нова', 'Жнец'];
-const RACER_NAMES_EN = ['Cobra', 'Whisper', 'Ronin', 'Spark', 'Vandal', 'Mirage', 'Shade', 'Phantom', 'Diesel', 'Witch', 'Falcon', 'Khan', 'Fox', 'Razor', 'Nova', 'Reaper'];
+const RACER_NAMES = ['Кобра', 'Шёпот', 'Ронин', 'Вандал', 'Дюна', 'Тень', 'Дьякон', 'Сокол', 'Лис', 'Нова', 'Жнец', 'Гром', 'Оса', 'Кнут', 'Север', 'Туман'];
+const RACER_NAMES_EN = ['Cobra', 'Whisper', 'Ronin', 'Vandal', 'Dune', 'Shade', 'Deacon', 'Falcon', 'Fox', 'Nova', 'Reaper', 'Thunder', 'Wasp', 'Whip', 'North', 'Fog'];
 const CLASS_MULT = { D: 1, C: 1.5, B: 2.2, A: 3.2, S: 4.5 };
 const PRIZES = [3000, 1800, 1100, 600, 300, 150];
 const RC = { on: false };
@@ -6326,14 +6352,15 @@ function raceHud() {
   const lab = document.getElementById('hScoreL'), big = document.getElementById('hScore'), sub = document.getElementById('hBest');
   if (M.police) {
     lab.textContent = T('bounty'); big.textContent = '$ ' + fmt(Math.round(RC.bounty)); sub.textContent = '★'.repeat(Math.ceil(RC.heat)) + '☆'.repeat(5 - Math.ceil(RC.heat));
-    el.innerHTML = `<div class="rb"><span>${esc(T('bust'))}</span><div class="bar"><i style="width:${RC.bust * 100}%;background:var(--bad)"></i></div></div><div class="rb"><span>${esc(T('evade'))}</span><div class="bar"><i style="width:${RC.evade * 100}%;background:var(--good)"></i></div></div>`;
+    el.innerHTML = (D.count > 0 ? `<div class="cd">${Math.ceil(D.count)}</div>` : '') + `<div class="rb"><span>${esc(T('bust'))}</span><div class="bar"><i style="width:${RC.bust * 100}%;background:var(--bad)"></i></div></div><div class="rb"><span>${esc(T('evade'))}</span><div class="bar"><i style="width:${RC.evade * 100}%;background:var(--good)"></i></div></div>`;
     document.getElementById('hTimer').textContent = fmtT(RC.t); return;
   }
   const [pos, n] = racePos(); lab.textContent = T('pos'); big.textContent = `${pos}/${n}`;
   sub.textContent = M.drag ? `${Math.max(0, Math.round(M.drag - D.rp))} м` : M.traps ? `${T('trapSum')}: ${fmt(Math.round(RC.trapSum))}` : `${T('lap')} ${Math.min(RC.lap, RC.laps)}/${RC.laps}`;
   document.getElementById('hTimer').textContent = D.count > 0 ? Math.ceil(D.count) : fmtT(RC.t);
-  const r = D.rpm / D.st.redline;
-  el.innerHTML = M.drag ? `<div class="shiftL ${r > .86 ? (r > .985 ? 'late' : 'on') : ''}">${esc(T('shift'))} ▲</div>` : '';
+  const r = D.rpm / D.st.redline, cd = D.count > 0 ? `<div class="cd" key="${Math.ceil(D.count)}">${Math.ceil(D.count)}</div>` : RC.t < .8 ? `<div class="cd go">${esc(T('goGo'))}</div>` : '';
+  const html = cd + (M.drag ? `<div class="shiftL ${r > .86 ? (r > .985 ? 'late' : 'on') : ''}">${esc(T('shift'))} ▲</div>` : '');
+  if (el.dataset.h !== html) { el.innerHTML = html; el.dataset.h = html; }
 }
 // ==== 9c. CAREER: «Восьмёрка» — сюжет, главы, боссы, диалоги ====
 // портреты: стилизованные силуэты (SVG), без чужих образов
@@ -6420,7 +6447,7 @@ const Career = {
     const list = CHAPTERS.map((ch, ci) => { const beat = c.boss[ch.boss], cur = ci === Math.min(c.ch, 7) && !c.fin, locked = ci > c.ch;
       return `<button class="bl ${beat ? 'beat' : ''} ${cur ? 'cur' : ''} ${locked ? 'locked' : ''}" data-act="chapter" data-id="${ci}" ${locked ? 'disabled' : ''}><span class="rk">#${ch.rank}</span><span class="bf">${portrait(ch.boss)}</span><span class="bn">${locked ? '???' : esc(ch.name[L] || ch.name.ru)}<small>${esc(T('cls'))} ${ch.cls} · ${beat ? '✓ ' + esc(T('beaten')) : locked ? '🔒' : esc(CARS[ch.car].name)}</small></span></button>`; }).join('');
     const ci = UI.chapter ?? Math.min(c.ch, 7), ch = CHAPTERS[ci], cm = CLASS_MULT[ch.cls];
-    const evCard = (e, k, boss) => { const id = boss ? 'boss' + ci : Career.evId(ci, k), won = boss ? c.boss[ch.boss] : c.won[id], lock = boss && !Career.unlockedBoss(ci) && !won, tr = TRACKS[e[1]], nm = boss ? (L === 'en' ? 'vs ' : 'против ') + (ch.name[L] || ch.name.ru) : e[2][L] || e[2].ru;
+    const evCard = (e, k, boss) => { const id = boss ? 'boss' + ci : Career.evId(ci, k), won = boss ? c.boss[ch.boss] : c.won[id], lock = boss && !Career.unlockedBoss(ci) && !won, tr = TRACKS[e[1]], nm = boss ? T('duel') + ': ' + (ch.name[L] || ch.name.ru) : e[2][L] || e[2].ru;
       const reward = Math.round((boss ? 5000 : 1000) * cm);
       return `<button class="card ev ${boss ? 'boss' : ''} ${won ? 'won' : ''}" data-act="${lock ? '' : 'event'}" data-ci="${ci}" data-k="${boss ? -1 : k}" ${lock ? 'disabled' : ''}><span class="evm">${ico[e[0]]} ${esc(T(modeName[e[0]]))}</span><b>${esc(nm)}</b><span class="muted small">${esc(tr.name[L] || tr.name.ru)} · ${esc(T('cls'))} ${ch.cls}+${e[3] ? ' · ' + esc(T(e[3] === 2 ? 'gold' : 'silver')) : ''}</span>
         <span class="small">${won ? '✓ ' + esc(T('done')) : lock ? '🔒 ' + esc(T('win2')) : `$ ${fmt(reward)}${boss ? ' + ' + esc(T('pinkSlip')) : ''}`}</span></button>`; };
@@ -6486,7 +6513,8 @@ const UI = {
       case 'event': Career.start(+d.ci, +d.k); break;
       case 'careerBack': Career.after(); break;
       case 'dlgNext': if (UI.dlgNext) UI.dlgNext(); break;
-      case 'quick': UI.sel.opts = {}; UI.trackSel(); break;
+      case 'quick': UI.sel.opts = {}; if (!isRaceMode(UI.sel.mode)) UI.sel.mode = 'circuit'; UI.trackSel(); break;
+      case 'driftQuick': UI.sel.opts = {}; if (isRaceMode(UI.sel.mode)) UI.sel.mode = 'chal'; if (UI.sel.track === 'drag') UI.sel.track = 'port'; UI.trackSel(); break;
       case 'drift': UI.garage(); break;
       case 'torch': if (/\/hub\/(index\.html)?$/.test(location.pathname)) location.href = location.pathname.replace(/hub\/(index\.html)?$/, 'game/index.html'); else UI.toast(T('mTorchD')); break;
       case 'tab': UI.tab = d.id; UI.garage(); break;
@@ -6532,20 +6560,25 @@ const UI = {
       <div class="row"><button class="btn ghost" data-act="lang" data-id="ru"><span>RU</span></button><button class="btn ghost" data-act="lang" data-id="en"><span>EN</span></button></div></div>`);
   },
   hubMenu() {
-    H.state = 'HUB'; UI.hud(false); UI.orbit.auto = true;
-    const m = (act, tag, name, desc, glyph, soon) => `<button class="mode ${soon ? 'soon' : ''}" ${soon ? 'disabled' : `data-act="${act}"`}><span class="tag">${esc(tag)}</span><b>${esc(name)}</b><span class="muted small">${esc(desc)}</span><span class="glyph">${glyph}</span></button>`;
-    UI.show(`<div class="topbar"><h1 style="font-size:clamp(34px,6vw,64px)">${H.lang === 'ru' ? 'ПОЛН<span class="a">О</span>ЧЬ' : 'MIDN<span class="a">I</span>GHT'}</h1><div class="row">${UI.money()}<button class="btn ghost" data-act="settings" data-from="hub"><span>⚙</span></button></div></div>
-      <div class="modes">
-        ${m('career', T('ready'), T('mCareer'), T('mCareerD'), '👑')}
-        ${m('quick', T('ready'), T('mRace'), T('mRaceD'), '🏁')}
-        ${m('drift', T('ready'), T('mDrift'), T('mDriftD'), '🔧')}
-        ${m('torch', T('ready'), T('mTorch'), T('mTorchD'), '🔥')}
-        ${m('', T('soon'), T('mArena'), T('mArenaD'), '⚔', true)}
-        ${m('', T('soon'), T('mParkour'), T('mParkourD'), '🏃', true)}
-        ${m('', T('soon'), T('mTag'), T('mTagD'), '👟', true)}
-      </div>`, 'clear');
+    H.state = 'HUB'; UI.hud(false); UI.orbit.auto = true; const s = H.save, c = Career.st(), car = CARS[s.car], cs = carStats(s.car, carConfig(s.car)), L = H.lang;
+    const ch = CHAPTERS[Math.min(c.ch, 7)], beaten = Object.keys(c.boss).length, rank = beaten ? 9 - beaten : null;
+    const item = (act, name, sub, extra = '') => `<button class="nav" data-act="${act}" ${extra}><b>${esc(name)}</b><span>${esc(sub)}</span></button>`;
+    const small = (act, name, soon) => `<button class="mini ${soon ? 'soon' : ''}" ${soon ? 'disabled' : `data-act="${act}"`}>${esc(name)}${soon ? ` <em>${esc(T('soon'))}</em>` : ''}</button>`;
+    UI.show(`<div class="menu">
+      <div class="logo"><div class="logoT">${L === 'ru' ? 'ПОЛН<span class="a">О</span>ЧЬ' : 'MIDN<span class="a">I</span>GHT'}</div><div class="logoS">${esc(T('tagline'))}</div></div>
+      <nav class="navs">
+        ${item('career', T('career'), c.fin ? T('crownShort') : `${T('chapter')} ${Math.min(c.ch, 7) + 1}/8 · ${ch.name[L] || ch.name.ru}`, 'autofocus')}
+        ${item('quick', T('mRace'), T('mRaceD'))}
+        ${item('drift', T('mGarage'), T('mGarageD'))}
+        ${item('driftQuick', T('catDrift'), T('mDriftQ'))}
+        ${item('settings', T('settings'), T('mSetD'), 'data-from="hub"')}
+      </nav>
+      <div class="others"><span class="muted small">${esc(T('otherGames'))}</span><div class="row">${small('torch', T('mTorch'))}${small('', T('mArena'), true)}${small('', T('mParkour'), true)}${small('', T('mTag'), true)}</div></div>
+      <aside class="hero"><div class="row" style="justify-content:space-between"><span class="money">$ ${fmt(s.money)}</span><span class="muted small">${rank ? `${esc(T('rank'))} #${rank}` : esc(T('unranked'))}</span></div>
+        <div class="heroN"><span class="cls cls${car.cls}">${car.cls}</span> ${esc(car.name)}</div>
+        <div class="heroS"><span><b class="num">${Math.round(cs.power)}</b> ${esc(T('hp'))}</span><span><b class="num">${Math.round(cs.mass)}</b> ${esc(T('kg'))}</span><span><b class="num">${Object.keys(s.owned).length}</b>/${Object.keys(CARS).length} ${esc(T('carsOwned'))}</span></div></aside>
+    </div>`, 'clear');
   },
-
   // ---------- гараж ----------
   garage() {
     H.state = 'GARAGE'; UI.hud(false); const s = H.save, id = s.car, cfg = carConfig(id), st = carStats(id, cfg);
@@ -6589,7 +6622,7 @@ const UI = {
     const mc = list => list.map(([k, n, dd, ic]) => `<button class="card ${UI.sel.mode === k ? 'on' : ''}" data-act="mode" data-id="${k}"><b>${ic} ${esc(T(n))}</b><span class="muted small">${esc(T(dd))}</span></button>`).join('');
     const modes = `<h4 class="muted small" style="grid-column:1/-1;margin:4px 0 0;letter-spacing:.2em;text-transform:uppercase">${esc(T('catRace'))}</h4>` + mc([['circuit', 'modeCircuit', 'modeCircuitD', '🏁'], ['sprint', 'modeSprint', 'modeSprintD', '⚡'], ['knockout', 'modeKO', 'modeKOD', '✖'], ['speedtrap', 'modeTrap', 'modeTrapD', '📷'], ['drag', 'modeDrag', 'modeDragD', '⏱'], ['pursuit', 'modePursuit', 'modePursuitD', '🚨']])
       + `<h4 class="muted small" style="grid-column:1/-1;margin:8px 0 0;letter-spacing:.2em;text-transform:uppercase">${esc(T('catDrift'))}</h4>` + mc([['free', 'modeFree', 'modeFreeD', '∞'], ['chal', 'modeChal', 'modeChalD', '🔥'], ['time', 'modeTime', 'modeTimeD', '⏲']]);
-    UI.show(`${UI.top(T('chooseTrack'), 'drift')}<div class="cards">${tracks}</div><h3 style="margin:16px 0 8px">${esc(T('chooseMode'))}</h3><div class="cards">${modes}</div>
+    UI.show(`${UI.top(T('chooseTrack'), 'hub')}<div class="cards">${tracks}</div><h3 style="margin:16px 0 8px">${esc(T('chooseMode'))}</h3><div class="cards">${modes}</div>
       <p class="muted small" style="margin:14px 0">${esc(Inp.usingTouch ? T('helpTouch') : T('help'))}</p><button class="btn primary" data-act="start" autofocus><span>${esc(T('start'))} ▶</span></button>`, '');
     UI.root.querySelector('.screen').style.background = 'linear-gradient(180deg,rgba(7,8,11,.85),rgba(7,8,11,.6))';
   },
@@ -6662,7 +6695,7 @@ const UI = {
     D.hudT -= dt; if (D.msgT > 0) { D.msgT -= dt; if (D.msgT <= 0) document.getElementById('hMsg').textContent = ''; }
     const mph = H.save.settings.units === 'mph', spd = D.speed * (mph ? 2.237 : 3.6);
     document.getElementById('hRpm').style.width = (D.rpm * 100).toFixed(1) + '%'; document.getElementById('hNos').style.width = (D.nitro * 100).toFixed(1) + '%';
-    const dr = document.getElementById('hDrift'); dr.style.opacity = D.dPts > 0 || D.msgT > 0 ? 1 : 0; if (!RC.on) document.getElementById('hRace').innerHTML = '';
+    const dr = document.getElementById('hDrift'); dr.style.opacity = D.dPts > 0 || D.msgT > 0 ? 1 : 0; if (!RC.on) { const hr = document.getElementById('hRace'); if (hr.dataset.h) { hr.innerHTML = ''; hr.dataset.h = ''; } }
     if (D.hudT > 0) return; D.hudT = 1 / 15;
     document.getElementById('hSpd').textContent = Math.round(spd); document.getElementById('hUnit').textContent = T(mph ? 'mph' : 'kmh');
     document.getElementById('hGear').textContent = D.vf < -.5 ? 'R' : D.speed < .5 ? 'N' : D.gear;
@@ -6679,14 +6712,19 @@ const UI = {
 
 // ==== 11. GAME LOOP & BOOT ====
 const Game = {
-  toDrive(track, mode, opts) { startDrive(track, mode, opts); document.body.classList.toggle('drag', mode === 'drag'); },
+  toDrive(track, mode, opts) {
+    const tips = T('tips'), tr = TRACKS[track], mk = { circuit: 'modeCircuit', sprint: 'modeSprint', knockout: 'modeKO', speedtrap: 'modeTrap', drag: 'modeDrag', pursuit: 'modePursuit', free: 'modeFree', chal: 'modeChal', time: 'modeTime' }[mode];
+    H.state = 'LOADING'; UI.show(`<div class="load"><div class="loadM">${esc(T(mk))}</div><div class="loadT">${esc(tr.name[H.lang] || tr.name.ru)}</div><div class="loadBar"><i></i></div><p class="loadTip"><b>${esc(T('tip'))}:</b> ${esc(tips[Math.floor(Math.random() * tips.length)])}</p></div>`, '');
+    requestAnimationFrame(() => setTimeout(() => { startDrive(track, mode, opts); UI.clear(); document.body.classList.toggle('drag', mode === 'drag'); }, 450));
+  },
   leaveDrive() { if (D.on) stopDrive(); UI.hud(false); document.body.classList.remove('drag'); },
 };
 function renderGarage(dt) {
   const g = W.garage, o = UI.orbit, car = g.userData.car; if (o.auto) o.a += dt * .18;
   const portrait = innerWidth < innerHeight, panel = H.state === 'GARAGE', focus = UI.tab === 'wheels' ? .8 : 1, d = o.dist * (UI.tab === 'wheels' ? .72 : 1) * (portrait ? 1.8 : 1);
-  W.cam.position.set(Math.sin(o.a) * d, .6 + Math.sin(o.e) * d * .6 * focus, Math.cos(o.a) * d);
-  W.cam.lookAt(0, (UI.tab === 'wheels' ? .35 : .65) - (portrait && panel ? 1.9 : 0), 0);
+  const sh = H.state === 'HUB' && !portrait ? -2.3 : 0, rx = Math.cos(o.a) * sh, rz = -Math.sin(o.a) * sh;
+  W.cam.position.set(Math.sin(o.a) * d + rx, .6 + Math.sin(o.e) * d * .6 * focus, Math.cos(o.a) * d + rz);
+  W.cam.lookAt(rx, (UI.tab === 'wheels' ? .35 : .65) - (portrait && panel ? 1.9 : 0) + (H.state === 'HUB' && portrait ? 2 : 0), rz);
   W.cam.fov = damp(W.cam.fov, portrait ? 60 : 45, 4, dt); W.cam.updateProjectionMatrix();
   if (car) car.userData.wheels.forEach(w => { if (w.front) w.pivot.rotation.y = Math.sin(performance.now() / 1500) * .25; });
   W.renderer.toneMappingExposure = 1.05; renderScene(g, [.45, .45, 2.2]);

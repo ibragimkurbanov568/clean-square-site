@@ -8,8 +8,8 @@ const RMODES = {
   drag: { laps: 0, ai: 3, drag: 402 },
   pursuit: { laps: 0, ai: 0, police: true, traffic: 6 },
 };
-const RACER_NAMES = ['Кобра', 'Шёпот', 'Ронин', 'Искра', 'Вандал', 'Мираж', 'Тень', 'Фантом', 'Дизель', 'Ведьма', 'Сокол', 'Хан', 'Лис', 'Бритва', 'Нова', 'Жнец'];
-const RACER_NAMES_EN = ['Cobra', 'Whisper', 'Ronin', 'Spark', 'Vandal', 'Mirage', 'Shade', 'Phantom', 'Diesel', 'Witch', 'Falcon', 'Khan', 'Fox', 'Razor', 'Nova', 'Reaper'];
+const RACER_NAMES = ['Кобра', 'Шёпот', 'Ронин', 'Вандал', 'Дюна', 'Тень', 'Дьякон', 'Сокол', 'Лис', 'Нова', 'Жнец', 'Гром', 'Оса', 'Кнут', 'Север', 'Туман'];
+const RACER_NAMES_EN = ['Cobra', 'Whisper', 'Ronin', 'Vandal', 'Dune', 'Shade', 'Deacon', 'Falcon', 'Fox', 'Nova', 'Reaper', 'Thunder', 'Wasp', 'Whip', 'North', 'Fog'];
 const CLASS_MULT = { D: 1, C: 1.5, B: 2.2, A: 3.2, S: 4.5 };
 const PRIZES = [3000, 1800, 1100, 600, 300, 150];
 const RC = { on: false };
@@ -316,12 +316,13 @@ function raceHud() {
   const lab = document.getElementById('hScoreL'), big = document.getElementById('hScore'), sub = document.getElementById('hBest');
   if (M.police) {
     lab.textContent = T('bounty'); big.textContent = '$ ' + fmt(Math.round(RC.bounty)); sub.textContent = '★'.repeat(Math.ceil(RC.heat)) + '☆'.repeat(5 - Math.ceil(RC.heat));
-    el.innerHTML = `<div class="rb"><span>${esc(T('bust'))}</span><div class="bar"><i style="width:${RC.bust * 100}%;background:var(--bad)"></i></div></div><div class="rb"><span>${esc(T('evade'))}</span><div class="bar"><i style="width:${RC.evade * 100}%;background:var(--good)"></i></div></div>`;
+    el.innerHTML = (D.count > 0 ? `<div class="cd">${Math.ceil(D.count)}</div>` : '') + `<div class="rb"><span>${esc(T('bust'))}</span><div class="bar"><i style="width:${RC.bust * 100}%;background:var(--bad)"></i></div></div><div class="rb"><span>${esc(T('evade'))}</span><div class="bar"><i style="width:${RC.evade * 100}%;background:var(--good)"></i></div></div>`;
     document.getElementById('hTimer').textContent = fmtT(RC.t); return;
   }
   const [pos, n] = racePos(); lab.textContent = T('pos'); big.textContent = `${pos}/${n}`;
   sub.textContent = M.drag ? `${Math.max(0, Math.round(M.drag - D.rp))} м` : M.traps ? `${T('trapSum')}: ${fmt(Math.round(RC.trapSum))}` : `${T('lap')} ${Math.min(RC.lap, RC.laps)}/${RC.laps}`;
   document.getElementById('hTimer').textContent = D.count > 0 ? Math.ceil(D.count) : fmtT(RC.t);
-  const r = D.rpm / D.st.redline;
-  el.innerHTML = M.drag ? `<div class="shiftL ${r > .86 ? (r > .985 ? 'late' : 'on') : ''}">${esc(T('shift'))} ▲</div>` : '';
+  const r = D.rpm / D.st.redline, cd = D.count > 0 ? `<div class="cd" key="${Math.ceil(D.count)}">${Math.ceil(D.count)}</div>` : RC.t < .8 ? `<div class="cd go">${esc(T('goGo'))}</div>` : '';
+  const html = cd + (M.drag ? `<div class="shiftL ${r > .86 ? (r > .985 ? 'late' : 'on') : ''}">${esc(T('shift'))} ▲</div>` : '');
+  if (el.dataset.h !== html) { el.innerHTML = html; el.dataset.h = html; }
 }

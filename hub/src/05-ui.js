@@ -30,7 +30,8 @@ const UI = {
       case 'event': Career.start(+d.ci, +d.k); break;
       case 'careerBack': Career.after(); break;
       case 'dlgNext': if (UI.dlgNext) UI.dlgNext(); break;
-      case 'quick': UI.sel.opts = {}; UI.trackSel(); break;
+      case 'quick': UI.sel.opts = {}; if (!isRaceMode(UI.sel.mode)) UI.sel.mode = 'circuit'; UI.trackSel(); break;
+      case 'driftQuick': UI.sel.opts = {}; if (isRaceMode(UI.sel.mode)) UI.sel.mode = 'chal'; if (UI.sel.track === 'drag') UI.sel.track = 'port'; UI.trackSel(); break;
       case 'drift': UI.garage(); break;
       case 'torch': if (/\/hub\/(index\.html)?$/.test(location.pathname)) location.href = location.pathname.replace(/hub\/(index\.html)?$/, 'game/index.html'); else UI.toast(T('mTorchD')); break;
       case 'tab': UI.tab = d.id; UI.garage(); break;
@@ -76,20 +77,25 @@ const UI = {
       <div class="row"><button class="btn ghost" data-act="lang" data-id="ru"><span>RU</span></button><button class="btn ghost" data-act="lang" data-id="en"><span>EN</span></button></div></div>`);
   },
   hubMenu() {
-    H.state = 'HUB'; UI.hud(false); UI.orbit.auto = true;
-    const m = (act, tag, name, desc, glyph, soon) => `<button class="mode ${soon ? 'soon' : ''}" ${soon ? 'disabled' : `data-act="${act}"`}><span class="tag">${esc(tag)}</span><b>${esc(name)}</b><span class="muted small">${esc(desc)}</span><span class="glyph">${glyph}</span></button>`;
-    UI.show(`<div class="topbar"><h1 style="font-size:clamp(34px,6vw,64px)">${H.lang === 'ru' ? 'ПОЛН<span class="a">О</span>ЧЬ' : 'MIDN<span class="a">I</span>GHT'}</h1><div class="row">${UI.money()}<button class="btn ghost" data-act="settings" data-from="hub"><span>⚙</span></button></div></div>
-      <div class="modes">
-        ${m('career', T('ready'), T('mCareer'), T('mCareerD'), '👑')}
-        ${m('quick', T('ready'), T('mRace'), T('mRaceD'), '🏁')}
-        ${m('drift', T('ready'), T('mDrift'), T('mDriftD'), '🔧')}
-        ${m('torch', T('ready'), T('mTorch'), T('mTorchD'), '🔥')}
-        ${m('', T('soon'), T('mArena'), T('mArenaD'), '⚔', true)}
-        ${m('', T('soon'), T('mParkour'), T('mParkourD'), '🏃', true)}
-        ${m('', T('soon'), T('mTag'), T('mTagD'), '👟', true)}
-      </div>`, 'clear');
+    H.state = 'HUB'; UI.hud(false); UI.orbit.auto = true; const s = H.save, c = Career.st(), car = CARS[s.car], cs = carStats(s.car, carConfig(s.car)), L = H.lang;
+    const ch = CHAPTERS[Math.min(c.ch, 7)], beaten = Object.keys(c.boss).length, rank = beaten ? 9 - beaten : null;
+    const item = (act, name, sub, extra = '') => `<button class="nav" data-act="${act}" ${extra}><b>${esc(name)}</b><span>${esc(sub)}</span></button>`;
+    const small = (act, name, soon) => `<button class="mini ${soon ? 'soon' : ''}" ${soon ? 'disabled' : `data-act="${act}"`}>${esc(name)}${soon ? ` <em>${esc(T('soon'))}</em>` : ''}</button>`;
+    UI.show(`<div class="menu">
+      <div class="logo"><div class="logoT">${L === 'ru' ? 'ПОЛН<span class="a">О</span>ЧЬ' : 'MIDN<span class="a">I</span>GHT'}</div><div class="logoS">${esc(T('tagline'))}</div></div>
+      <nav class="navs">
+        ${item('career', T('career'), c.fin ? T('crownShort') : `${T('chapter')} ${Math.min(c.ch, 7) + 1}/8 · ${ch.name[L] || ch.name.ru}`, 'autofocus')}
+        ${item('quick', T('mRace'), T('mRaceD'))}
+        ${item('drift', T('mGarage'), T('mGarageD'))}
+        ${item('driftQuick', T('catDrift'), T('mDriftQ'))}
+        ${item('settings', T('settings'), T('mSetD'), 'data-from="hub"')}
+      </nav>
+      <div class="others"><span class="muted small">${esc(T('otherGames'))}</span><div class="row">${small('torch', T('mTorch'))}${small('', T('mArena'), true)}${small('', T('mParkour'), true)}${small('', T('mTag'), true)}</div></div>
+      <aside class="hero"><div class="row" style="justify-content:space-between"><span class="money">$ ${fmt(s.money)}</span><span class="muted small">${rank ? `${esc(T('rank'))} #${rank}` : esc(T('unranked'))}</span></div>
+        <div class="heroN"><span class="cls cls${car.cls}">${car.cls}</span> ${esc(car.name)}</div>
+        <div class="heroS"><span><b class="num">${Math.round(cs.power)}</b> ${esc(T('hp'))}</span><span><b class="num">${Math.round(cs.mass)}</b> ${esc(T('kg'))}</span><span><b class="num">${Object.keys(s.owned).length}</b>/${Object.keys(CARS).length} ${esc(T('carsOwned'))}</span></div></aside>
+    </div>`, 'clear');
   },
-
   // ---------- гараж ----------
   garage() {
     H.state = 'GARAGE'; UI.hud(false); const s = H.save, id = s.car, cfg = carConfig(id), st = carStats(id, cfg);
@@ -133,7 +139,7 @@ const UI = {
     const mc = list => list.map(([k, n, dd, ic]) => `<button class="card ${UI.sel.mode === k ? 'on' : ''}" data-act="mode" data-id="${k}"><b>${ic} ${esc(T(n))}</b><span class="muted small">${esc(T(dd))}</span></button>`).join('');
     const modes = `<h4 class="muted small" style="grid-column:1/-1;margin:4px 0 0;letter-spacing:.2em;text-transform:uppercase">${esc(T('catRace'))}</h4>` + mc([['circuit', 'modeCircuit', 'modeCircuitD', '🏁'], ['sprint', 'modeSprint', 'modeSprintD', '⚡'], ['knockout', 'modeKO', 'modeKOD', '✖'], ['speedtrap', 'modeTrap', 'modeTrapD', '📷'], ['drag', 'modeDrag', 'modeDragD', '⏱'], ['pursuit', 'modePursuit', 'modePursuitD', '🚨']])
       + `<h4 class="muted small" style="grid-column:1/-1;margin:8px 0 0;letter-spacing:.2em;text-transform:uppercase">${esc(T('catDrift'))}</h4>` + mc([['free', 'modeFree', 'modeFreeD', '∞'], ['chal', 'modeChal', 'modeChalD', '🔥'], ['time', 'modeTime', 'modeTimeD', '⏲']]);
-    UI.show(`${UI.top(T('chooseTrack'), 'drift')}<div class="cards">${tracks}</div><h3 style="margin:16px 0 8px">${esc(T('chooseMode'))}</h3><div class="cards">${modes}</div>
+    UI.show(`${UI.top(T('chooseTrack'), 'hub')}<div class="cards">${tracks}</div><h3 style="margin:16px 0 8px">${esc(T('chooseMode'))}</h3><div class="cards">${modes}</div>
       <p class="muted small" style="margin:14px 0">${esc(Inp.usingTouch ? T('helpTouch') : T('help'))}</p><button class="btn primary" data-act="start" autofocus><span>${esc(T('start'))} ▶</span></button>`, '');
     UI.root.querySelector('.screen').style.background = 'linear-gradient(180deg,rgba(7,8,11,.85),rgba(7,8,11,.6))';
   },
@@ -206,7 +212,7 @@ const UI = {
     D.hudT -= dt; if (D.msgT > 0) { D.msgT -= dt; if (D.msgT <= 0) document.getElementById('hMsg').textContent = ''; }
     const mph = H.save.settings.units === 'mph', spd = D.speed * (mph ? 2.237 : 3.6);
     document.getElementById('hRpm').style.width = (D.rpm * 100).toFixed(1) + '%'; document.getElementById('hNos').style.width = (D.nitro * 100).toFixed(1) + '%';
-    const dr = document.getElementById('hDrift'); dr.style.opacity = D.dPts > 0 || D.msgT > 0 ? 1 : 0; if (!RC.on) document.getElementById('hRace').innerHTML = '';
+    const dr = document.getElementById('hDrift'); dr.style.opacity = D.dPts > 0 || D.msgT > 0 ? 1 : 0; if (!RC.on) { const hr = document.getElementById('hRace'); if (hr.dataset.h) { hr.innerHTML = ''; hr.dataset.h = ''; } }
     if (D.hudT > 0) return; D.hudT = 1 / 15;
     document.getElementById('hSpd').textContent = Math.round(spd); document.getElementById('hUnit').textContent = T(mph ? 'mph' : 'kmh');
     document.getElementById('hGear').textContent = D.vf < -.5 ? 'R' : D.speed < .5 ? 'N' : D.gear;
@@ -223,14 +229,19 @@ const UI = {
 
 // ==== 11. GAME LOOP & BOOT ====
 const Game = {
-  toDrive(track, mode, opts) { startDrive(track, mode, opts); document.body.classList.toggle('drag', mode === 'drag'); },
+  toDrive(track, mode, opts) {
+    const tips = T('tips'), tr = TRACKS[track], mk = { circuit: 'modeCircuit', sprint: 'modeSprint', knockout: 'modeKO', speedtrap: 'modeTrap', drag: 'modeDrag', pursuit: 'modePursuit', free: 'modeFree', chal: 'modeChal', time: 'modeTime' }[mode];
+    H.state = 'LOADING'; UI.show(`<div class="load"><div class="loadM">${esc(T(mk))}</div><div class="loadT">${esc(tr.name[H.lang] || tr.name.ru)}</div><div class="loadBar"><i></i></div><p class="loadTip"><b>${esc(T('tip'))}:</b> ${esc(tips[Math.floor(Math.random() * tips.length)])}</p></div>`, '');
+    requestAnimationFrame(() => setTimeout(() => { startDrive(track, mode, opts); UI.clear(); document.body.classList.toggle('drag', mode === 'drag'); }, 450));
+  },
   leaveDrive() { if (D.on) stopDrive(); UI.hud(false); document.body.classList.remove('drag'); },
 };
 function renderGarage(dt) {
   const g = W.garage, o = UI.orbit, car = g.userData.car; if (o.auto) o.a += dt * .18;
   const portrait = innerWidth < innerHeight, panel = H.state === 'GARAGE', focus = UI.tab === 'wheels' ? .8 : 1, d = o.dist * (UI.tab === 'wheels' ? .72 : 1) * (portrait ? 1.8 : 1);
-  W.cam.position.set(Math.sin(o.a) * d, .6 + Math.sin(o.e) * d * .6 * focus, Math.cos(o.a) * d);
-  W.cam.lookAt(0, (UI.tab === 'wheels' ? .35 : .65) - (portrait && panel ? 1.9 : 0), 0);
+  const sh = H.state === 'HUB' && !portrait ? -2.3 : 0, rx = Math.cos(o.a) * sh, rz = -Math.sin(o.a) * sh;
+  W.cam.position.set(Math.sin(o.a) * d + rx, .6 + Math.sin(o.e) * d * .6 * focus, Math.cos(o.a) * d + rz);
+  W.cam.lookAt(rx, (UI.tab === 'wheels' ? .35 : .65) - (portrait && panel ? 1.9 : 0) + (H.state === 'HUB' && portrait ? 2 : 0), rz);
   W.cam.fov = damp(W.cam.fov, portrait ? 60 : 45, 4, dt); W.cam.updateProjectionMatrix();
   if (car) car.userData.wheels.forEach(w => { if (w.front) w.pivot.rotation.y = Math.sin(performance.now() / 1500) * .25; });
   W.renderer.toneMappingExposure = 1.05; renderScene(g, [.45, .45, 2.2]);
