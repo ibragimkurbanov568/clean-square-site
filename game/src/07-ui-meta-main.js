@@ -174,7 +174,7 @@ const UI = {
       <h3>${esc(L('chooseHero'))}</h3><div class="grid">${chars}</div>
       <h3>${esc(L('chooseBiome'))}</h3><div class="grid">${biomes}</div>
       <h3>${esc(L('chooseDiff'))}</h3><div class="grid">${diffs}</div>${curses}
-      <div class="row" style="margin:18px 0 30px"><span class="gold serif">${esc(L('rewardMul'))}: ×${mul.toFixed(1)}</span><button class="btn primary" data-act="start" autofocus>🔥 ${esc(L('start'))}</button></div></div>`, 'dim');
+      <div class="row" style="position:sticky;bottom:0;margin:18px 0 0;padding:12px 0 calc(12px + var(--sab));background:linear-gradient(180deg,rgba(10,9,8,0),rgba(10,9,8,.95) 35%)"><span class="gold serif">${esc(L('rewardMul'))}: ×${mul.toFixed(1)}</span><button class="btn primary" data-act="start" autofocus>🔥 ${esc(L('start'))}</button></div></div>`, 'dim');
   },
   altar() {
     const s = Game.save;

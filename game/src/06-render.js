@@ -121,7 +121,7 @@ const Render = {
       const d2 = dist2(ex, ey, ppx, ppy);
       if (e.id === 'shade' && d2 > lr2) continue;
       const spr = Sprites.enemy[e.id]; if (!spr) continue;
-      const fr = ((e.anim * (e.def.spd > 90 ? 8 : 4)) | 0) % 2, img = e.flashT > 0 ? spr.white[fr] : spr.frames[fr];
+      const fr = ((e.anim * (e.def.spd > 90 ? 8 : 4)) | 0) % 2, img = e.flashT > 0 && (!e.big || ((now * 24) | 0) % 2) ? spr.white[fr] : spr.frames[fr];
       const sc = e.scale * (spr.r ? e.r / e.scale / spr.r : 1), size = spr.size * sc;
       if (e.elite && Render.glow) g.drawImage(Sprites.glow.gold, ex - e.r * 2, ey - e.r * 2, e.r * 4, e.r * 4);
       if (e.boss && Render.glow) g.drawImage(e.id === 'rotmother' ? Sprites.glow.green : Sprites.glow.violet, ex - e.r * 2.2, ey - e.r * 2.2, e.r * 4.4, e.r * 4.4);

@@ -119,7 +119,7 @@ Sys.weaponStats = function (w) {
   b.dmg *= st.might; b.cd *= st.cooldown; b.area *= st.area; b.speed *= st.projSpeed; b.dur *= st.duration; b.amount += st.amount; b.freeze += st.freeze;
   if (w.id === 'poison' || w.id === 'flask') b.dmg *= st.poison;
   if (w.evo) {
-    const E = { blade: { dmg: 1.5, area: 1.2 }, shovel: { dmg: 1.4 }, poison: { dmg: 1.5, dur: 1.5, area: 1.3 }, hammer: { dmg: 1.3 }, daggers: { dmg: .9 },
+    const E = { blade: { dmg: 2.2, area: 1.25 }, shovel: { dmg: 1.4 }, poison: { dmg: 1.5, dur: 1.5, area: 1.3 }, hammer: { dmg: 1.3 }, daggers: { dmg: 1.2 },
       flask: { dmg: 1.5 }, censer: { dmg: 1.5 }, lightning: { dmg: 1.5 }, arrows: { dmg: 1.4 }, rune: { dmg: 1.5, cd: .7 }, ice: { dmg: 1.5 }, black: { dmg: 1.5 } }[w.id];
     for (const k in E) b[k] *= E[k];
     if (w.id === 'daggers') b.cd = .11 * st.cooldown;
@@ -544,6 +544,7 @@ const Weapons = {
     if (w.id === 'censer') { n = s.amount; kind = 'orbit'; }
     else if (w.id === 'shovel' && w.evo) { n = Math.min(2 + Math.floor(s.amount / 2), 5); kind = 'scythe'; }
     else if (w.id === 'arrows' && w.evo) { n = Math.min(3 + Math.floor(s.amount / 2), 7); kind = 'wolf'; }
+    w.needOrbs = n > 0;
     for (let i = 0; i < n; i++) { const o = Weapons.proj(kind, w, p.x, p.y, 0, 0, 14, s.dmg, 999, 1e9); if (!o) break; o.a = i / n * TAU; w.orbs.push(o); }
   },
   update(dt) {
@@ -553,6 +554,7 @@ const Weapons = {
       if (w.id === 'black' && w.evo) { w.x.ecl = (w.x.ecl ?? 12) - dt; if (w.x.ecl <= 0) { w.x.ecl = 12; Weapons.eclipse(w); } }
       if (w.id === 'flask' && w.evo && Input.moving) { w.x.trail = (w.x.trail || 0) - dt; if (w.x.trail <= 0) { w.x.trail = .22; Weapons.zone('fire', w, p.x, p.y, 44 * s.area, 2, s.dmg * .6); } }
       if (w.id === 'ice' && w.evo) { if (!w.x.aura || !w.x.aura.active) { w.x.aura = Weapons.zone('frostaura', w, p.x, p.y, 170 * s.area, 1e9, 0, .3); if (w.x.aura) w.x.aura.follow = true; } else w.x.aura.r = 170 * s.area; }
+      if (w.orbs.length && w.orbs.some(o => !o.active || o.w !== w) || (w.needOrbs && !w.orbs.length)) { w.x.orbT = (w.x.orbT || 0) - dt; if (w.x.orbT <= 0) { w.x.orbT = 1; Weapons.resetOrbiters(w); } }
       if (s.cd <= 0 || w.t > 0) continue;
       w.t = s.cd;
       Weapons.fire[w.id](w, s, p);
@@ -666,7 +668,7 @@ const Weapons = {
     black(w, s, p) {
       const run = Game.run;
       for (let i = 0; i < s.amount; i++) {
-        const o = Weapons.proj('wave', w, p.x, p.y, 0, 0, 20, s.dmg * 3, 999, .65 + i * .12); if (o) { o.rad = 270 * s.area; o.n = -i * .12; }
+        const o = Weapons.proj('wave', w, p.x, p.y, 0, 0, 20, s.dmg * 1.4, 999, .65 + i * .12); if (o) { o.rad = 270 * s.area; o.n = -i * .12; }
       }
       if (!CHAR[run.char].noLight) run.player.light = Math.max(0, run.player.light - 1.5);
       Audio.play('black');
