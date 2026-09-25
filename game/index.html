@@ -2774,7 +2774,7 @@ const UI = {
       case 'banish': UI.banishMode = !UI.banishMode; UI.levelUp(false, true); break;
       case 'takeChest': UI.resume(); break;
       case 'resume': UI.resume(); break;
-      case 'giveUp': if (confirm(L('giveUpSure'))) { Game.endRun(false); } break;
+      case 'giveUp': UI.ask(L('giveUpSure'), () => Game.endRun(false), () => UI.pause()); break;
       case 'endless': { const run = Game.run; run.endless = true; run.endlessStart = run.t; run.nextElite = run.t + 60; Game.state = 'RUN'; UI.clear(); UI.runHud(true); Music.set('run', run.biome); break; }
       case 'finishDawn': Game.endRun(true); break;
       case 'again': { const o = Game.lastOpts; if (o && !o.daily) Game.startRun(o); else { Game.state = 'CAMP'; UI.camp(); } break; }
@@ -2784,7 +2784,9 @@ const UI = {
       case 'discardRun': Save.clearRun(); Game.state = 'CAMP'; UI.camp(); break;
       case 'export': { const ta = UI.root.querySelector('#saveStr'); ta.value = Save.exportStr(); ta.select(); try { navigator.clipboard.writeText(ta.value); UI.toast(L('copied')); } catch (e) { /* ok */ } break; }
       case 'import': { const ta = UI.root.querySelector('#saveStr'); if (Save.importStr(ta.value)) { UI.toast(L('importOk')); UI.applySettings(); UI.settings(); } else UI.toast(L('importBad')); break; }
-      case 'reset': if (confirm(L('resetSure'))) { Game.save = Save.defaults(); Save.write(); UI.applySettings(); UI.camp(); } break;
+      case 'reset': UI.ask(L('resetSure'), () => { Game.save = Save.defaults(); Save.write(); UI.applySettings(); UI.camp(); }, () => UI.settings()); break;
+      case 'askYes': { const f = UI.askYes; UI.askYes = UI.askNo = null; if (f) f(); break; }
+      case 'askNo': { const f = UI.askNo; UI.askYes = UI.askNo = null; if (f) f(); break; }
       case 'lang': UI.setSetting('lang', d.id, true); break;
       case 'backPause': UI.pause(); break;
     }
@@ -2803,6 +2805,12 @@ const UI = {
     UI.touchMode();
   },
 
+  // подтверждение внутри страницы (без системных диалогов)
+  ask(msg, yes, no) {
+    UI.askYes = yes; UI.askNo = no;
+    UI.show(`<div class="panel" style="max-width:440px;text-align:center"><p style="margin-bottom:14px">${esc(msg)}</p>
+      <div class="row"><button class="btn primary" data-act="askYes">✓</button><button class="btn" data-act="askNo" data-back autofocus>✕</button></div></div>`, 'center dim');
+  },
   // ---------- экраны ----------
   boot() {
     UI.show(`<div class="row" style="flex-direction:column;gap:18px;max-width:640px;text-align:center">
@@ -3043,8 +3051,9 @@ const UI = {
   share() {
     const r = Game.lastResult && (Game.state === 'RESULTS' || !Game.save.daily.result) ? Game.lastResult : Game.save.daily.result || Game.lastResult; if (!r) return;
     const text = UI.shareText(r) + '\n' + location.href.split('#')[0];
-    if (navigator.share) navigator.share({ text }).catch(() => {});
-    else { try { navigator.clipboard.writeText(text).then(() => UI.toast(L('copied'))); } catch (e) { UI.toast(text); } }
+    const copy = () => { try { navigator.clipboard.writeText(text).then(() => UI.toast(L('copied')), () => UI.toast(text)); } catch (e) { UI.toast(text); } };
+    if (navigator.share) navigator.share({ text }).catch(err => { if (!err || err.name !== 'AbortError') copy(); });
+    else copy();
   },
 };
 
