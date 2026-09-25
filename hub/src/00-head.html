@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#07080b">
+<meta name="description" content="Полночь — игровой хаб. Дрифт, тюнинг и ночные трассы в 3D.">
+<title>Полночь</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2307080b'/%3E%3Ccircle cx='32' cy='32' r='20' fill='none' stroke='%23ff5a1f' stroke-width='6'/%3E%3Cpath d='M32 16v16l10 8' stroke='%2322d3ee' stroke-width='5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#07080b; --panel:rgba(14,16,22,.92); --panel2:#161a22; --line:#2a303c; --line2:#3a4252;
+  --text:#e9edf3; --dim:#8b95a7; --accent:#ff5a1f; --accent2:#ffb020; --cyan:#22d3ee; --good:#4ade80; --bad:#f43f5e;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px); --sal:env(safe-area-inset-left,0px); --sar:env(safe-area-inset-right,0px);
+  --head:'Arial Narrow','Roboto Condensed','Helvetica Neue',Arial,sans-serif; --body:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --fs:clamp(13px,1vw + 9px,16px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:var(--fs)/1.4 var(--body);
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+#ui{position:fixed;inset:0;pointer-events:none;z-index:5}
+.screen{position:absolute;inset:0;pointer-events:auto;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;
+  padding:calc(14px + var(--sat)) calc(16px + var(--sar)) calc(14px + var(--sab)) calc(16px + var(--sal))}
+.screen.clear{pointer-events:none}.screen.clear>*{pointer-events:auto}
+h1,h2,h3,.head{font-family:var(--head);font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-stretch:condensed}
+h1{font-size:clamp(40px,8vw,88px);line-height:.9;font-style:italic}
+h1 .a{color:var(--accent)} h2{font-size:clamp(22px,3vw,32px);font-style:italic} h3{font-size:1.05em;color:var(--dim);letter-spacing:.12em}
+.muted{color:var(--dim)} .small{font-size:.84em} .num{font-variant-numeric:tabular-nums}
+.btn{font:700 1em var(--head);text-transform:uppercase;letter-spacing:.08em;color:var(--text);background:var(--panel2);border:1px solid var(--line2);
+  border-radius:4px;min-height:46px;padding:10px 18px;cursor:pointer;transform:skewX(-8deg);transition:background .15s,border-color .15s,transform .1s}
+.btn>span{display:inline-block;transform:skewX(8deg)}
+.btn:hover{border-color:var(--accent)} .btn:active{transform:skewX(-8deg) scale(.97)}
+.btn:focus-visible,.opt:focus-visible,.mode:focus-visible,.sw:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.btn.primary{background:linear-gradient(90deg,var(--accent),#ff2d55);border-color:transparent;color:#fff;box-shadow:0 6px 24px rgba(255,90,31,.35)}
+.btn.ghost{background:transparent}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.money{font:800 1.15em var(--head);color:var(--accent2);letter-spacing:.04em}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+/* хаб */
+.modes{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));margin-top:18px;max-width:1100px}
+.mode{position:relative;text-align:left;min-height:150px;padding:16px;border:1px solid var(--line);border-radius:8px;background:linear-gradient(160deg,#141821,#0b0d12);
+  color:var(--text);cursor:pointer;overflow:hidden;font:inherit;display:flex;flex-direction:column;gap:6px}
+.mode:hover{border-color:var(--accent)} .mode .tag{font:700 .72em var(--head);letter-spacing:.14em;text-transform:uppercase;color:var(--cyan)}
+.mode.soon{cursor:default;opacity:.6} .mode.soon .tag{color:var(--dim)}
+.mode b{font:800 1.5em var(--head);text-transform:uppercase;font-style:italic;letter-spacing:.02em}
+.mode .glyph{position:absolute;right:-6px;bottom:-14px;font-size:84px;opacity:.12}
+/* гараж */
+.garage{position:absolute;right:calc(12px + var(--sar));top:calc(70px + var(--sat));bottom:calc(12px + var(--sab));width:min(400px,calc(100% - 24px));
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;overflow:hidden;pointer-events:auto;backdrop-filter:blur(6px)}
+.tabs{display:flex;overflow-x:auto;border-bottom:1px solid var(--line);flex:0 0 auto;touch-action:pan-x}
+.tabs button{flex:0 0 auto;background:none;border:0;border-bottom:2px solid transparent;color:var(--dim);font:700 .82em var(--head);text-transform:uppercase;letter-spacing:.1em;padding:12px 12px;cursor:pointer;min-height:44px}
+.tabs button.on{color:var(--text);border-bottom-color:var(--accent)}
+.gbody{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;touch-action:pan-y}
+.opts{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+.opt{background:var(--panel2);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:10px 8px;text-align:left;cursor:pointer;font:inherit;min-height:56px;display:flex;flex-direction:column;gap:2px}
+.opt.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)} .opt .p{font-size:.78em;color:var(--accent2)} .opt .p.owned{color:var(--good)}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.sw{width:38px;height:38px;border-radius:50%;border:2px solid var(--line2);cursor:pointer;padding:0}
+.sw.on{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
+.slider{display:flex;flex-direction:column;gap:4px} .slider label{display:flex;justify-content:space-between;font-size:.9em}
+input[type=range]{width:100%;accent-color:var(--accent)} input[type=color]{width:46px;height:38px;border:0;background:none;cursor:pointer}
+.bar{height:6px;border-radius:3px;background:#1e2430;overflow:hidden}.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--accent))}
+.stat{display:grid;grid-template-columns:90px 1fr 38px;gap:8px;align-items:center;font-size:.85em}
+.pips{display:flex;gap:4px}.pips i{width:16px;height:8px;border-radius:2px;background:#1e2430}.pips i.on{background:var(--accent)}
+/* HUD */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:4;display:none}
+#hud.on{display:block}
+.speedo{position:absolute;right:calc(18px + var(--sar));bottom:calc(18px + var(--sab));text-align:right}
+.speedo .v{font:italic 900 clamp(44px,7vw,76px)/.9 var(--head);font-variant-numeric:tabular-nums;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.speedo .u{font:700 .8em var(--head);letter-spacing:.2em;color:var(--dim)}
+.rpm{width:clamp(150px,20vw,220px);height:10px;background:#1a1e27;border-radius:5px;overflow:hidden;margin-top:6px;margin-left:auto}
+.rpm i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),#fff 70%,var(--bad))}
+.gear{font:900 1.4em var(--head);color:var(--accent2)}
+.nitro{width:clamp(150px,20vw,220px);height:6px;background:#1a1e27;border-radius:3px;overflow:hidden;margin:6px 0 0 auto}.nitro i{display:block;height:100%;background:linear-gradient(90deg,#3b82f6,#a5f3fc)}
+.drift{position:absolute;left:50%;top:calc(80px + var(--sat));transform:translateX(-50%);text-align:center;transition:opacity .25s}
+.drift .pts{font:italic 900 clamp(34px,5vw,58px)/1 var(--head);color:var(--accent2);text-shadow:0 0 18px rgba(255,160,40,.55),0 2px 0 #000;font-variant-numeric:tabular-nums}
+.drift .mul{font:900 1.3em var(--head);color:var(--cyan)} .drift .ang{font:700 .85em var(--head);letter-spacing:.14em;color:var(--dim)}
+.drift .msg{font:italic 900 1.4em var(--head);color:var(--bad)}
+.score{position:absolute;left:calc(16px + var(--sal));top:calc(14px + var(--sat));font:700 1em var(--head);letter-spacing:.06em;text-transform:uppercase}
+.score .big{font:italic 900 2em var(--head);font-variant-numeric:tabular-nums;color:var(--text)}
+#mini{position:absolute;left:calc(12px + var(--sal));bottom:calc(12px + var(--sab));width:clamp(110px,16vw,170px);height:clamp(110px,16vw,170px);opacity:.9}
+.timer{position:absolute;left:50%;top:calc(14px + var(--sat));transform:translateX(-50%);font:italic 900 1.6em var(--head);font-variant-numeric:tabular-nums}
+#pauseB{position:absolute;right:calc(12px + var(--sar));top:calc(12px + var(--sat));pointer-events:auto;width:46px;height:46px;border-radius:6px;border:1px solid var(--line2);background:rgba(10,12,16,.7);color:var(--text);font-size:18px}
+/* касания */
+#touch{position:fixed;inset:0;pointer-events:none;z-index:6;display:none}
+#touch.on{display:block}
+.tb{position:absolute;pointer-events:auto;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(20,24,32,.55);color:#fff;
+  font:900 15px var(--head);display:flex;align-items:center;justify-content:center;text-transform:uppercase;letter-spacing:.06em;touch-action:none}
+.tb.on{background:rgba(255,90,31,.55);border-color:var(--accent)}
+#tL{left:calc(18px + var(--sal));bottom:calc(28px + var(--sab));width:78px;height:78px}
+#tR{left:calc(108px + var(--sal));bottom:calc(28px + var(--sab));width:78px;height:78px}
+#tG{right:calc(18px + var(--sar));bottom:calc(130px + var(--sab));width:84px;height:84px}
+#tB{right:calc(112px + var(--sar));bottom:calc(150px + var(--sab));width:64px;height:64px}
+#tH{right:calc(112px + var(--sar));bottom:calc(230px + var(--sab));width:64px;height:64px}
+#tN{right:calc(24px + var(--sar));bottom:calc(228px + var(--sab));width:64px;height:64px;color:#a5f3fc}
+body.touch .speedo{bottom:auto;top:calc(64px + var(--sat));right:calc(14px + var(--sar));transform:none;text-align:right}
+body.touch .speedo .v{font-size:44px}
+body.touch .speedo .rpm,body.touch .speedo .nitro{width:130px}
+body.touch #mini{bottom:auto;top:calc(64px + var(--sat));width:100px;height:100px}
+#toast{position:fixed;left:50%;top:calc(16px + var(--sat));transform:translateX(-50%);z-index:9;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+#toast div{background:rgba(12,14,20,.95);border:1px solid var(--line2);border-left:3px solid var(--accent);padding:8px 14px;border-radius:4px;font-weight:600;animation:tin .25s ease-out,tout .4s 2.6s forwards}
+@keyframes tin{from{opacity:0;transform:translateY(-8px)}} @keyframes tout{to{opacity:0}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px}
+.center{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;gap:14px;text-align:center}
+.cards{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));width:100%;max-width:980px}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:14px;text-align:left;color:var(--text);font:inherit;cursor:pointer;display:flex;flex-direction:column;gap:6px;min-height:110px}
+.card.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.card b{font:800 1.2em var(--head);text-transform:uppercase;font-style:italic}
+.medal{font:800 .8em var(--head);letter-spacing:.1em}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 18px;text-align:left}
+.kv span:nth-child(even){font-weight:700;font-variant-numeric:tabular-nums}
+@media (max-width:720px){.garage{top:auto;height:52%;width:calc(100% - 24px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="hud">
+  <div class="score"><div class="muted small" id="hScoreL"></div><div class="big" id="hScore">0</div><div class="small muted" id="hBest"></div></div>
+  <div class="timer" id="hTimer"></div>
+  <div class="drift" id="hDrift" style="opacity:0"><div class="pts" id="hPts">0</div><div class="mul" id="hMul">×1</div><div class="ang" id="hAng"></div><div class="msg" id="hMsg"></div></div>
+  <canvas id="mini" width="180" height="180"></canvas>
+  <div class="speedo"><span class="gear" id="hGear">N</span> <span class="v" id="hSpd">0</span> <span class="u" id="hUnit">КМ/Ч</span><div class="rpm"><i id="hRpm"></i></div><div class="nitro"><i id="hNos"></i></div></div>
+  <button id="pauseB" aria-label="Pause">❚❚</button>
+</div>
+<div id="touch">
+  <div class="tb" id="tL">◀</div><div class="tb" id="tR">▶</div>
+  <div class="tb" id="tG">GAS</div><div class="tb" id="tB">BRK</div><div class="tb" id="tH">HB</div><div class="tb" id="tN">NOS</div>
+</div>
+<div id="ui"></div>
+<div id="toast" aria-live="polite"></div>
