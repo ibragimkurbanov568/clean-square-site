@@ -119,6 +119,20 @@ body.touch #mini{bottom:auto;top:calc(64px + var(--sat));width:100px;height:100p
 .medal{font:800 .8em var(--head);letter-spacing:.1em}
 .kv{display:grid;grid-template-columns:1fr auto;gap:6px 18px;text-align:left}
 .kv span:nth-child(even){font-weight:700;font-variant-numeric:tabular-nums}
+/* диалоги и карьера */
+.dlg{position:fixed;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:0 16px calc(24px + var(--sab));background:linear-gradient(0deg,rgba(0,0,0,.85),rgba(0,0,0,0) 60%);cursor:pointer}
+.dlgBox{display:flex;gap:18px;align-items:flex-end;max-width:860px;width:100%;background:rgba(10,12,16,.92);border:1px solid var(--line2);border-left:4px solid var(--accent);border-radius:6px;padding:16px;animation:tin .3s ease-out}
+.dlgFace{flex:0 0 auto;width:clamp(90px,16vw,140px);margin-top:-60px}.face{display:block;width:100%;height:auto;border-radius:4px;border:1px solid var(--line2)}
+.dlgName{font:italic 900 1.4em var(--head);text-transform:uppercase;color:var(--accent2)}.dlgText{font-size:1.1em;line-height:1.5;margin:6px 0 10px;max-width:60ch}
+.career{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:16px;align-items:start}
+.blist{display:flex;flex-direction:column;gap:6px}.bltitle{font:italic 900 1.6em var(--head);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.bl{display:grid;grid-template-columns:44px 44px 1fr;gap:10px;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:6px 10px;color:var(--text);font:inherit;text-align:left;cursor:pointer;transform:skewX(-6deg)}
+.bl>*{transform:skewX(6deg)}.bl .rk{font:italic 900 1.5em var(--head);color:var(--dim)}.bl .bf .face{width:44px;border:0}.bl .bn{font:800 1.05em var(--head);text-transform:uppercase;display:flex;flex-direction:column}.bl small{font:500 .72em var(--body,inherit);color:var(--dim);text-transform:none}
+.bl.cur{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}.bl.beat .rk{color:var(--accent2)}.bl.locked{opacity:.45;cursor:default}.bl.locked .face{filter:brightness(0)}
+.chap{display:flex;flex-direction:column;gap:14px}.chead{display:flex;gap:16px;align-items:center}.chead .face{width:110px}
+.card.ev .evm{font:700 .75em var(--head);letter-spacing:.14em;text-transform:uppercase;color:var(--cyan)}.card.ev.won{opacity:.75}.card.ev.won b::after{content:' ✓';color:var(--good)}
+.card.ev.boss{border-color:var(--accent);background:linear-gradient(135deg,rgba(255,90,31,.18),var(--panel2))}.card[disabled]{opacity:.5;cursor:default}
+@media (max-width:720px){.career{grid-template-columns:1fr}.blist{display:grid;grid-template-columns:repeat(4,1fr)}.bl{grid-template-columns:1fr;justify-items:center;padding:4px}.bl .bn,.bl .rk{display:none}}
 @media (max-width:720px){.garage{top:auto;height:52%;width:calc(100% - 24px)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -4862,7 +4876,7 @@ const STR = {
     angle: 'угол', paused: 'Пауза', resume: 'Продолжить', restart: 'Заново', toGarage: 'В гараж', toHub: 'В меню', results: 'Итоги',
     earned: 'Заработано', bronze: 'Бронза', silver: 'Серебро', gold: 'Золото', noMedal: 'Без медали', bestLap: 'Лучший круг', newRecord: 'Новый рекорд!',
     quality: 'Графика', qLow: 'Низкая', qMid: 'Средняя', qHigh: 'Высокая', volume: 'Громкость', music: 'Музыка', lang: 'Язык', units: 'Единицы', kmh: 'КМ/Ч', mph: 'MPH',
-    camBumper: 'С бампера', camCine: 'Кино', assist: 'Помощь в контруле', repair: 'Починить бесплатно', damage: 'Повреждения', repaired: 'Машина как новая', tHeads: 'Свет', tExtra: 'Детали', heads: 'Фары', lightCol: 'Цвет света', tails: 'Стопы', exhaust: 'Выхлоп', fenders: 'Расширители', stripes: 'Полосы', stripeCol: 'Цвет полос', free: 'Бесплатно', camHint: 'Камера', wNight: 'Ясная ночь', wSunny: 'Солнечно', modeCircuit: 'Кольцо', modeCircuitD: '3 круга против 5 соперников', modeSprint: 'Спринт', modeSprintD: 'Один круг сквозь ночной трафик', modeKO: 'На выбывание', modeKOD: 'Последний на круге выбывает', modeTrap: 'Радары', modeTrapD: 'Сумма скоростей на камерах решает', modeDrag: 'Драг', modeDragD: '402 метра, ручная коробка: E — выше, Q — ниже', modePursuit: 'Погоня', modePursuitD: 'Уйди от полиции и собери награду', police: 'Полиция', koOut: 'выбывает', copDown: 'ПАТРУЛЬ ВЫВЕДЕН', trap: 'РАДАР', trapSum: 'Сумма', launchPerfect: 'ИДЕАЛЬНЫЙ СТАРТ', launchSpin: 'ПРОБУКСОВКА', launchBog: 'ВЯЛЫЙ СТАРТ', shiftPerfect: 'ИДЕАЛЬНОЕ ПЕРЕКЛЮЧЕНИЕ', shiftGood: 'ХОРОШО', shiftLate: 'ПОЗДНО', shiftEarly: 'РАНО', roadblock: 'Впереди блокпост!', backup: 'Подкрепление в пути', bounty: 'Награда', bust: 'Арест', evade: 'Отрыв', pos: 'Позиция', you: 'Вы', shift: 'ПЕРЕДАЧА', busted: 'АРЕСТОВАН', escaped: 'УШЁЛ ОТ ПОГОНИ', place: 'Место', raceWin: 'ПОБЕДА', raceLose: 'ПОРАЖЕНИЕ', catRace: 'Гонки', catDrift: 'Дрифт', eliminated: 'Выбыл', continue: 'Продолжить', driver: 'Гонщик', car: 'Машина', copsDown: 'Патрулей выведено', vinyl: 'Винил', vcol: 'Цвет винила', vcol2: 'Второй цвет', cls: 'Класс', allCls: 'Все', 
+    camBumper: 'С бампера', camCine: 'Кино', assist: 'Помощь в контруле', repair: 'Починить бесплатно', damage: 'Повреждения', repaired: 'Машина как новая', tHeads: 'Свет', tExtra: 'Детали', heads: 'Фары', lightCol: 'Цвет света', tails: 'Стопы', exhaust: 'Выхлоп', fenders: 'Расширители', stripes: 'Полосы', stripeCol: 'Цвет полос', free: 'Бесплатно', camHint: 'Камера', wNight: 'Ясная ночь', wSunny: 'Солнечно', tapNext: 'Нажмите, чтобы продолжить', beaten: 'побеждён', career: 'Карьера', theEight: 'Восьмёрка', chapter: 'Глава', bossCar: 'Машина босса', done: 'Пройдено', win2: 'Выиграйте 2 заезда', pinkSlip: 'Машина босса ваша', crownKept: 'Корона ваша. Все заезды можно проходить снова.', needClass: 'Нужна машина класса', bonus: 'Бонус', mCareer: 'Карьера: Восьмёрка', mCareerD: 'Сюжет: 8 глав, 8 боссов, машины на кону', mRace: 'Быстрая гонка', mRaceD: 'Любой режим, любая трасса, соперники и полиция', modeCircuit: 'Кольцо', modeCircuitD: '3 круга против 5 соперников', modeSprint: 'Спринт', modeSprintD: 'Один круг сквозь ночной трафик', modeKO: 'На выбывание', modeKOD: 'Последний на круге выбывает', modeTrap: 'Радары', modeTrapD: 'Сумма скоростей на камерах решает', modeDrag: 'Драг', modeDragD: '402 метра, ручная коробка: E — выше, Q — ниже', modePursuit: 'Погоня', modePursuitD: 'Уйди от полиции и собери награду', police: 'Полиция', koOut: 'выбывает', copDown: 'ПАТРУЛЬ ВЫВЕДЕН', trap: 'РАДАР', trapSum: 'Сумма', launchPerfect: 'ИДЕАЛЬНЫЙ СТАРТ', launchSpin: 'ПРОБУКСОВКА', launchBog: 'ВЯЛЫЙ СТАРТ', shiftPerfect: 'ИДЕАЛЬНОЕ ПЕРЕКЛЮЧЕНИЕ', shiftGood: 'ХОРОШО', shiftLate: 'ПОЗДНО', shiftEarly: 'РАНО', roadblock: 'Впереди блокпост!', backup: 'Подкрепление в пути', bounty: 'Награда', bust: 'Арест', evade: 'Отрыв', pos: 'Позиция', you: 'Вы', shift: 'ПЕРЕДАЧА', busted: 'АРЕСТОВАН', escaped: 'УШЁЛ ОТ ПОГОНИ', place: 'Место', raceWin: 'ПОБЕДА', raceLose: 'ПОРАЖЕНИЕ', catRace: 'Гонки', catDrift: 'Дрифт', eliminated: 'Выбыл', continue: 'Продолжить', driver: 'Гонщик', car: 'Машина', copsDown: 'Патрулей выведено', vinyl: 'Винил', vcol: 'Цвет винила', vcol2: 'Второй цвет', cls: 'Класс', allCls: 'Все', 
     camera: 'Камера', camChase: 'Сзади', camFar: 'Дальняя', camHood: 'С капота', controls: 'Управление',
     help: 'W/↑ газ · S/↓ тормоз · A/D руль · Пробел ручник · Shift нитро · C камера (5 видов) · Esc пауза', helpTouch: 'Кнопки на экране: руль слева, газ/тормоз/ручник/нитро справа',
     notEnough: 'Не хватает денег', bought: 'Куплено', lockedCar: 'Сначала купите машину', saved: 'Сохранено',
@@ -4889,7 +4903,7 @@ const STR = {
     angle: 'angle', paused: 'Paused', resume: 'Resume', restart: 'Restart', toGarage: 'Garage', toHub: 'Menu', results: 'Results',
     earned: 'Earned', bronze: 'Bronze', silver: 'Silver', gold: 'Gold', noMedal: 'No medal', bestLap: 'Best lap', newRecord: 'New record!',
     quality: 'Graphics', qLow: 'Low', qMid: 'Medium', qHigh: 'High', volume: 'Volume', music: 'Music', lang: 'Language', units: 'Units', kmh: 'KM/H', mph: 'MPH',
-    camBumper: 'Bumper', camCine: 'Cinematic', assist: 'Countersteer assist', repair: 'Repair for free', damage: 'Damage', repaired: 'Good as new', tHeads: 'Lights', tExtra: 'Parts', heads: 'Headlights', lightCol: 'Light colour', tails: 'Tail lights', exhaust: 'Exhaust', fenders: 'Fenders', stripes: 'Stripes', stripeCol: 'Stripe colour', free: 'Free', camHint: 'Camera', wNight: 'Clear night', wSunny: 'Sunny', modeCircuit: 'Circuit', modeCircuitD: '3 laps against 5 rivals', modeSprint: 'Sprint', modeSprintD: 'One lap through night traffic', modeKO: 'Knockout', modeKOD: 'Last car each lap is out', modeTrap: 'Speedtrap', modeTrapD: 'Highest total camera speed wins', modeDrag: 'Drag', modeDragD: '402 metres, manual gears: E up, Q down', modePursuit: 'Pursuit', modePursuitD: 'Escape the police and build your bounty', police: 'Police', koOut: 'is out', copDown: 'COP DISABLED', trap: 'SPEEDTRAP', trapSum: 'Total', launchPerfect: 'PERFECT LAUNCH', launchSpin: 'WHEELSPIN', launchBog: 'BOGGED START', shiftPerfect: 'PERFECT SHIFT', shiftGood: 'GOOD', shiftLate: 'LATE', shiftEarly: 'EARLY', roadblock: 'Roadblock ahead!', backup: 'Backup en route', bounty: 'Bounty', bust: 'Bust', evade: 'Evade', pos: 'Position', you: 'You', shift: 'SHIFT', busted: 'BUSTED', escaped: 'ESCAPED', place: 'Place', raceWin: 'VICTORY', raceLose: 'DEFEAT', catRace: 'Races', catDrift: 'Drift', eliminated: 'Out', continue: 'Continue', driver: 'Driver', car: 'Car', copsDown: 'Cops disabled', vinyl: 'Vinyl', vcol: 'Vinyl colour', vcol2: 'Second colour', cls: 'Class', allCls: 'All', 
+    camBumper: 'Bumper', camCine: 'Cinematic', assist: 'Countersteer assist', repair: 'Repair for free', damage: 'Damage', repaired: 'Good as new', tHeads: 'Lights', tExtra: 'Parts', heads: 'Headlights', lightCol: 'Light colour', tails: 'Tail lights', exhaust: 'Exhaust', fenders: 'Fenders', stripes: 'Stripes', stripeCol: 'Stripe colour', free: 'Free', camHint: 'Camera', wNight: 'Clear night', wSunny: 'Sunny', tapNext: 'Tap to continue', beaten: 'beaten', career: 'Career', theEight: 'The Eight', chapter: 'Chapter', bossCar: 'Boss car', done: 'Completed', win2: 'Win 2 events', pinkSlip: 'Boss car is yours', crownKept: 'The crown is yours. Every event can be replayed.', needClass: 'Requires a class', bonus: 'Bonus', mCareer: 'Career: The Eight', mCareerD: 'Story: 8 chapters, 8 bosses, cars on the line', mRace: 'Quick Race', mRaceD: 'Any mode, any track, rivals and police', modeCircuit: 'Circuit', modeCircuitD: '3 laps against 5 rivals', modeSprint: 'Sprint', modeSprintD: 'One lap through night traffic', modeKO: 'Knockout', modeKOD: 'Last car each lap is out', modeTrap: 'Speedtrap', modeTrapD: 'Highest total camera speed wins', modeDrag: 'Drag', modeDragD: '402 metres, manual gears: E up, Q down', modePursuit: 'Pursuit', modePursuitD: 'Escape the police and build your bounty', police: 'Police', koOut: 'is out', copDown: 'COP DISABLED', trap: 'SPEEDTRAP', trapSum: 'Total', launchPerfect: 'PERFECT LAUNCH', launchSpin: 'WHEELSPIN', launchBog: 'BOGGED START', shiftPerfect: 'PERFECT SHIFT', shiftGood: 'GOOD', shiftLate: 'LATE', shiftEarly: 'EARLY', roadblock: 'Roadblock ahead!', backup: 'Backup en route', bounty: 'Bounty', bust: 'Bust', evade: 'Evade', pos: 'Position', you: 'You', shift: 'SHIFT', busted: 'BUSTED', escaped: 'ESCAPED', place: 'Place', raceWin: 'VICTORY', raceLose: 'DEFEAT', catRace: 'Races', catDrift: 'Drift', eliminated: 'Out', continue: 'Continue', driver: 'Driver', car: 'Car', copsDown: 'Cops disabled', vinyl: 'Vinyl', vcol: 'Vinyl colour', vcol2: 'Second colour', cls: 'Class', allCls: 'All', 
     camera: 'Camera', camChase: 'Chase', camFar: 'Far', camHood: 'Hood', controls: 'Controls',
     help: 'W/↑ throttle · S/↓ brake · A/D steer · Space handbrake · Shift nitro · C camera (5 views) · Esc pause', helpTouch: 'On-screen buttons: steering left, gas/brake/handbrake/nitro right',
     notEnough: 'Not enough money', bought: 'Purchased', lockedCar: 'Buy the car first', saved: 'Saved',
@@ -6321,6 +6335,125 @@ function raceHud() {
   const r = D.rpm / D.st.redline;
   el.innerHTML = M.drag ? `<div class="shiftL ${r > .86 ? (r > .985 ? 'late' : 'on') : ''}">${esc(T('shift'))} ▲</div>` : '';
 }
+// ==== 9c. CAREER: «Восьмёрка» — сюжет, главы, боссы, диалоги ====
+// портреты: стилизованные силуэты (SVG), без чужих образов
+const FACES = {
+  mira: { skin: '#c89478', hair: '#1b1b22', style: 1, acc: '#ff5a1f', glasses: false, band: true },
+  spark: { skin: '#e0b08f', hair: '#ff3b3b', style: 2, acc: '#ff3b3b', glasses: false },
+  diesel: { skin: '#9b6b4f', hair: '#2a2420', style: 0, acc: '#f5c518', glasses: false, beard: true },
+  razor: { skin: '#d9a88a', hair: '#e5e7eb', style: 3, acc: '#e5e7eb', glasses: true },
+  witch: { skin: '#f0c9ae', hair: '#6d28d9', style: 4, acc: '#a855f7', glasses: false },
+  khan: { skin: '#b98262', hair: '#111', style: 0, acc: '#22c55e', glasses: true, beard: true },
+  mirage: { skin: '#e8b996', hair: '#06b6d4', style: 2, acc: '#06b6d4', glasses: true },
+  phantom: { skin: '#3a3a44', hair: '#0a0a0c', style: 5, acc: '#9ca3af', glasses: false, mask: true },
+  count: { skin: '#d7ad91', hair: '#c9a227', style: 3, acc: '#c9a227', glasses: false, beard: true },
+};
+function portrait(k, rank) {
+  const f = FACES[k] || FACES.mira, id = 'p' + k, hair = [
+    'M30 58 Q30 22 60 20 Q90 22 90 58 L86 44 Q60 34 34 44 Z',
+    'M28 64 Q26 18 60 18 Q94 18 92 64 L92 96 L84 70 Q86 40 60 36 Q34 40 36 70 L28 96 Z',
+    'M32 56 Q34 14 62 16 Q96 20 90 60 L84 38 L74 46 L66 34 L56 46 L44 36 Z',
+    'M30 54 Q36 20 62 20 Q88 22 90 54 Q76 30 44 40 Z',
+    'M26 60 Q24 14 60 14 Q98 14 94 60 L100 120 L84 112 L86 62 Q84 36 60 34 Q36 36 34 62 L36 112 L20 120 Z',
+    'M24 70 Q22 10 60 10 Q98 10 96 70 L96 110 L24 110 Z'][f.style];
+  return `<svg class="face" viewBox="0 0 120 140" role="img" aria-label="${esc(k)}"><defs><linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${f.acc}" stop-opacity=".55"/><stop offset="1" stop-color="#07080b"/></linearGradient></defs>
+    <rect width="120" height="140" fill="url(#${id}g)"/>
+    <path d="M8 140 Q12 104 40 98 L60 106 L80 98 Q108 104 112 140 Z" fill="#14161c"/><path d="M40 98 L60 124 L80 98 L72 96 L60 110 L48 96 Z" fill="${f.acc}" opacity=".8"/>
+    <rect x="50" y="78" width="20" height="24" rx="6" fill="${f.skin}" filter="brightness(.8)"/>
+    <ellipse cx="60" cy="62" rx="26" ry="31" fill="${f.skin}"/>
+    ${f.beard ? `<path d="M36 68 Q38 94 60 96 Q82 94 84 68 Q78 84 60 84 Q42 84 36 68 Z" fill="${f.hair}" opacity=".9"/>` : ''}
+    <path d="${hair}" fill="${f.hair}"/>
+    ${f.band ? `<rect x="33" y="40" width="54" height="6" rx="3" fill="${f.acc}"/>` : ''}
+    ${f.mask ? `<path d="M34 56 Q60 50 86 56 L86 70 Q60 78 34 70 Z" fill="#0b0b0f"/><rect x="40" y="59" width="40" height="4" rx="2" fill="${f.acc}"/>`
+      : f.glasses ? `<rect x="36" y="55" width="48" height="11" rx="4" fill="#0b0d12"/><rect x="38" y="57" width="44" height="3" rx="1.5" fill="${f.acc}" opacity=".9"/>`
+      : `<ellipse cx="49" cy="61" rx="3.2" ry="2.2" fill="#15171c"/><ellipse cx="71" cy="61" rx="3.2" ry="2.2" fill="#15171c"/><path d="M44 55 L54 54 M66 54 L76 55" stroke="${f.hair}" stroke-width="2.4" stroke-linecap="round"/>`}
+    <path d="M52 80 Q60 ${f.mask ? 80 : 83} 68 80" stroke="#5a3a30" stroke-width="2" fill="none" stroke-linecap="round" opacity="${f.mask ? 0 : .8}"/>
+    ${rank ? `<text x="112" y="132" text-anchor="end" font-family="Oswald,Impact,sans-serif" font-weight="700" font-style="italic" font-size="34" fill="#fff" opacity=".92">#${rank}</text>` : ''}</svg>`;
+}
+
+// главы: босс, класс, три заезда и поединок
+const N2c = (ru, en) => ({ ru, en });
+const CHAPTERS = [
+  { boss: 'spark', rank: 8, name: N2c('Искра', 'Spark'), car: 'hornet', cls: 'D', ev: [['circuit', 'port', N2c('Портовое кольцо', 'Harbour Ring')], ['sprint', 'city', N2c('Неоновый спринт', 'Neon Sprint')], ['chal', 'snow', N2c('Ледяной дрифт', 'Ice Drift'), 1]], bossEv: ['sprint', 'port'] },
+  { boss: 'diesel', rank: 7, name: N2c('Дизель', 'Diesel'), car: 'titan', cls: 'C', ev: [['drag', 'drag', N2c('Четверть мили', 'Quarter Mile')], ['circuit', 'mountain', N2c('Перевал', 'The Pass')], ['speedtrap', 'airfield', N2c('Взлётная полоса', 'Runway Trap')]], bossEv: ['drag', 'drag'] },
+  { boss: 'razor', rank: 6, name: N2c('Бритва', 'Razor'), car: 'ronin', cls: 'C', ev: [['knockout', 'city', N2c('Неоновое выбывание', 'Neon Knockout')], ['sprint', 'desert', N2c('Пыльный спринт', 'Dust Sprint')], ['pursuit', 'port', N2c('Облава в порту', 'Harbour Heat')]], bossEv: ['knockout', 'mountain'] },
+  { boss: 'witch', rank: 5, name: N2c('Ведьма', 'Witch'), car: 'kitsune', cls: 'B', ev: [['circuit', 'snow', N2c('Белое кольцо', 'White Ring')], ['chal', 'desert', N2c('Дрифт в каньоне', 'Canyon Drift'), 1], ['speedtrap', 'port', N2c('Камеры набережной', 'Pier Cameras')]], bossEv: ['chal', 'snow', 2] },
+  { boss: 'khan', rank: 4, name: N2c('Хан', 'Khan'), car: 'condor', cls: 'B', ev: [['drag', 'drag', N2c('Ночной драг', 'Night Drag')], ['knockout', 'airfield', N2c('Ангарное выбывание', 'Hangar Knockout')], ['sprint', 'mountain', N2c('Спуск', 'Downhill')]], bossEv: ['speedtrap', 'airfield'] },
+  { boss: 'mirage', rank: 3, name: N2c('Мираж', 'Mirage'), car: 'raijin', cls: 'A', ev: [['circuit', 'desert', N2c('Кольцо каньона', 'Canyon Ring')], ['pursuit', 'city', N2c('Город в огне', 'City Heat')], ['speedtrap', 'mountain', N2c('Горные радары', 'Mountain Traps')]], bossEv: ['pursuit', 'snow'] },
+  { boss: 'phantom', rank: 2, name: N2c('Фантом', 'Phantom'), car: 'oni', cls: 'A', ev: [['knockout', 'port', N2c('Последний причал', 'Last Pier')], ['drag', 'drag', N2c('Дуэль на прямой', 'Straight Duel')], ['sprint', 'airfield', N2c('Форсаж', 'Afterburner')]], bossEv: ['sprint', 'city'] },
+  { boss: 'count', rank: 1, name: N2c('Граф', 'The Count'), car: 'zenith', cls: 'S', ev: [['circuit', 'city', N2c('Корона города', 'City Crown')], ['speedtrap', 'desert', N2c('Мираж скорости', 'Speed Mirage')], ['pursuit', 'mountain', N2c('Последняя облава', 'Final Heat')]], bossEv: ['circuit', 'mountain'] },
+];
+// реплики: [кто, ru, en]
+const STORY = {
+  intro: [['mira', 'Добро пожаловать в Полночь. Днём это обычный город. Ночью — трасса.', 'Welcome to Midnight. By day it is just a city. By night it is a racetrack.'],
+    ['mira', 'Улицами правит Восьмёрка — восемь гонщиков. Первый в списке — Граф. Год назад он забрал мой гараж по расписке.', 'The streets belong to the Eight. Number one is the Count. A year ago he took my garage on a pink slip.'],
+    ['mira', 'Этот Kaze — всё, что у меня осталось. Побеждай, поднимайся по списку — и мы вернём своё.', 'This Kaze is all I have left. Win, climb the list, and we take back what is ours.'],
+    ['mira', 'Начни с Искры, номер восемь. Выиграй два заезда — и она сама тебя найдёт.', 'Start with Spark, number eight. Win two events and she will come looking for you.']],
+  spark: { pre: ['Новенький на машине Миры? Порт — мой дом. Не заблудись.', 'The new kid in Mira\'s car? The harbour is my home. Try not to get lost.'], post: ['Ладно… ты едешь чище, чем я думала. Держи ключи — и удачи с Дизелем.', 'Fine… you drive cleaner than I thought. Take the keys, and good luck with Diesel.'] },
+  diesel: { pre: ['Повороты — для слабых. Четыреста метров. Прямая. Чистая мощность.', 'Corners are for the weak. Four hundred metres. Straight line. Pure power.'], post: ['Хм. Коробку ты дёргаешь как надо. Бритва в горах тебя не пожалеет.', 'Huh. You work that gearbox right. Razor will not go easy on you.'] },
+  razor: { pre: ['Здесь выживает один. Каждый круг кто-то вылетает. Сегодня — ты.', 'Only one survives out here. Every lap somebody drops. Tonight it is you.'], post: ['Последний круг был твой. Ведьма заметила тебя. На льду не зевай.', 'That last lap was yours. The Witch has noticed you. Stay sharp on the ice.'] },
+  witch: { pre: ['Лёд не прощает ошибок. Покажи, как держишь занос. Мне нужно золото.', 'Ice forgives nothing. Show me how you hold a slide. Gold, or go home.'], post: ['Красиво. Почти как я. Хан ждёт на аэродроме — у него радары и деньги.', 'Beautiful. Almost like me. Khan waits at the airfield — he has cameras and cash.'] },
+  khan: { pre: ['Скорость — это цифры, а камеры не врут. Проиграешь — заплатишь.', 'Speed is numbers, and cameras do not lie. Lose, and you pay.'], post: ['Цифры сказали своё. Мираж работает на Графа — жди полицию.', 'The numbers have spoken. Mirage works for the Count — expect the police.'] },
+  mirage: { pre: ['Граф сдал тебя копам. Уйдёшь от погони — тогда поговорим.', 'The Count sold you out to the cops. Shake them off, then we talk.'], post: ['Ты ушёл от целого участка? Фантом о тебе уже знает.', 'You lost an entire precinct? Phantom already knows your name.'] },
+  phantom: { pre: ['Меня никто не видел впереди. Город, трафик, один круг.', 'Nobody has ever seen me from behind. City, traffic, one lap.'], post: ['…Граф ждёт в горах. Там всё и закончится.', '…The Count waits in the mountains. That is where it ends.'] },
+  count: { pre: ['Мира прислала ученика? Я выиграл её гараж честно. Горы, три круга. Проиграешь — машина моя.', 'Mira sent her student? I won her garage fair and square. Mountains, three laps. Lose, and your car is mine.'], post: ['Забирай. Гараж, машину, список. Полночь теперь твоя.', 'Take it. The garage, the car, the list. Midnight is yours now.'] },
+  finale: [['mira', 'Мы дома. Спасибо тебе.', 'We are home. Thank you.'], ['mira', 'Но слухи уже идут: из соседних городов едут новые гонщики. Все заезды открыты — держи корону.', 'But word travels: racers from other cities are coming. Every event is open — keep the crown.']],
+};
+const Career = {
+  st() { const s = H.save; s.career = s.career || { ch: 0, won: {}, boss: {}, intro: false, fin: false }; return s.career; },
+  evId: (ci, k) => `c${ci}e${k}`,
+  unlockedBoss(ci) { const c = Career.st(); return CHAPTERS[ci].ev.filter((_, k) => c.won[Career.evId(ci, k)]).length >= 2; },
+  // диалог: список реплик → по одной, затем callback
+  dialog(lines, done) {
+    let i = 0; const L = H.lang === 'en' ? 2 : 1;
+    const show = () => {
+      if (i >= lines.length) { done && done(); return; }
+      const [who, ...txt] = lines[i], chap = CHAPTERS.find(c => c.boss === who), nm = who === 'mira' ? (H.lang === 'en' ? 'Mira' : 'Мира') : chap ? chap.name[H.lang] || chap.name.ru : who;
+      UI.show(`<div class="dlg" data-act="dlgNext"><div class="dlgBox"><div class="dlgFace">${portrait(who, chap && chap.rank)}</div><div><div class="dlgName">${esc(nm)}</div><p class="dlgText">${esc(txt[L - 1])}</p><div class="muted small">${esc(T('tapNext'))} ▸</div></div></div></div>`, 'clear');
+      UI.dlgNext = () => { i++; show(); }; Snd.play('click');
+    };
+    show();
+  },
+  open() {
+    const c = Career.st(); if (!c.intro) { c.intro = true; Save.write(); Career.dialog(STORY.intro, Career.open); return; }
+    H.state = 'CAREER'; UI.hud(false); const L = H.lang, s = H.save, modeName = { circuit: 'modeCircuit', sprint: 'modeSprint', knockout: 'modeKO', speedtrap: 'modeTrap', drag: 'modeDrag', pursuit: 'modePursuit', chal: 'modeChal' }, ico = { circuit: '🏁', sprint: '⚡', knockout: '✖', speedtrap: '📷', drag: '⏱', pursuit: '🚨', chal: '🔥' };
+    const list = CHAPTERS.map((ch, ci) => { const beat = c.boss[ch.boss], cur = ci === Math.min(c.ch, 7) && !c.fin, locked = ci > c.ch;
+      return `<button class="bl ${beat ? 'beat' : ''} ${cur ? 'cur' : ''} ${locked ? 'locked' : ''}" data-act="chapter" data-id="${ci}" ${locked ? 'disabled' : ''}><span class="rk">#${ch.rank}</span><span class="bf">${portrait(ch.boss)}</span><span class="bn">${locked ? '???' : esc(ch.name[L] || ch.name.ru)}<small>${esc(T('cls'))} ${ch.cls} · ${beat ? '✓ ' + esc(T('beaten')) : locked ? '🔒' : esc(CARS[ch.car].name)}</small></span></button>`; }).join('');
+    const ci = UI.chapter ?? Math.min(c.ch, 7), ch = CHAPTERS[ci], cm = CLASS_MULT[ch.cls];
+    const evCard = (e, k, boss) => { const id = boss ? 'boss' + ci : Career.evId(ci, k), won = boss ? c.boss[ch.boss] : c.won[id], lock = boss && !Career.unlockedBoss(ci) && !won, tr = TRACKS[e[1]], nm = boss ? (L === 'en' ? 'vs ' : 'против ') + (ch.name[L] || ch.name.ru) : e[2][L] || e[2].ru;
+      const reward = Math.round((boss ? 5000 : 1000) * cm);
+      return `<button class="card ev ${boss ? 'boss' : ''} ${won ? 'won' : ''}" data-act="${lock ? '' : 'event'}" data-ci="${ci}" data-k="${boss ? -1 : k}" ${lock ? 'disabled' : ''}><span class="evm">${ico[e[0]]} ${esc(T(modeName[e[0]]))}</span><b>${esc(nm)}</b><span class="muted small">${esc(tr.name[L] || tr.name.ru)} · ${esc(T('cls'))} ${ch.cls}+${e[3] ? ' · ' + esc(T(e[3] === 2 ? 'gold' : 'silver')) : ''}</span>
+        <span class="small">${won ? '✓ ' + esc(T('done')) : lock ? '🔒 ' + esc(T('win2')) : `$ ${fmt(reward)}${boss ? ' + ' + esc(T('pinkSlip')) : ''}`}</span></button>`; };
+    UI.show(`${UI.top(T('career'), 'hub')}<div class="career"><div class="blist"><div class="bltitle">${esc(T('theEight'))}</div>${list}</div>
+      <div class="chap"><div class="chead">${portrait(ch.boss, ch.rank)}<div><div class="muted small" style="letter-spacing:.2em;text-transform:uppercase">${esc(T('chapter'))} ${ci + 1}/8</div><h2 style="margin:4px 0">${esc(ch.name[L] || ch.name.ru)}</h2><div class="muted">${esc(T('bossCar'))}: <b>${esc(CARS[ch.car].name)}</b> · ${esc(T('cls'))} ${ch.cls}</div></div></div>
+      <div class="cards">${ch.ev.map((e, k) => evCard(e, k)).join('')}${evCard(ch.bossEv, -1, true)}</div>${c.fin ? `<p class="muted">${esc(T('crownKept'))}</p>` : ''}</div></div>`, '');
+    UI.root.querySelector('.screen').style.background = 'linear-gradient(90deg,rgba(7,8,11,.94),rgba(7,8,11,.72))';
+  },
+  start(ci, k) {
+    const ch = CHAPTERS[ci], boss = k < 0, e = boss ? ch.bossEv : ch.ev[k], s = H.save, pc = CARS[s.car];
+    if (CLASSES.indexOf(pc.cls) < CLASSES.indexOf(ch.cls)) { UI.toast(T('needClass') + ' ' + ch.cls); return; }
+    const cls = CLASSES[Math.max(CLASSES.indexOf(ch.cls), CLASSES.indexOf(pc.cls))];
+    const go = () => { UI.clear(); UI.sel.track = e[1]; UI.sel.mode = e[0]; UI.sel.opts = { event: { ci, k, medal: e[2] && !boss ? e[3] : boss ? e[2] : 0 }, cls, diff: 1 + ci * .06 + (boss ? .15 : 0), rivals: boss ? [ch.car] : null, boss: boss ? { name: ch.name[H.lang] || ch.name.ru } : null };
+      if (boss && e[0] === 'chal') UI.sel.opts.event.medal = e[2];
+      Game.toDrive(UI.sel.track, UI.sel.mode, UI.sel.opts); };
+    if (boss) Career.dialog([[ch.boss, ...STORY[ch.boss].pre]], go); else go();
+  },
+  // итог заезда карьеры
+  after() {
+    const o = UI.sel.opts, ev = o && o.event; if (!ev) return UI.hubMenu(); const c = Career.st(), ch = CHAPTERS[ev.ci], lr = UI.lastRace || {}, s = H.save, cm = CLASS_MULT[ch.cls];
+    Game.leaveDrive(); UI.sel.opts = {};
+    if (!lr.win) { Career.open(); return; }
+    if (ev.k < 0) {
+      const first = !c.boss[ch.boss]; c.boss[ch.boss] = true;
+      if (first) { s.money += Math.round(5000 * cm); s.owned[ch.car] = true; c.ch = Math.max(c.ch, ev.ci + 1); if (ev.ci === 7) c.fin = true; Save.write();
+        UI.toast(`${T('pinkSlip')}: ${CARS[ch.car].name}`); Snd.play('medal');
+        const lines = [[ch.boss, ...STORY[ch.boss].post]].concat(ev.ci === 7 ? STORY.finale : []); UI.chapter = Math.min(ev.ci + 1, 7);
+        Career.dialog(lines, Career.open); return; }
+    } else { const id = Career.evId(ev.ci, ev.k); if (!c.won[id]) { c.won[id] = true; s.money += Math.round(1000 * cm); UI.toast(`${T('bonus')}: $ ${fmt(Math.round(1000 * cm))}`); }
+      if (Career.unlockedBoss(ev.ci) && !c.boss[ch.boss] && !c['seen' + ev.ci]) { c['seen' + ev.ci] = true; Save.write(); Career.dialog([['mira', `${ch.name.ru} вызывает тебя на дуэль. Будь готов.`, `${ch.name.en} wants to race you. Be ready.`]], Career.open); return; } }
+    Save.write(); Career.open();
+  },
+};
 // ==== 10. UI ====
 const UI = {
   root: null, tab: 'cars', orbit: { a: .7, e: .28, dist: 7.6, drag: null, auto: true }, sel: { track: 'port', mode: 'free' },
@@ -6348,6 +6481,12 @@ const UI = {
     switch (a) {
       case 'begin': Snd.init(); UI.hubMenu(); break;
       case 'hub': UI.hubMenu(); break;
+      case 'career': UI.chapter = null; Career.open(); break;
+      case 'chapter': UI.chapter = +d.id; Career.open(); break;
+      case 'event': Career.start(+d.ci, +d.k); break;
+      case 'careerBack': Career.after(); break;
+      case 'dlgNext': if (UI.dlgNext) UI.dlgNext(); break;
+      case 'quick': UI.sel.opts = {}; UI.trackSel(); break;
       case 'drift': UI.garage(); break;
       case 'torch': if (/\/hub\/(index\.html)?$/.test(location.pathname)) location.href = location.pathname.replace(/hub\/(index\.html)?$/, 'game/index.html'); else UI.toast(T('mTorchD')); break;
       case 'tab': UI.tab = d.id; UI.garage(); break;
@@ -6397,7 +6536,9 @@ const UI = {
     const m = (act, tag, name, desc, glyph, soon) => `<button class="mode ${soon ? 'soon' : ''}" ${soon ? 'disabled' : `data-act="${act}"`}><span class="tag">${esc(tag)}</span><b>${esc(name)}</b><span class="muted small">${esc(desc)}</span><span class="glyph">${glyph}</span></button>`;
     UI.show(`<div class="topbar"><h1 style="font-size:clamp(34px,6vw,64px)">${H.lang === 'ru' ? 'ПОЛН<span class="a">О</span>ЧЬ' : 'MIDN<span class="a">I</span>GHT'}</h1><div class="row">${UI.money()}<button class="btn ghost" data-act="settings" data-from="hub"><span>⚙</span></button></div></div>
       <div class="modes">
-        ${m('drift', T('ready'), T('mDrift'), T('mDriftD'), '🏁')}
+        ${m('career', T('ready'), T('mCareer'), T('mCareerD'), '👑')}
+        ${m('quick', T('ready'), T('mRace'), T('mRaceD'), '🏁')}
+        ${m('drift', T('ready'), T('mDrift'), T('mDriftD'), '🔧')}
         ${m('torch', T('ready'), T('mTorch'), T('mTorchD'), '🔥')}
         ${m('', T('soon'), T('mArena'), T('mArenaD'), '⚔', true)}
         ${m('', T('soon'), T('mParkour'), T('mParkourD'), '🏃', true)}
@@ -6481,13 +6622,14 @@ const UI = {
     if (D.mode === 'time' && D.bestLap) { earn += Math.round(12000 / Math.max(20, D.bestLap)) * 10; if (!s.best[key] || D.bestLap < s.best[key]) { s.best[key] = D.bestLap; rec = true; } }
     if (D.mode === 'free' && D.score > (s.best[key] || 0)) { s.best[key] = D.score; rec = true; }
     s.money += earn; s.stats.drift += D.score; s.stats.runs++; Save.write(); if (medal >= 0) Snd.play('medal');
+    const ev = UI.sel.opts && UI.sel.opts.event; UI.lastRace = { win: ev ? medal >= (ev.medal || 0) : medal >= 0, mode: D.mode };
     const mName = [T('bronze'), T('silver'), T('gold')][medal] || T('noMedal'), mCol = ['#cd7f32', '#c0c0c0', '#ffd700'][medal] || '#8b95a7';
     UI.show(`<div class="center"><h2>${esc(T('results'))}</h2>${rec ? `<div class="head" style="color:var(--accent2);letter-spacing:.2em">★ ${esc(T('newRecord'))}</div>` : ''}
       ${D.mode === 'chal' ? `<div class="medal" style="color:${mCol};font-size:1.6em">● ${esc(mName)}</div>` : ''}
       <div class="panel kv" style="min-width:min(360px,92vw)"><span>${esc(T('score'))}</span><span>${fmt(D.score)}</span>
         ${D.mode === 'time' ? `<span>${esc(T('bestLap'))}</span><span>${D.bestLap ? fmtT(D.bestLap) : '—'}</span>` : ''}
         <span>×${esc('max')}</span><span>×${D.maxMul}</span><span>${esc(T('drift'))} max</span><span>${D.longest.toFixed(1)} s</span><span>${esc(T('earned'))}</span><span style="color:var(--accent2)">$ ${fmt(earn)}</span></div>
-      <div class="row" style="justify-content:center"><button class="btn primary" data-act="restart" autofocus><span>${esc(T('restart'))}</span></button><button class="btn" data-act="toGarage"><span>${esc(T('toGarage'))}</span></button><button class="btn ghost" data-act="toHub"><span>${esc(T('toHub'))}</span></button></div></div>`, '');
+      <div class="row" style="justify-content:center">${ev ? `<button class="btn primary" data-act="careerBack" autofocus><span>${esc(T('continue'))}</span></button>` : ''}<button class="btn ${ev ? '' : 'primary'}" data-act="restart"><span>${esc(T('restart'))}</span></button><button class="btn" data-act="toGarage"><span>${esc(T('toGarage'))}</span></button><button class="btn ghost" data-act="toHub"><span>${esc(T('toHub'))}</span></button></div></div>`, '');
     UI.root.querySelector('.screen').style.background = 'rgba(7,8,11,.75)';
   },
   raceResults() {

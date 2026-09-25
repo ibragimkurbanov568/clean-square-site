@@ -25,6 +25,12 @@ const UI = {
     switch (a) {
       case 'begin': Snd.init(); UI.hubMenu(); break;
       case 'hub': UI.hubMenu(); break;
+      case 'career': UI.chapter = null; Career.open(); break;
+      case 'chapter': UI.chapter = +d.id; Career.open(); break;
+      case 'event': Career.start(+d.ci, +d.k); break;
+      case 'careerBack': Career.after(); break;
+      case 'dlgNext': if (UI.dlgNext) UI.dlgNext(); break;
+      case 'quick': UI.sel.opts = {}; UI.trackSel(); break;
       case 'drift': UI.garage(); break;
       case 'torch': if (/\/hub\/(index\.html)?$/.test(location.pathname)) location.href = location.pathname.replace(/hub\/(index\.html)?$/, 'game/index.html'); else UI.toast(T('mTorchD')); break;
       case 'tab': UI.tab = d.id; UI.garage(); break;
@@ -74,7 +80,9 @@ const UI = {
     const m = (act, tag, name, desc, glyph, soon) => `<button class="mode ${soon ? 'soon' : ''}" ${soon ? 'disabled' : `data-act="${act}"`}><span class="tag">${esc(tag)}</span><b>${esc(name)}</b><span class="muted small">${esc(desc)}</span><span class="glyph">${glyph}</span></button>`;
     UI.show(`<div class="topbar"><h1 style="font-size:clamp(34px,6vw,64px)">${H.lang === 'ru' ? 'ПОЛН<span class="a">О</span>ЧЬ' : 'MIDN<span class="a">I</span>GHT'}</h1><div class="row">${UI.money()}<button class="btn ghost" data-act="settings" data-from="hub"><span>⚙</span></button></div></div>
       <div class="modes">
-        ${m('drift', T('ready'), T('mDrift'), T('mDriftD'), '🏁')}
+        ${m('career', T('ready'), T('mCareer'), T('mCareerD'), '👑')}
+        ${m('quick', T('ready'), T('mRace'), T('mRaceD'), '🏁')}
+        ${m('drift', T('ready'), T('mDrift'), T('mDriftD'), '🔧')}
         ${m('torch', T('ready'), T('mTorch'), T('mTorchD'), '🔥')}
         ${m('', T('soon'), T('mArena'), T('mArenaD'), '⚔', true)}
         ${m('', T('soon'), T('mParkour'), T('mParkourD'), '🏃', true)}
@@ -158,13 +166,14 @@ const UI = {
     if (D.mode === 'time' && D.bestLap) { earn += Math.round(12000 / Math.max(20, D.bestLap)) * 10; if (!s.best[key] || D.bestLap < s.best[key]) { s.best[key] = D.bestLap; rec = true; } }
     if (D.mode === 'free' && D.score > (s.best[key] || 0)) { s.best[key] = D.score; rec = true; }
     s.money += earn; s.stats.drift += D.score; s.stats.runs++; Save.write(); if (medal >= 0) Snd.play('medal');
+    const ev = UI.sel.opts && UI.sel.opts.event; UI.lastRace = { win: ev ? medal >= (ev.medal || 0) : medal >= 0, mode: D.mode };
     const mName = [T('bronze'), T('silver'), T('gold')][medal] || T('noMedal'), mCol = ['#cd7f32', '#c0c0c0', '#ffd700'][medal] || '#8b95a7';
     UI.show(`<div class="center"><h2>${esc(T('results'))}</h2>${rec ? `<div class="head" style="color:var(--accent2);letter-spacing:.2em">★ ${esc(T('newRecord'))}</div>` : ''}
       ${D.mode === 'chal' ? `<div class="medal" style="color:${mCol};font-size:1.6em">● ${esc(mName)}</div>` : ''}
       <div class="panel kv" style="min-width:min(360px,92vw)"><span>${esc(T('score'))}</span><span>${fmt(D.score)}</span>
         ${D.mode === 'time' ? `<span>${esc(T('bestLap'))}</span><span>${D.bestLap ? fmtT(D.bestLap) : '—'}</span>` : ''}
         <span>×${esc('max')}</span><span>×${D.maxMul}</span><span>${esc(T('drift'))} max</span><span>${D.longest.toFixed(1)} s</span><span>${esc(T('earned'))}</span><span style="color:var(--accent2)">$ ${fmt(earn)}</span></div>
-      <div class="row" style="justify-content:center"><button class="btn primary" data-act="restart" autofocus><span>${esc(T('restart'))}</span></button><button class="btn" data-act="toGarage"><span>${esc(T('toGarage'))}</span></button><button class="btn ghost" data-act="toHub"><span>${esc(T('toHub'))}</span></button></div></div>`, '');
+      <div class="row" style="justify-content:center">${ev ? `<button class="btn primary" data-act="careerBack" autofocus><span>${esc(T('continue'))}</span></button>` : ''}<button class="btn ${ev ? '' : 'primary'}" data-act="restart"><span>${esc(T('restart'))}</span></button><button class="btn" data-act="toGarage"><span>${esc(T('toGarage'))}</span></button><button class="btn ghost" data-act="toHub"><span>${esc(T('toHub'))}</span></button></div></div>`, '');
     UI.root.querySelector('.screen').style.background = 'rgba(7,8,11,.75)';
   },
   raceResults() {
