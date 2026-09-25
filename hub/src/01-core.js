@@ -4,6 +4,7 @@
 const CFG = {
   SAVE_KEY: 'midnightHub.v1', STEP: 1 / 60, MAX_STEPS: 5,
   DRIFT_MIN_ANGLE: 0.2, DRIFT_MIN_SPEED: 7, DRIFT_MULT_EVERY: 2.2, DRIFT_MULT_MAX: 6, DRIFT_BANK_DELAY: 1.1,
+  ASSIST: .45, YAW_DAMP: .8, SPIN_LAT: .95,
   MONEY_PER_POINT: 0.06, CHALLENGE_TIME: 90, LAPS: 3, START_MONEY: 2500,
   QUALITY: { low: { pr: 1, shadow: 0, parts: .4 }, mid: { pr: 1.25, shadow: 1024, parts: .75 }, high: { pr: 2, shadow: 2048, parts: 1 } },
 };
@@ -30,8 +31,9 @@ const STR = {
     angle: 'угол', paused: 'Пауза', resume: 'Продолжить', restart: 'Заново', toGarage: 'В гараж', toHub: 'В меню', results: 'Итоги',
     earned: 'Заработано', bronze: 'Бронза', silver: 'Серебро', gold: 'Золото', noMedal: 'Без медали', bestLap: 'Лучший круг', newRecord: 'Новый рекорд!',
     quality: 'Графика', qLow: 'Низкая', qMid: 'Средняя', qHigh: 'Высокая', volume: 'Громкость', music: 'Музыка', lang: 'Язык', units: 'Единицы', kmh: 'КМ/Ч', mph: 'MPH',
+    camBumper: 'С бампера', camCine: 'Кино', assist: 'Помощь в контруле', repair: 'Починить бесплатно', damage: 'Повреждения', repaired: 'Машина как новая', tHeads: 'Свет', tExtra: 'Детали', heads: 'Фары', lightCol: 'Цвет света', tails: 'Стопы', exhaust: 'Выхлоп', fenders: 'Расширители', stripes: 'Полосы', stripeCol: 'Цвет полос', free: 'Бесплатно', camHint: 'Камера', wNight: 'Ясная ночь', wSunny: 'Солнечно', 
     camera: 'Камера', camChase: 'Сзади', camFar: 'Дальняя', camHood: 'С капота', controls: 'Управление',
-    help: 'W/↑ газ · S/↓ тормоз · A/D руль · Пробел ручник · Shift нитро · C камера · Esc пауза', helpTouch: 'Кнопки на экране: руль слева, газ/тормоз/ручник/нитро справа',
+    help: 'W/↑ газ · S/↓ тормоз · A/D руль · Пробел ручник · Shift нитро · C камера (5 видов) · Esc пауза', helpTouch: 'Кнопки на экране: руль слева, газ/тормоз/ручник/нитро справа',
     notEnough: 'Не хватает денег', bought: 'Куплено', lockedCar: 'Сначала купите машину', saved: 'Сохранено',
     hp: 'лс', kg: 'кг', mm: 'мм',
     weather: 'Погода', wRain: 'Ливень', wClear: 'Ясно, закат', wSnow: 'Снегопад', wDust: 'Пыльная буря', grip: 'сцепление',
@@ -56,8 +58,9 @@ const STR = {
     angle: 'angle', paused: 'Paused', resume: 'Resume', restart: 'Restart', toGarage: 'Garage', toHub: 'Menu', results: 'Results',
     earned: 'Earned', bronze: 'Bronze', silver: 'Silver', gold: 'Gold', noMedal: 'No medal', bestLap: 'Best lap', newRecord: 'New record!',
     quality: 'Graphics', qLow: 'Low', qMid: 'Medium', qHigh: 'High', volume: 'Volume', music: 'Music', lang: 'Language', units: 'Units', kmh: 'KM/H', mph: 'MPH',
+    camBumper: 'Bumper', camCine: 'Cinematic', assist: 'Countersteer assist', repair: 'Repair for free', damage: 'Damage', repaired: 'Good as new', tHeads: 'Lights', tExtra: 'Parts', heads: 'Headlights', lightCol: 'Light colour', tails: 'Tail lights', exhaust: 'Exhaust', fenders: 'Fenders', stripes: 'Stripes', stripeCol: 'Stripe colour', free: 'Free', camHint: 'Camera', wNight: 'Clear night', wSunny: 'Sunny', 
     camera: 'Camera', camChase: 'Chase', camFar: 'Far', camHood: 'Hood', controls: 'Controls',
-    help: 'W/↑ throttle · S/↓ brake · A/D steer · Space handbrake · Shift nitro · C camera · Esc pause', helpTouch: 'On-screen buttons: steering left, gas/brake/handbrake/nitro right',
+    help: 'W/↑ throttle · S/↓ brake · A/D steer · Space handbrake · Shift nitro · C camera (5 views) · Esc pause', helpTouch: 'On-screen buttons: steering left, gas/brake/handbrake/nitro right',
     notEnough: 'Not enough money', bought: 'Purchased', lockedCar: 'Buy the car first', saved: 'Saved',
     hp: 'hp', kg: 'kg', mm: 'mm',
     weather: 'Weather', wRain: 'Downpour', wClear: 'Clear sunset', wSnow: 'Snowfall', wDust: 'Dust storm', grip: 'grip',
@@ -79,7 +82,7 @@ const Save = {
   ok: true,
   defaults() {
     return { v: 1, money: CFG.START_MONEY, car: 'kaze', cars: {}, owned: { kaze: true }, parts: {}, best: {}, stats: { drift: 0, runs: 0 },
-      settings: { vol: .8, music: .4, quality: 'auto', lang: null, units: 'kmh', cam: 0 } };
+      settings: { vol: .8, music: .4, quality: 'auto', lang: null, units: 'kmh', cam: 0, assist: true } };
   },
   load() {
     let d = Save.defaults();
@@ -100,32 +103,49 @@ const Snd = {
     Snd.master = c.createGain(); Snd.master.connect(comp); Snd.music = c.createGain(); Snd.music.connect(Snd.master);
     const nb = c.createBuffer(1, c.sampleRate, c.sampleRate), d = nb.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; Snd.noise = nb;
     Snd.vol();
-    // двигатель: пила + квадрат через фильтр
-    const e = Snd.eng = { o1: c.createOscillator(), o2: c.createOscillator(), o3: c.createOscillator(), f: c.createBiquadFilter(), g: c.createGain(), tg: c.createGain(), turbo: c.createOscillator() };
-    e.o1.type = 'sawtooth'; e.o2.type = 'square'; e.o3.type = 'sawtooth'; e.f.type = 'lowpass'; e.f.Q.value = 3; e.g.gain.value = 0;
-    [e.o1, e.o2, e.o3].forEach(o => { o.connect(e.f); o.start(); }); e.f.connect(e.g); e.g.connect(Snd.master);
+    // двигатель: гармоники частоты вспышек → перегруз → фильтр → модуляция (рык V8)
+    const e = Snd.eng = { o1: c.createOscillator(), o2: c.createOscillator(), o3: c.createOscillator(), o4: c.createOscillator(), ws: c.createWaveShaper(), f: c.createBiquadFilter(), am: c.createGain(), g: c.createGain(),
+      lfo: c.createOscillator(), lfoG: c.createGain(), turbo: c.createOscillator(), tg: c.createGain(), intake: c.createBufferSource(), inF: c.createBiquadFilter(), inG: c.createGain(), g2: c.createGain(), g3: c.createGain(), g4: c.createGain() };
+    e.o1.type = 'sawtooth'; e.o2.type = 'square'; e.o3.type = 'sawtooth'; e.o4.type = 'triangle';
+    const curve = new Float32Array(1024); for (let i = 0; i < 1024; i++) { const x = i / 512 - 1; curve[i] = Math.tanh(x * 2.2); } e.ws.curve = curve; e.ws.oversample = '2x';
+    e.f.type = 'lowpass'; e.f.Q.value = 4; e.g.gain.value = 0; e.am.gain.value = 1; e.g2.gain.value = .6; e.g3.gain.value = .35; e.g4.gain.value = .4;
+    e.o1.connect(e.ws); e.o2.connect(e.g2); e.g2.connect(e.ws); e.o3.connect(e.g3); e.g3.connect(e.ws); e.o4.connect(e.g4); e.g4.connect(e.ws);
+    e.ws.connect(e.f); e.f.connect(e.am); e.am.connect(e.g); e.g.connect(Snd.master);
+    e.lfo.type = 'sine'; e.lfoG.gain.value = 0; e.lfo.connect(e.lfoG); e.lfoG.connect(e.am.gain);
+    [e.o1, e.o2, e.o3, e.o4, e.lfo].forEach(o => o.start());
     e.turbo.type = 'sine'; e.tg.gain.value = 0; e.turbo.connect(e.tg); e.tg.connect(Snd.master); e.turbo.start();
+    e.intake.buffer = nb; e.intake.loop = true; e.inF.type = 'bandpass'; e.inF.Q.value = 1.5; e.inG.gain.value = 0; e.intake.connect(e.inF); e.inF.connect(e.inG); e.inG.connect(Snd.master); e.intake.start();
     // визг шин
     const s = c.createBufferSource(); s.buffer = nb; s.loop = true; const sf = c.createBiquadFilter(); sf.type = 'bandpass'; sf.frequency.value = 1900; sf.Q.value = 5;
     const sg = c.createGain(); sg.gain.value = 0; s.connect(sf); sf.connect(sg); sg.connect(Snd.master); s.start(); Snd.screech = { g: sg, f: sf };
     Snd.startMusic();
   },
   vol() { if (!Snd.ctx) return; const st = H.save.settings, t = Snd.ctx.currentTime; Snd.master.gain.setTargetAtTime(st.vol * .8, t, .05); Snd.music.gain.setTargetAtTime(st.music * .35, t, .05); },
-  engine(rpm, thr, on, turbo) {
-    if (!Snd.eng) return; const e = Snd.eng, t = Snd.ctx.currentTime, f = 38 + rpm * 190;
-    e.o1.frequency.setTargetAtTime(f, t, .03); e.o2.frequency.setTargetAtTime(f * .5, t, .03); e.o3.frequency.setTargetAtTime(f * 1.01 + 2, t, .03);
-    e.f.frequency.setTargetAtTime(300 + rpm * 1800 + thr * 900, t, .05); e.g.gain.setTargetAtTime(on ? .05 + thr * .07 + rpm * .03 : 0, t, .08);
-    e.turbo.frequency.setTargetAtTime(1800 + rpm * 2600, t, .1); e.tg.gain.setTargetAtTime(on ? turbo * thr * rpm * .012 : 0, t, .1);
+  engine(r01, thr, on, pr) {
+    if (!Snd.eng) return; const e = Snd.eng, t = Snd.ctx.currentTime;
+    if (!on || !pr) { e.g.gain.setTargetAtTime(0, t, .08); e.tg.gain.setTargetAtTime(0, t, .08); e.inG.gain.setTargetAtTime(0, t, .08); return; }
+    const f = pr.rpm / 60 * pr.cyl / 2, v8 = pr.snd === 'v8', v10 = pr.snd === 'v10', i4t = pr.snd === 'i4t';
+    e.o1.frequency.setTargetAtTime(f, t, .02); e.o2.frequency.setTargetAtTime(f * .5, t, .02); e.o3.frequency.setTargetAtTime(f * 2.01, t, .02); e.o4.frequency.setTargetAtTime(f * (v10 ? 3 : 1.5), t, .02);
+    e.g3.gain.setTargetAtTime(v10 ? .55 : v8 ? .2 : .4, t, .1); e.g2.gain.setTargetAtTime(v8 ? .9 : .55, t, .1);
+    const bright = v10 ? 1.6 : v8 ? .75 : 1.15;
+    e.f.frequency.setTargetAtTime((260 + r01 * 2200 * bright) * (.45 + .55 * thr + .15), t, .04);
+    e.lfo.frequency.setTargetAtTime(v8 ? f * .25 : f * .5, t, .05); e.lfoG.gain.setTargetAtTime(v8 ? .45 * (1 - r01 * .5) : .12, t, .1);
+    const lim = pr.limit && Math.random() < .5 ? .3 : 1;
+    e.g.gain.setTargetAtTime((.05 + thr * .09 + r01 * .04) * lim * (v8 ? 1.15 : 1), t, .04);
+    e.inF.frequency.setTargetAtTime(f * 5, t, .05); e.inG.gain.setTargetAtTime(thr * (.02 + r01 * .04), t, .06);
+    e.turbo.frequency.setTargetAtTime(1600 + r01 * 3600, t, .12); e.tg.gain.setTargetAtTime(pr.turbo || i4t ? thr * r01 * (.006 + (pr.turbo || 0) * .006) : 0, t, .12);
   },
+  shift() { if (!Snd.eng) return; const t = Snd.ctx.currentTime, g = Snd.eng.g.gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(g.value * .25, t + .05); g.linearRampToValueAtTime(g.value, t + .16); Snd.burst(.06, 900, .25, 'bandpass', 3); },
   tires(slip) { if (!Snd.screech) return; const t = Snd.ctx.currentTime; Snd.screech.g.gain.setTargetAtTime(clamp(slip, 0, 1) * .16, t, .06); Snd.screech.f.frequency.setTargetAtTime(1500 + slip * 900, t, .1); },
   tone(f, d, type = 'sine', v = .2, slide = 1, when = 0) { if (!Snd.ctx) return; const c = Snd.ctx, t = c.currentTime + when, o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.setValueAtTime(f, t); if (slide !== 1) o.frequency.exponentialRampToValueAtTime(f * slide, t + d); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g); g.connect(Snd.master); o.start(t); o.stop(t + d + .02); },
   burst(d, f, v = .3, type = 'lowpass', q = 1) { if (!Snd.ctx) return; const c = Snd.ctx, t = c.currentTime, s = c.createBufferSource(); s.buffer = Snd.noise; const fl = c.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q; const g = c.createGain(); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); s.connect(fl); fl.connect(g); g.connect(Snd.master); s.start(t, Math.random() * .5); s.stop(t + d); },
-  play(n) {
+  play(n, v = .6) {
     switch (n) {
       case 'click': Snd.tone(900, .05, 'triangle', .08); break;
       case 'buy': [660, 880, 1320].forEach((f, i) => Snd.tone(f, .2, 'triangle', .12, 1, i * .06)); break;
-      case 'hit': Snd.burst(.35, 500, .5); Snd.tone(70, .3, 'sine', .4, .5); break;
-      case 'pop': Snd.burst(.08, 1200, .35, 'bandpass', 2); break;
+      case 'hit': Snd.burst(.4, 600, .35 + v * .4); Snd.burst(.25, 2600, .12 + v * .2, 'bandpass', 4); Snd.tone(70, .3, 'sine', .3 + v * .3, .5); break;
+      case 'pop': Snd.burst(.07, rand(700, 1400), .4, 'bandpass', 2); setTimeout(() => Snd.burst(.05, rand(500, 1000), .3, 'bandpass', 2), rand(30, 70)); break;
+      case 'blowoff': Snd.burst(.45, 2200, .22, 'highpass', 1); break;
       case 'nitro': Snd.burst(.6, 2500, .25, 'highpass'); break;
       case 'bank': [523, 784].forEach((f, i) => Snd.tone(f, .25, 'square', .06, 1, i * .07)); break;
       case 'lose': Snd.tone(300, .4, 'sawtooth', .1, .4); break;
@@ -157,15 +177,15 @@ const Inp = {
   init() {
     addEventListener('keydown', e => {
       if (e.repeat) return; Inp.keys.add(e.code);
-      if (e.code === 'KeyC') Inp.cam = true; if (e.code === 'Escape' || e.code === 'KeyP') Inp.pause = true;
+      if (e.code === 'KeyC' || e.code === 'KeyV') Inp.cam = true; if (e.code === 'Escape' || e.code === 'KeyP') Inp.pause = true;
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code) && H.state === 'DRIVE') e.preventDefault();
     });
     addEventListener('keyup', e => Inp.keys.delete(e.code)); addEventListener('blur', () => Inp.keys.clear());
     addEventListener('contextmenu', e => e.preventDefault());
     addEventListener('touchstart', () => { if (!Inp.usingTouch) { Inp.usingTouch = true; document.body.classList.add('touch'); UI.touchHud(); } }, { passive: true });
-    for (const k of ['L', 'R', 'G', 'B', 'H', 'N']) {
+    for (const k of ['L', 'R', 'G', 'B', 'H', 'N', 'C']) {
       const el = document.getElementById('t' + k);
-      const on = e => { e.preventDefault(); Inp.touch[k] = 1; el.classList.add('on'); try { el.setPointerCapture(e.pointerId); } catch (er) { /* ok */ } };
+      const on = e => { e.preventDefault(); if (k === 'C') { Inp.cam = true; return; } Inp.touch[k] = 1; el.classList.add('on'); try { el.setPointerCapture(e.pointerId); } catch (er) { /* ok */ } };
       const off = () => { Inp.touch[k] = 0; el.classList.remove('on'); };
       el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('lostpointercapture', off);
     }

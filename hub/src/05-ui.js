@@ -31,6 +31,7 @@ const UI = {
       case 'buyCar': { const c = CARS[d.id]; if (s.owned[d.id]) { s.car = d.id; } else if (s.money >= c.price) { s.money -= c.price; s.owned[d.id] = true; s.car = d.id; Snd.play('buy'); UI.toast(T('bought')); } else { UI.toast(T('notEnough')); break; }
         Save.write(); UI.rebuildGarageCar(); UI.garage(); break; }
       case 'part': UI.buyPart(d.key, +d.v); break;
+      case 'repair': { const s2 = H.save; s2.damage = s2.damage || {}; s2.damage[id] = 0; Save.write(); UI.rebuildGarageCar(); Snd.play('buy'); UI.toast(T('repaired')); UI.garage(); break; }
       case 'paint': UI.setCfg('paint', d.v, true); UI.garage(); break;
       case 'up': { const cfg = carConfig(id), lv = cfg.up[d.key], price = PRICES[d.key][lv]; if (price === undefined) break; if (s.money < price) { UI.toast(T('notEnough')); break; }
         s.money -= price; cfg.up[d.key]++; Save.write(); Snd.play('buy'); UI.garage(); break; }
@@ -48,11 +49,11 @@ const UI = {
     }
   },
   clear() { UI.root.innerHTML = ''; },
-  setSetting(k, v, rerender) { const st = H.save.settings; st[k] = k === 'cam' ? +v : v; Save.write(); UI.apply(); if (k === 'quality') resize(); if (rerender) UI.settings(UI.settingsFrom); },
+  setSetting(k, v, rerender) { const st = H.save.settings; st[k] = k === 'cam' ? +v : k === 'assist' ? (v === true || v === 'true') : v; Save.write(); UI.apply(); if (k === 'quality') resize(); if (rerender) UI.settings(UI.settingsFrom); },
   apply() { const st = H.save.settings; H.lang = st.lang || ((navigator.language || 'ru').toLowerCase().startsWith('ru') ? 'ru' : 'en'); document.documentElement.lang = H.lang; document.title = T('hub'); Snd.vol(); },
   setCfg(k, v, rebuild) { const cfg = carConfig(H.save.car); cfg[k] = v; Save.write(); if (rebuild) UI.rebuildGarageCar(); },
   buyPart(key, v) {
-    const s = H.save, id = s.car, price = (PRICES[key] || [])[v] || 0;
+    const s = H.save, id = s.car, price = partPrice(key, v);
     if (!owns(id, key, v) && price > 0) { if (s.money < price) { UI.toast(T('notEnough')); return; } s.money -= price; s.parts[`${id}:${key}:${v}`] = 1; Snd.play('buy'); }
     UI.setCfg(key, v, true); UI.garage();
   },
@@ -83,38 +84,40 @@ const UI = {
   // ---------- гараж ----------
   garage() {
     H.state = 'GARAGE'; UI.hud(false); const s = H.save, id = s.car, cfg = carConfig(id), st = carStats(id, cfg);
-    const tabs = [['cars', T('tCars')], ['paint', T('tPaint')], ['wheels', T('tWheels')], ['stance', T('tStance')], ['body', T('tBody')], ['glass', T('tGlass')], ['engine', T('tEngine')]];
-    const opt = (key, v, label) => { const own = owns(id, key, v), price = PRICES[key][v], on = cfg[key] === v;
-      return `<button class="opt ${on ? 'on' : ''}" data-act="part" data-key="${key}" data-v="${v}"><span>${esc(label)}</span><span class="p ${own || !price ? 'owned' : ''}">${on ? '✓' : own || !price ? T('owned') : '$ ' + fmt(price)}</span></button>`; };
+    const tabs = [['cars', T('tCars')], ['paint', T('tPaint')], ['wheels', T('tWheels')], ['stance', T('tStance')], ['body', T('tBody')], ['lights', T('tHeads')], ['engine', T('tEngine')]];
+    const opt = (key, v) => { const own = owns(id, key, v), price = partPrice(key, v), on = cfg[key] === v, lab = partName(PARTS[key][v][0]);
+      return `<button class="opt ${on ? 'on' : ''}" data-act="part" data-key="${key}" data-v="${v}"><span>${key === 'neon' && v ? `<span style="color:${NEONS[v]}">●●●</span>` : esc(lab)}</span><span class="p ${own || !price ? 'owned' : ''}">${on ? '✓' : !price ? T('free') : own ? T('owned') : '$ ' + fmt(price)}</span></button>`; };
+    const opts = key => `<div class="opts">${PARTS[key].map((_, i) => opt(key, i)).join('')}</div>`;
     const sw = (key, list, cur, act = 'part') => `<div class="swatches">${list.map((c, i) => `<button class="sw ${cur === (act === 'paint' ? c : i) ? 'on' : ''}" style="background:${c || 'repeating-linear-gradient(45deg,#333 0 4px,#222 4px 8px)'}" data-act="${act}" data-key="${key}" data-v="${act === 'paint' ? c : i}" aria-label="${c || T('none')}"></button>`).join('')}</div>`;
     const bar = (label, v, txt) => `<div class="stat"><span class="muted">${esc(label)}</span><div class="bar"><i style="width:${clamp(v, 0, 1) * 100}%"></i></div><span class="num small">${txt}</span></div>`;
+    const hp = x => Math.round(x.power), dmg = (s.damage || {})[id] || 0;
     let body = '';
-    if (UI.tab === 'cars') body = Object.entries(CARS).map(([cid, c]) => { const cs = carStats(cid, carConfig(cid)), own = s.owned[cid];
+    if (UI.tab === 'cars') body = (dmg ? `<div class="panel" style="padding:12px;display:flex;justify-content:space-between;align-items:center;gap:8px"><span>${esc(T('damage'))}: <b class="num" style="color:var(--bad)">${dmg}%</b></span><button class="btn" data-act="repair"><span>🔧 ${esc(T('repair'))}</span></button></div>` : '')
+      + Object.entries(CARS).map(([cid, c]) => { const cs = carStats(cid, carConfig(cid)), own = s.owned[cid];
       return `<div class="panel" style="padding:12px"><div class="row" style="justify-content:space-between"><b class="head" style="font-size:1.3em;font-style:italic">${esc(c.name)}</b>
         ${own ? (s.car === cid ? `<span class="muted small">${esc(T('selected'))}</span>` : `<button class="btn" data-act="buyCar" data-id="${cid}"><span>${esc(T('select'))}</span></button>`) : `<button class="btn primary" data-act="buyCar" data-id="${cid}"><span>$ ${fmt(c.price)}</span></button>`}</div>
-        ${bar(T('sPower'), cs.power / 26000, Math.round(cs.power / 45) + ' ' + T('hp'))}${bar(T('sGrip'), cs.grip / 1.5, cs.grip.toFixed(2))}${bar(T('sTop'), cs.top / 100, Math.round(cs.top * 3.6))}</div>`; }).join('');
+        ${bar(T('sPower'), hp(cs) / 650, hp(cs) + ' ' + T('hp'))}${bar(T('sWeight'), 1 - cs.mass / 2200, Math.round(cs.mass) + ' ' + T('kg'))}${bar(T('sGrip'), cs.mu / 1.5, cs.mu.toFixed(2))}</div>`; }).join('');
     if (UI.tab === 'paint') body = `<h3>${esc(T('paint'))}</h3>${sw('paint', PAINTS, cfg.paint, 'paint')}
       <div class="row"><label for="cPick">${esc(T('custom'))}</label><input id="cPick" type="color" value="${cfg.paint}" data-cfg="paint"></div>
-      <h3>${esc(T('finish'))}</h3><div class="opts">${['fGloss', 'fMetallic', 'fMatte', 'fPearl', 'fChrome'].map((k, i) => opt('finish', i, T(k))).join('')}</div>
-      <h3>${esc(T('neon'))}</h3><div class="opts">${NEONS.map((c, i) => opt('neon', i, i ? '●' : T('none')).replace('<span>●</span>', `<span style="color:${c}">●●●</span>`)).join('')}</div>`;
-    if (UI.tab === 'wheels') body = `<h3>${esc(T('wheelStyle'))}</h3><div class="opts">${['5-Spoke', 'Mesh', 'Deep Dish', 'Turbine', 'Multi'].map((n, i) => opt('wheel', i, n)).join('')}</div>
-      <h3>${esc(T('wheelColor'))}</h3>${sw('wcol', WHEEL_COLORS, cfg.wcol)}<h3>${esc(T('wheelSize'))}</h3><div class="opts">${['17"', '18"', '19"'].map((n, i) => opt('wsize', i, n)).join('')}</div>
-      <h3>${esc(T('caliper'))}</h3>${sw('caliper', CALIPERS, cfg.caliper)}`;
+      <h3>${esc(T('finish'))}</h3>${opts('finish')}<h3>${esc(T('stripes'))}</h3>${opts('stripes')}<h3>${esc(T('stripeCol'))}</h3>${sw('stripeCol', STRIPE_COLS, cfg.stripeCol)}`;
+    if (UI.tab === 'wheels') body = `<h3>${esc(T('wheelStyle'))}</h3>${opts('wheel')}<h3>${esc(T('wheelColor'))}</h3>${sw('wcol', WHEEL_COLORS, cfg.wcol)}<h3>${esc(T('wheelSize'))}</h3>${opts('wsize')}<h3>${esc(T('caliper'))}</h3>${sw('caliper', CALIPERS, cfg.caliper)}`;
     if (UI.tab === 'stance') body = `<div class="slider"><label for="sH"><span>${esc(T('height'))}</span><span class="num">${cfg.height > 0 ? '−' : cfg.height < 0 ? '+' : ''}${Math.abs(cfg.height * 35)} ${T('mm')}</span></label><input id="sH" type="range" min="-2" max="4" step="1" value="${cfg.height}" data-cfg="height"></div>
-      <div class="slider"><label for="sC"><span>${esc(T('camber'))}</span><span class="num">${(cfg.camber * 1.7).toFixed(1)}°</span></label><input id="sC" type="range" min="0" max="6" step="1" value="${cfg.camber}" data-cfg="camber"></div>`;
-    if (UI.tab === 'body') body = [['front', T('front'), [T('stock'), 'Lip', 'Aero']], ['rear', T('rear'), [T('stock'), 'Diffuser', 'Race']], ['hood', T('hood'), [T('stock'), 'Vented', 'Carbon']], ['spoiler', T('spoiler'), [T('none'), 'Ducktail', 'GT', 'Wing']], ['skirts', T('skirts'), [T('none'), 'Aero']]]
-      .map(([k, n, names]) => `<h3>${esc(n)}</h3><div class="opts">${names.map((nm, i) => opt(k, i, nm)).join('')}</div>`).join('');
-    if (UI.tab === 'glass') body = `<h3>${esc(T('tint'))}</h3><div class="opts">${['0%', '35%', '70%', 'Limo'].map((n, i) => opt('tint', i, n)).join('')}</div>`;
+      <div class="slider"><label for="sC"><span>${esc(T('camber'))}</span><span class="num">${(cfg.camber * 1.7).toFixed(1)}°</span></label><input id="sC" type="range" min="0" max="6" step="1" value="${cfg.camber}" data-cfg="camber"></div>
+      <h3>${esc(T('fenders'))}</h3>${opts('fenders')}`;
+    if (UI.tab === 'body') body = [['front', T('front')], ['rear', T('rear')], ['hood', T('hood')], ['spoiler', T('spoiler')], ['skirts', T('skirts')], ['exhaust', T('exhaust')]].map(([k, n]) => `<h3>${esc(n)}</h3>${opts(k)}`).join('');
+    if (UI.tab === 'lights') body = `<h3>${esc(T('heads'))}</h3>${opts('heads')}<h3>${esc(T('lightCol'))}</h3>${sw('lightCol', LIGHT_COLS, cfg.lightCol)}<h3>${esc(T('tails'))}</h3>${opts('tails')}
+      <h3>${esc(T('neon'))}</h3>${opts('neon')}<h3>${esc(T('tint'))}</h3>${opts('tint')}`;
     if (UI.tab === 'engine') body = UPGRADES.map(k => { const lv = cfg.up[k], max = PRICES[k].length, price = PRICES[k][lv];
       return `<div class="panel" style="padding:12px;display:flex;flex-direction:column;gap:8px"><div class="row" style="justify-content:space-between"><b class="head">${esc(T('up' + k[0].toUpperCase() + k.slice(1)))}</b>
         ${lv < max ? `<button class="btn" data-act="up" data-key="${k}"><span>$ ${fmt(price)}</span></button>` : '<span class="muted small">MAX</span>'}</div><div class="pips">${Array.from({ length: max }, (_, i) => `<i class="${i < lv ? 'on' : ''}"></i>`).join('')}</div></div>`; }).join('')
-      + `<div class="panel" style="padding:12px;display:flex;flex-direction:column;gap:6px">${bar(T('sPower'), st.power / 26000, Math.round(st.power / 45) + ' ' + T('hp'))}${bar(T('sGrip'), st.grip / 1.5, st.grip.toFixed(2))}${bar(T('sHandling'), st.steer / .9, st.steer.toFixed(2))}${bar(T('sWeight'), 1 - st.mass / 2000, Math.round(st.mass) + ' ' + T('kg'))}${bar(T('sTop'), st.top / 100, Math.round(st.top * 3.6))}</div>`;
+      + `<div class="panel" style="padding:12px;display:flex;flex-direction:column;gap:6px">${bar(T('sPower'), hp(st) / 650, hp(st) + ' ' + T('hp'))}${bar(T('sGrip'), st.mu / 1.5, st.mu.toFixed(2))}${bar(T('sHandling'), st.resp / 1.5, st.resp.toFixed(2))}${bar(T('sWeight'), 1 - st.mass / 2200, Math.round(st.mass) + ' ' + T('kg'))}</div>`;
     UI.show(`<div class="topbar"><button class="btn ghost" data-act="hub"><span>← ${esc(T('back'))}</span></button><h2>${esc(T('garage'))} · ${esc(CARS[id].name)}</h2><div class="row">${UI.money()}<button class="btn primary" data-act="race"><span>${esc(T('race'))} ▶</span></button></div></div>
       <div class="garage"><div class="tabs">${tabs.map(([k, n]) => `<button class="${UI.tab === k ? 'on' : ''}" data-act="tab" data-id="${k}">${esc(n)}</button>`).join('')}</div><div class="gbody">${body}</div></div>`, 'clear');
+    const gb = UI.root.querySelector('.gbody'); if (gb && UI.gScroll && UI.gScrollTab === UI.tab) gb.scrollTop = UI.gScroll; if (gb) gb.addEventListener('scroll', () => { UI.gScroll = gb.scrollTop; UI.gScrollTab = UI.tab; });
   },
   trackSel() {
     H.state = 'TRACKSEL'; const s = H.save;
-    const wIcon = { rain: '🌧', clear: '🌅', snow: '❄', dust: '🌪' }, wName = { rain: 'wRain', clear: 'wClear', snow: 'wSnow', dust: 'wDust' };
+    const wIcon = { rain: '🌧', clear: '🌅', snow: '❄', dust: '🌪', night: '🌃', sunny: '☀' }, wName = { rain: 'wRain', clear: 'wClear', snow: 'wSnow', dust: 'wDust', night: 'wNight', sunny: 'wSunny' };
     const tracks = Object.entries(TRACKS).map(([k, t]) => `<button class="card ${UI.sel.track === k ? 'on' : ''}" data-act="track" data-id="${k}"><b>${esc(t.name[H.lang] || t.name.ru)}</b>
       <span class="muted small">${wIcon[t.weather]} ${esc(T(wName[t.weather]))} · ${esc(T('grip'))} ${Math.round(t.grip * 100)}%</span><span class="small">${esc(T('best'))}: <span class="num">${fmt(s.best[k + ':chal'] || 0)}</span> · ${s.best[k + ':time'] ? fmtT(s.best[k + ':time']) : '—'}</span></button>`).join('');
     const modes = [['free', 'modeFree', 'modeFreeD'], ['chal', 'modeChal', 'modeChalD'], ['time', 'modeTime', 'modeTimeD']].map(([k, n, dd]) => `<button class="card ${UI.sel.mode === k ? 'on' : ''}" data-act="mode" data-id="${k}"><b>${esc(T(n))}</b><span class="muted small">${esc(T(dd))}</span></button>`).join('');
@@ -129,7 +132,8 @@ const UI = {
       <div class="slider"><label for="st_vol"><span>${esc(T('volume'))}</span></label><input id="st_vol" type="range" min="0" max="1" step=".05" value="${st.vol}" data-set="vol"></div>
       <div class="slider"><label for="st_music"><span>${esc(T('music'))}</span></label><input id="st_music" type="range" min="0" max="1" step=".05" value="${st.music}" data-set="music"></div>
       ${sel('quality', T('quality'), [['auto', 'Auto'], ['low', T('qLow')], ['mid', T('qMid')], ['high', T('qHigh')]])}
-      ${sel('cam', T('camera'), [[0, T('camChase')], [1, T('camFar')], [2, T('camHood')]])}
+      ${sel('cam', T('camera'), CAMS.map((k, i) => [i, T(k)]))}
+      ${sel('assist', T('assist'), [['true', '✓'], ['false', '✕']])}
       ${sel('units', T('units'), [['kmh', T('kmh')], ['mph', T('mph')]])}
       ${sel('lang', T('lang'), [['ru', 'Русский'], ['en', 'English']])}
       <p class="muted small">${esc(T('help'))}</p>
@@ -213,14 +217,14 @@ function boot() {
     let dt = (now - last) / 1000; last = now; if (dt > .1) dt = .1;
     Inp.poll(dt);
     if (Inp.pause) { Inp.pause = false; if (H.state === 'DRIVE') UI.pause(); else if (H.state === 'PAUSE') UI.act('resume', {}); }
-    if (Inp.cam) { Inp.cam = false; if (H.state === 'DRIVE') { H.save.settings.cam = (H.save.settings.cam + 1) % 3; Save.write(); } }
+    if (Inp.cam) { Inp.cam = false; if (H.state === 'DRIVE') { H.save.settings.cam = (H.save.settings.cam + 1) % CAMS.length; Save.write(); UI.toast(T('camHint') + ': ' + T(CAMS[H.save.settings.cam])); } }
     if (D.on && W.track) {
       if (H.state === 'DRIVE') { acc += dt; let n = 0; while (acc >= CFG.STEP && n < CFG.MAX_STEPS) { driveStep(CFG.STEP); acc -= CFG.STEP; n++; } if (n >= CFG.MAX_STEPS) acc = 0; driveVisual(dt); UI.hudUpdate(dt); }
       W.renderer.render(W.track.sc, W.cam);
     } else renderGarage(dt);
   };
   requestAnimationFrame(loop);
-  H.dev = { D, W, UI, Save, CARS, startDrive, stopDrive, driveStep, Inp };
+  H.dev = { D, W, UI, Save, CARS, CFG, startDrive, stopDrive, driveStep, physStep, Inp };
 }
 boot();
 })();
