@@ -204,7 +204,7 @@ function renderGarage(dt) {
   W.cam.lookAt(0, (UI.tab === 'wheels' ? .35 : .65) - (portrait && panel ? 1.9 : 0), 0);
   W.cam.fov = damp(W.cam.fov, portrait ? 60 : 45, 4, dt); W.cam.updateProjectionMatrix();
   if (car) car.userData.wheels.forEach(w => { if (w.front) w.pivot.rotation.y = Math.sin(performance.now() / 1500) * .25; });
-  W.renderer.toneMappingExposure = 1.1; W.renderer.render(g, W.cam);
+  W.renderer.toneMappingExposure = 1.05; renderScene(g, [.45, .45, 2.2]);
 }
 function boot() {
   Save.load(); UI.init(); UI.apply(); Inp.init(); initRenderer(); initMaterials();
@@ -220,7 +220,7 @@ function boot() {
     if (Inp.cam) { Inp.cam = false; if (H.state === 'DRIVE') { H.save.settings.cam = (H.save.settings.cam + 1) % CAMS.length; Save.write(); UI.toast(T('camHint') + ': ' + T(CAMS[H.save.settings.cam])); } }
     if (D.on && W.track) {
       if (H.state === 'DRIVE') { acc += dt; let n = 0; while (acc >= CFG.STEP && n < CFG.MAX_STEPS) { driveStep(CFG.STEP); acc -= CFG.STEP; n++; } if (n >= CFG.MAX_STEPS) acc = 0; driveVisual(dt); UI.hudUpdate(dt); }
-      W.renderer.render(W.track.sc, W.cam);
+      if (D.on && D.cube && quality() === 'high') updateReflections(); renderScene(W.track.sc, W.track.th.bloom || [.5, .5, .85]);
     } else renderGarage(dt);
   };
   requestAnimationFrame(loop);

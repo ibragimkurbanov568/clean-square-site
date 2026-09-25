@@ -14,13 +14,13 @@ const TRACKS = {
     pts: [[0, 0], [150, -30], [245, 40], [205, 145], [105, 122], [45, 205], [-80, 185], [-125, 85], [-72, 12]], medals: [5000, 12000, 21000] },
 };
 const THEME = {
-  rain: { sky: ['#05070c', '#141c2a', '#1c2433'], fog: 0x0b1018, fogN: 30, fogF: 240, hemi: [0x33445a, 0x0c0c10, .5], sun: [0x8fa4c8, .45], sunPos: [-40, 80, 30], exp: 1.05, night: true, ground: 'concrete', wet: true, wall: 'concrete', lampCol: 0xffa040 },
-  clear: { sky: ['#1f2a55', '#ff8a4c', '#ffd29a'], fog: 0x8a5a60, fogN: 90, fogF: 650, hemi: [0xffc59a, 0x3a2f35, .75], sun: [0xffa060, 2.6], sunPos: [-120, 40, -60], exp: 1.0, ground: 'grass', wall: 'rail', lampCol: 0xffc070 },
-  snow: { sky: ['#a9b7c6', '#d7dee6', '#eef2f6'], fog: 0xd2dae3, fogN: 25, fogF: 260, hemi: [0xe6eef6, 0x8a96a6, 1.0], sun: [0xffffff, .9], sunPos: [60, 90, 40], exp: 1.0, ground: 'snow', wall: 'snowbank', lampCol: 0xfff0d0 },
-  dust: { sky: ['#b98a55', '#d9a86a', '#e8c48f'], fog: 0xc8a070, fogN: 18, fogF: 170, hemi: [0xffe0b0, 0x8a6a4a, .9], sun: [0xfff0d0, 1.9], sunPos: [50, 120, -30], exp: 1.0, ground: 'sand', wall: 'rock', lampCol: 0xffe0a0 },
+  rain: { bloom: [.85, .55, 1.25], sky: ['#05070c', '#141c2a', '#1c2433'], fog: 0x0b1018, fogN: 30, fogF: 240, hemi: [0x33445a, 0x0c0c10, .5], sun: [0x8fa4c8, .45], sunPos: [-40, 80, 30], exp: 1.05, night: true, ground: 'concrete', wet: true, wall: 'concrete', lampCol: 0xffa040 },
+  clear: { phys: true, turb: 10, ray: 3, envI: .55, bloom: [.4, .5, 2.2], sky: ['#1f2a55', '#ff8a4c', '#ffd29a'], fog: 0x8a5a60, fogN: 90, fogF: 650, hemi: [0xffc59a, 0x3a2f35, .75], sun: [0xffa060, 2.6], sunPos: [-120, 40, -60], exp: 1.0, ground: 'grass', wall: 'rail', lampCol: 0xffc070 },
+  snow: { phys: true, turb: 12, ray: .6, envI: .45, flare: false, bloom: [.25, .4, 2.6], sky: ['#a9b7c6', '#d7dee6', '#eef2f6'], fog: 0xd2dae3, fogN: 25, fogF: 260, hemi: [0xe6eef6, 0x8a96a6, 1.0], sun: [0xffffff, .9], sunPos: [60, 90, 40], exp: 1.0, ground: 'snow', wall: 'snowbank', lampCol: 0xfff0d0 },
+  dust: { phys: true, turb: 18, ray: 4, envI: .5, flare: false, bloom: [.3, .5, 2.4], sky: ['#b98a55', '#d9a86a', '#e8c48f'], fog: 0xc8a070, fogN: 18, fogF: 170, hemi: [0xffe0b0, 0x8a6a4a, .9], sun: [0xfff0d0, 1.9], sunPos: [50, 120, -30], exp: 1.0, ground: 'sand', wall: 'rock', lampCol: 0xffe0a0 },
 };
-THEME.night = { sky: ['#030409', '#0e1330', '#241238'], fog: 0x0b0d1c, fogN: 40, fogF: 330, hemi: [0x4a5590, 0x0a0a12, .55], sun: [0x8090c0, .35], sunPos: [-40, 90, 30], exp: 1.12, night: true, ground: 'concrete', wet: true, wall: 'concrete', lampCol: 0xffc890 };
-THEME.sunny = { sky: ['#2f6fd6', '#8ec5ff', '#e2f0ff'], fog: 0xc6dcf2, fogN: 140, fogF: 950, hemi: [0xdfefff, 0x6a6250, 1.05], sun: [0xfff2dc, 3.1], sunPos: [90, 160, 50], exp: .95, ground: 'grass', wall: 'tires', lampCol: 0xffffff };
+THEME.night = { bloom: [.8, .55, 1.4], sky: ['#030409', '#0e1330', '#241238'], fog: 0x0b0d1c, fogN: 40, fogF: 330, hemi: [0x4a5590, 0x0a0a12, .55], sun: [0x8090c0, .35], sunPos: [-40, 90, 30], exp: 1.12, night: true, ground: 'concrete', wet: true, wall: 'concrete', lampCol: 0xffc890 };
+THEME.sunny = { phys: true, turb: 3, ray: 1, envI: .4, bloom: [.25, .4, 3], sky: ['#2f6fd6', '#8ec5ff', '#e2f0ff'], fog: 0xc6dcf2, fogN: 140, fogF: 950, hemi: [0xdfefff, 0x6a6250, 1.05], sun: [0xfff2dc, 3.1], sunPos: [90, 160, 50], exp: .95, ground: 'grass', wall: 'tires', lampCol: 0xffffff };
 const W = { renderer: null, scene: null, cam: null, track: null, lamps: [], lampLights: [], weather: null, flashT: 0, nextBolt: 8 };
 
 function canvasTex(size, draw, repeat = 1) { const c = document.createElement('canvas'); c.width = c.height = size; draw(c.getContext('2d'), size); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeat, repeat); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; }
@@ -28,14 +28,31 @@ function noiseFill(g, s, base, spots, n, a = .5) { g.fillStyle = base; g.fillRec
 
 function initRenderer() {
   const canvas = document.getElementById('gl');
-  const r = W.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  const r = W.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', stencil: false });
   r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
-  W.cam = new THREE.PerspectiveCamera(62, 1, .1, 1500);
+  W.cam = new THREE.PerspectiveCamera(62, 1, .1, 2000);
+  // постобработка: рендер → свечение → сглаживание → виньетка → вывод (тон-маппинг и sRGB)
+  const c = W.composer = new THREE.EffectComposer(r);
+  W.rpass = new THREE.RenderPass(new THREE.Scene(), W.cam); c.addPass(W.rpass);
+  W.bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256, 256), .5, .55, .85); c.addPass(W.bloom);
+  W.smaa = new THREE.SMAAPass(256, 256); c.addPass(W.smaa);
+  W.vig = new THREE.ShaderPass(THREE.VignetteShader); W.vig.uniforms.offset.value = .95; W.vig.uniforms.darkness.value = 1.15; c.addPass(W.vig);
+  c.addPass(new THREE.OutputPass());
   addEventListener('resize', resize); resize();
 }
 function quality() { const q = H.save.settings.quality; return q === 'auto' ? (Inp.usingTouch || matchMedia('(pointer:coarse)').matches ? 'mid' : 'high') : q; }
-function resize() { const q = CFG.QUALITY[quality()]; W.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, q.pr)); W.renderer.setSize(innerWidth, innerHeight, false); W.cam.aspect = innerWidth / innerHeight; W.cam.updateProjectionMatrix(); }
-
+function resize() {
+  const q = CFG.QUALITY[quality()], pr = Math.min(devicePixelRatio || 1, q.pr);
+  W.renderer.setPixelRatio(pr); W.renderer.setSize(innerWidth, innerHeight, false); W.cam.aspect = innerWidth / innerHeight; W.cam.updateProjectionMatrix();
+  W.composer.setPixelRatio(pr); W.composer.setSize(innerWidth, innerHeight); W.bloom.resolution.set(innerWidth * pr / 2, innerHeight * pr / 2);
+}
+// кадр: низкое качество — без постобработки; среднее — без SMAA
+function renderScene(sc, bloom) {
+  const q = quality();
+  if (q === 'low') { W.renderer.render(sc, W.cam); return; }
+  W.rpass.scene = sc; W.bloom.strength = bloom[0]; W.bloom.radius = bloom[1]; W.bloom.threshold = bloom[2]; W.smaa.enabled = q === 'high';
+  W.composer.render();
+}
 function skyMesh(cols, stars) {
   const mat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, fog: false,
     uniforms: { top: { value: new THREE.Color(cols[0]) }, mid: { value: new THREE.Color(cols[1]) }, bot: { value: new THREE.Color(cols[2]) } },
@@ -47,7 +64,13 @@ function skyMesh(cols, stars) {
   return g;
 }
 // карта окружения для отражений: небо + несколько ярких панелей
+function physSky(th) {
+  const sky = new THREE.Sky(); sky.scale.setScalar(1800); const u = sky.material.uniforms;
+  u.turbidity.value = th.turb ?? 6; u.rayleigh.value = th.ray ?? 1.4; u.mieCoefficient.value = .006; u.mieDirectionalG.value = .85;
+  const sp = new THREE.Vector3(...th.sunPos).normalize(); u.sunPosition.value.copy(sp); return sky;
+}
 function envFromSky(th) {
+  if (th.phys) { const s = new THREE.Scene(); s.add(physSky(th)); const pm = new THREE.PMREMGenerator(W.renderer), rt = pm.fromScene(s, .02); pm.dispose(); return rt.texture; }
   const s = new THREE.Scene(); s.add(skyMesh(th.sky, false));
   const lm = new THREE.MeshBasicMaterial({ color: th.night ? 0xffb070 : 0xffffff });
   for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(th.night ? 40 : 120, 20), lm); const a = i / 6 * TAU; m.position.set(Math.cos(a) * 300, th.night ? 30 : 160, Math.sin(a) * 300); m.lookAt(0, 0, 0); s.add(m); }
@@ -56,7 +79,7 @@ function envFromSky(th) {
 
 function buildGarageScene() {
   const sc = new THREE.Scene(); sc.background = new THREE.Color(0x0a0c10); sc.fog = new THREE.Fog(0x0a0c10, 14, 40);
-  const th = { sky: ['#0a0c12', '#1a2030', '#101218'], night: true }; sc.environment = envFromSky(th);
+  const pm = new THREE.PMREMGenerator(W.renderer); sc.environment = pm.fromScene(new THREE.RoomEnvironment(), .04).texture; sc.environmentIntensity = .3; pm.dispose();
   sc.add(new THREE.HemisphereLight(0x8899bb, 0x111111, .6));
   const key = new THREE.SpotLight(0xffffff, 260, 30, .55, .5, 1.6); key.position.set(4, 8, 5); key.castShadow = true; key.shadow.mapSize.set(1024, 1024); key.shadow.bias = -.002; key.shadow.normalBias = .03; sc.add(key);
   const rim = new THREE.SpotLight(0xff5a1f, 160, 30, .6, .6, 1.6); rim.position.set(-6, 5, -6); sc.add(rim);
@@ -70,7 +93,12 @@ function buildGarageScene() {
 
 function buildTrack(id) {
   const def = TRACKS[id], th = THEME[def.weather], sc = new THREE.Scene(), q = CFG.QUALITY[quality()];
-  sc.fog = new THREE.Fog(th.fog, th.fogN, th.fogF); sc.add(skyMesh(th.sky, th.night)); sc.environment = envFromSky(th); sc.background = new THREE.Color(th.fog);
+  sc.fog = new THREE.Fog(th.fog, th.fogN, th.fogF); sc.add(th.phys ? physSky(th) : skyMesh(th.sky, th.night)); sc.environment = envFromSky(th); sc.environmentIntensity = th.envI ?? 1; sc.background = new THREE.Color(th.fog);
+  // блик солнца
+  if (th.phys && th.flare !== false) { const ft = canvasTex(128, (g, s2) => { const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.2, 'rgba(255,240,200,.6)'); gr.addColorStop(1, 'rgba(255,200,120,0)'); g.fillStyle = gr; g.fillRect(0, 0, s2, s2); });
+    const ring = canvasTex(128, (g) => { g.strokeStyle = 'rgba(180,220,255,.35)'; g.lineWidth = 6; g.beginPath(); g.arc(64, 64, 50, 0, TAU); g.stroke(); });
+    const lf = new THREE.Lensflare(); lf.addElement(new THREE.LensflareElement(ft, 420, 0, new THREE.Color(0xfff2d8))); lf.addElement(new THREE.LensflareElement(ring, 80, .5)); lf.addElement(new THREE.LensflareElement(ft, 60, .7, new THREE.Color(0x88bbff))); lf.addElement(new THREE.LensflareElement(ring, 140, 1));
+    const pl = new THREE.PointLight(0xffffff, 0); pl.position.copy(new THREE.Vector3(...th.sunPos).normalize().multiplyScalar(1500)); pl.add(lf); sc.add(pl); }
   const hemi = new THREE.HemisphereLight(th.hemi[0], th.hemi[1], th.hemi[2]); sc.add(hemi);
   const sun = new THREE.DirectionalLight(th.sun[0], th.sun[1]); sun.castShadow = q.shadow > 0; sun.shadow.mapSize.set(q.shadow || 512, q.shadow || 512);
   const sh = sun.shadow.camera; sh.left = -35; sh.right = 35; sh.top = 35; sh.bottom = -35; sh.near = 1; sh.far = 300; sun.shadow.bias = -.0004; sun.shadow.normalBias = .03; sc.add(sun); sc.add(sun.target);
@@ -167,7 +195,7 @@ function buildTrack(id) {
   }
   if (id === 'city') {
     const winTex = canvasTex(256, (g, s2) => { g.fillStyle = '#0b0d14'; g.fillRect(0, 0, s2, s2); for (let y = 8; y < s2; y += 16) for (let x = 6; x < s2; x += 12) { const on = Math.random() < .42; g.fillStyle = on ? ['#ffd79a', '#fff1c8', '#9ad0ff', '#ffb070'][Math.random() * 4 | 0] : '#141824'; g.fillRect(x, y, 7, 9); } });
-    const bmat = new THREE.MeshStandardMaterial({ color: 0x2a2e3a, roughness: .7, metalness: .3, emissive: 0xffffff, emissiveMap: winTex, emissiveIntensity: 1.1, map: winTex });
+    const bmat = new THREE.MeshStandardMaterial({ color: 0x2a2e3a, roughness: .7, metalness: .3, emissive: 0xffffff, emissiveMap: winTex, emissiveIntensity: .9, map: winTex });
     const blds = []; scatter(120, 10, 90, (x, z, r) => { const h = 14 + r() * 55, w = 10 + r() * 14; blds.push({ x, y: h / 2, z, sx: w, sy: h, sz: 10 + r() * 14, r: Math.round(r() * 4) * Math.PI / 2 }); });
     inst(new THREE.BoxGeometry(1, 1, 1), bmat, blds);
     const neonCols = [0xff2d95, 0x22d3ee, 0xa855f7, 0xffb020, 0x4ade80], neons = [];
@@ -217,7 +245,7 @@ function buildTrack(id) {
   const lights = []; if (th.night || id === 'snow') for (let i = 0; i < (quality() === 'low' ? 2 : 5); i++) { const l = new THREE.PointLight(th.lampCol, th.night ? 60 : 20, 26, 1.8); sc.add(l); lights.push(l); }
   // погода
   const weather = buildWeather(def.weather, sc);
-  W.renderer.toneMappingExposure = th.exp;
+  W.renderer.toneMappingExposure = th.phys ? th.exp * .62 : th.exp;
   W.track = { id, def, th, sc, P, Tn, Nm, D, N, total, hw, sun, hemi, lamps, lights, weather, hemiBase: th.hemi[2], anim };
   return W.track;
 }

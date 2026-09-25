@@ -73,6 +73,10 @@ function startDrive(trackId, mode) {
   u.pool.visible = night; u.pool.material.opacity = .24; u.headGlow.forEach(g => { g.visible = night; }); u.headMat.emissiveIntensity = night ? 3 : 1.4;
   D.smokeCol = { rain: [.6, .63, .67], clear: [.84, .84, .86], snow: [.96, .97, 1], dust: [.8, .66, .5], night: [.62, .64, .7], sunny: [.86, .86, .88] }[tr.def.weather] || [.8, .8, .82];
   D.grip = tr.def.grip;
+  // живые отражения окружения на кузове (высокое качество)
+  if (quality() === 'high') { const rt = new THREE.WebGLCubeRenderTarget(128, { generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter });
+    D.cube = new THREE.CubeCamera(.5, 400, rt); tr.sc.add(D.cube); D.cubeT = 0;
+    car.traverse(o => { if (o.material && o.material.isMeshStandardMaterial && (o.material === u.paint || o.material === u.glass || o.material.metalness > .6)) { if (o.material === Mat.chrome) return; o.material.envMap = rt.texture; } }); } else D.cube = null;
   if (D.damage) dentFromDamage();
   UI.drawMini(); H.state = 'DRIVE'; UI.hud(true);
 }
@@ -246,5 +250,9 @@ function cameraUpdate(dt, fx, fz, lx, lz) {
   cam.lookAt(D.camLook);
   const fov = (innerWidth < innerHeight ? 78 : 62) + (mode === 2 || mode === 3 ? 8 : 0) + Math.min(D.speed, 70) * .2 + (D.nosOn ? 9 : 0);
   cam.fov = damp(cam.fov, fov, 4, dt); cam.updateProjectionMatrix();
+}
+function updateReflections() {
+  D.cubeT = (D.cubeT + 1) % 3; if (D.cubeT) return;
+  D.car.visible = false; D.cube.position.set(D.x, 1, D.z); D.cube.update(W.renderer, D.tr.sc); D.car.visible = true;
 }
 function lerpAngle(a, b, t) { let d = b - a; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU; return a + d * t; }
