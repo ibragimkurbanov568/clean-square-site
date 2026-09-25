@@ -31,7 +31,7 @@ const STR = {
     angle: 'угол', paused: 'Пауза', resume: 'Продолжить', restart: 'Заново', toGarage: 'В гараж', toHub: 'В меню', results: 'Итоги',
     earned: 'Заработано', bronze: 'Бронза', silver: 'Серебро', gold: 'Золото', noMedal: 'Без медали', bestLap: 'Лучший круг', newRecord: 'Новый рекорд!',
     quality: 'Графика', qLow: 'Низкая', qMid: 'Средняя', qHigh: 'Высокая', volume: 'Громкость', music: 'Музыка', lang: 'Язык', units: 'Единицы', kmh: 'КМ/Ч', mph: 'MPH',
-    camBumper: 'С бампера', camCine: 'Кино', assist: 'Помощь в контруле', repair: 'Починить бесплатно', damage: 'Повреждения', repaired: 'Машина как новая', tHeads: 'Свет', tExtra: 'Детали', heads: 'Фары', lightCol: 'Цвет света', tails: 'Стопы', exhaust: 'Выхлоп', fenders: 'Расширители', stripes: 'Полосы', stripeCol: 'Цвет полос', free: 'Бесплатно', camHint: 'Камера', wNight: 'Ясная ночь', wSunny: 'Солнечно', vinyl: 'Винил', vcol: 'Цвет винила', vcol2: 'Второй цвет', cls: 'Класс', allCls: 'Все', 
+    camBumper: 'С бампера', camCine: 'Кино', assist: 'Помощь в контруле', repair: 'Починить бесплатно', damage: 'Повреждения', repaired: 'Машина как новая', tHeads: 'Свет', tExtra: 'Детали', heads: 'Фары', lightCol: 'Цвет света', tails: 'Стопы', exhaust: 'Выхлоп', fenders: 'Расширители', stripes: 'Полосы', stripeCol: 'Цвет полос', free: 'Бесплатно', camHint: 'Камера', wNight: 'Ясная ночь', wSunny: 'Солнечно', modeCircuit: 'Кольцо', modeCircuitD: '3 круга против 5 соперников', modeSprint: 'Спринт', modeSprintD: 'Один круг сквозь ночной трафик', modeKO: 'На выбывание', modeKOD: 'Последний на круге выбывает', modeTrap: 'Радары', modeTrapD: 'Сумма скоростей на камерах решает', modeDrag: 'Драг', modeDragD: '402 метра, ручная коробка: E — выше, Q — ниже', modePursuit: 'Погоня', modePursuitD: 'Уйди от полиции и собери награду', police: 'Полиция', koOut: 'выбывает', copDown: 'ПАТРУЛЬ ВЫВЕДЕН', trap: 'РАДАР', trapSum: 'Сумма', launchPerfect: 'ИДЕАЛЬНЫЙ СТАРТ', launchSpin: 'ПРОБУКСОВКА', launchBog: 'ВЯЛЫЙ СТАРТ', shiftPerfect: 'ИДЕАЛЬНОЕ ПЕРЕКЛЮЧЕНИЕ', shiftGood: 'ХОРОШО', shiftLate: 'ПОЗДНО', shiftEarly: 'РАНО', roadblock: 'Впереди блокпост!', backup: 'Подкрепление в пути', bounty: 'Награда', bust: 'Арест', evade: 'Отрыв', pos: 'Позиция', you: 'Вы', shift: 'ПЕРЕДАЧА', busted: 'АРЕСТОВАН', escaped: 'УШЁЛ ОТ ПОГОНИ', place: 'Место', raceWin: 'ПОБЕДА', raceLose: 'ПОРАЖЕНИЕ', catRace: 'Гонки', catDrift: 'Дрифт', eliminated: 'Выбыл', continue: 'Продолжить', driver: 'Гонщик', car: 'Машина', copsDown: 'Патрулей выведено', vinyl: 'Винил', vcol: 'Цвет винила', vcol2: 'Второй цвет', cls: 'Класс', allCls: 'Все', 
     camera: 'Камера', camChase: 'Сзади', camFar: 'Дальняя', camHood: 'С капота', controls: 'Управление',
     help: 'W/↑ газ · S/↓ тормоз · A/D руль · Пробел ручник · Shift нитро · C камера (5 видов) · Esc пауза', helpTouch: 'Кнопки на экране: руль слева, газ/тормоз/ручник/нитро справа',
     notEnough: 'Не хватает денег', bought: 'Куплено', lockedCar: 'Сначала купите машину', saved: 'Сохранено',
@@ -58,7 +58,7 @@ const STR = {
     angle: 'angle', paused: 'Paused', resume: 'Resume', restart: 'Restart', toGarage: 'Garage', toHub: 'Menu', results: 'Results',
     earned: 'Earned', bronze: 'Bronze', silver: 'Silver', gold: 'Gold', noMedal: 'No medal', bestLap: 'Best lap', newRecord: 'New record!',
     quality: 'Graphics', qLow: 'Low', qMid: 'Medium', qHigh: 'High', volume: 'Volume', music: 'Music', lang: 'Language', units: 'Units', kmh: 'KM/H', mph: 'MPH',
-    camBumper: 'Bumper', camCine: 'Cinematic', assist: 'Countersteer assist', repair: 'Repair for free', damage: 'Damage', repaired: 'Good as new', tHeads: 'Lights', tExtra: 'Parts', heads: 'Headlights', lightCol: 'Light colour', tails: 'Tail lights', exhaust: 'Exhaust', fenders: 'Fenders', stripes: 'Stripes', stripeCol: 'Stripe colour', free: 'Free', camHint: 'Camera', wNight: 'Clear night', wSunny: 'Sunny', vinyl: 'Vinyl', vcol: 'Vinyl colour', vcol2: 'Second colour', cls: 'Class', allCls: 'All', 
+    camBumper: 'Bumper', camCine: 'Cinematic', assist: 'Countersteer assist', repair: 'Repair for free', damage: 'Damage', repaired: 'Good as new', tHeads: 'Lights', tExtra: 'Parts', heads: 'Headlights', lightCol: 'Light colour', tails: 'Tail lights', exhaust: 'Exhaust', fenders: 'Fenders', stripes: 'Stripes', stripeCol: 'Stripe colour', free: 'Free', camHint: 'Camera', wNight: 'Clear night', wSunny: 'Sunny', modeCircuit: 'Circuit', modeCircuitD: '3 laps against 5 rivals', modeSprint: 'Sprint', modeSprintD: 'One lap through night traffic', modeKO: 'Knockout', modeKOD: 'Last car each lap is out', modeTrap: 'Speedtrap', modeTrapD: 'Highest total camera speed wins', modeDrag: 'Drag', modeDragD: '402 metres, manual gears: E up, Q down', modePursuit: 'Pursuit', modePursuitD: 'Escape the police and build your bounty', police: 'Police', koOut: 'is out', copDown: 'COP DISABLED', trap: 'SPEEDTRAP', trapSum: 'Total', launchPerfect: 'PERFECT LAUNCH', launchSpin: 'WHEELSPIN', launchBog: 'BOGGED START', shiftPerfect: 'PERFECT SHIFT', shiftGood: 'GOOD', shiftLate: 'LATE', shiftEarly: 'EARLY', roadblock: 'Roadblock ahead!', backup: 'Backup en route', bounty: 'Bounty', bust: 'Bust', evade: 'Evade', pos: 'Position', you: 'You', shift: 'SHIFT', busted: 'BUSTED', escaped: 'ESCAPED', place: 'Place', raceWin: 'VICTORY', raceLose: 'DEFEAT', catRace: 'Races', catDrift: 'Drift', eliminated: 'Out', continue: 'Continue', driver: 'Driver', car: 'Car', copsDown: 'Cops disabled', vinyl: 'Vinyl', vcol: 'Vinyl colour', vcol2: 'Second colour', cls: 'Class', allCls: 'All', 
     camera: 'Camera', camChase: 'Chase', camFar: 'Far', camHood: 'Hood', controls: 'Controls',
     help: 'W/↑ throttle · S/↓ brake · A/D steer · Space handbrake · Shift nitro · C camera (5 views) · Esc pause', helpTouch: 'On-screen buttons: steering left, gas/brake/handbrake/nitro right',
     notEnough: 'Not enough money', bought: 'Purchased', lockedCar: 'Buy the car first', saved: 'Saved',
@@ -178,15 +178,15 @@ const Inp = {
   init() {
     addEventListener('keydown', e => {
       if (e.repeat) return; Inp.keys.add(e.code);
-      if (e.code === 'KeyC' || e.code === 'KeyV') Inp.cam = true; if (e.code === 'Escape' || e.code === 'KeyP') Inp.pause = true;
+      if (e.code === 'KeyC' || e.code === 'KeyV') Inp.cam = true; if (e.code === 'KeyE') Inp.shiftUp = true; if (e.code === 'KeyQ') Inp.shiftDown = true; if (e.code === 'KeyR') Inp.reset = true; if (e.code === 'Escape' || e.code === 'KeyP') Inp.pause = true;
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code) && H.state === 'DRIVE') e.preventDefault();
     });
     addEventListener('keyup', e => Inp.keys.delete(e.code)); addEventListener('blur', () => Inp.keys.clear());
     addEventListener('contextmenu', e => e.preventDefault());
     addEventListener('touchstart', () => { if (!Inp.usingTouch) { Inp.usingTouch = true; document.body.classList.add('touch'); UI.touchHud(); } }, { passive: true });
-    for (const k of ['L', 'R', 'G', 'B', 'H', 'N', 'C']) {
+    for (const k of ['L', 'R', 'G', 'B', 'H', 'N', 'C', 'U', 'D', 'X']) {
       const el = document.getElementById('t' + k);
-      const on = e => { e.preventDefault(); if (k === 'C') { Inp.cam = true; return; } Inp.touch[k] = 1; el.classList.add('on'); try { el.setPointerCapture(e.pointerId); } catch (er) { /* ok */ } };
+      const on = e => { e.preventDefault(); if (k === 'C') { Inp.cam = true; return; } if (k === 'U') { Inp.shiftUp = true; return; } if (k === 'D') { Inp.shiftDown = true; return; } if (k === 'X') { Inp.reset = true; return; } Inp.touch[k] = 1; el.classList.add('on'); try { el.setPointerCapture(e.pointerId); } catch (er) { /* ok */ } };
       const off = () => { Inp.touch[k] = 0; el.classList.remove('on'); };
       el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('lostpointercapture', off);
     }
@@ -202,6 +202,7 @@ const Inp = {
       const ax = gp.axes[0] || 0; if (Math.abs(ax) > .12) st = ax;
       const bv = i => gp.buttons[i] ? gp.buttons[i].value || (gp.buttons[i].pressed ? 1 : 0) : 0;
       gas = Math.max(gas, bv(7)); br = Math.max(br, bv(6)); hb = hb || bv(0) > .5; nos = nos || bv(2) > .5 || bv(5) > .5;
+      if (bv(1) > .5 && !Inp.padPrev[1]) Inp.shiftUp = true; if (bv(4) > .5 && !Inp.padPrev[4]) Inp.shiftDown = true; if (bv(8) > .5 && !Inp.padPrev[8]) Inp.reset = true; Inp.padPrev[1] = bv(1) > .5; Inp.padPrev[4] = bv(4) > .5; Inp.padPrev[8] = bv(8) > .5;
       if (bv(9) > .5 && !Inp.padPrev[9]) Inp.pause = true; if (bv(3) > .5 && !Inp.padPrev[3]) Inp.cam = true;
       Inp.padPrev[9] = bv(9) > .5; Inp.padPrev[3] = bv(3) > .5;
     }

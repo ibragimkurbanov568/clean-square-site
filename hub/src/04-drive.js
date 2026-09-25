@@ -43,7 +43,7 @@ function addSkid(S, w, x, z, dx, dz) {
 }
 
 // ---------- старт заезда ----------
-function startDrive(trackId, mode) {
+function startDrive(trackId, mode, ropts) {
   const s = H.save, id = s.car, cfg = carConfig(id), st = carStats(id, cfg);
   const tr = buildTrack(trackId), car = buildCar(id, cfg); tr.sc.add(car);
   const P0 = tr.P[2], T0 = tr.Tn[2], night = !!tr.th.night || tr.def.weather === 'dust' || tr.def.weather === 'rain';
@@ -78,11 +78,12 @@ function startDrive(trackId, mode) {
     D.cube = new THREE.CubeCamera(.5, 400, rt); tr.sc.add(D.cube); D.cubeT = 0;
     car.traverse(o => { if (o.material && o.material.isMeshStandardMaterial && (o.material === u.paint || o.material === u.glass || o.material.metalness > .6)) { if (o.material === Mat.chrome) return; o.material.envMap = rt.texture; } }); } else D.cube = null;
   if (D.damage) dentFromDamage();
+  if (isRaceMode(mode)) raceStart(mode, ropts || {});
   UI.drawMini(); H.state = 'DRIVE'; UI.hud(true);
 }
 function dentFromDamage() { const d = CARS[D.id]; let left = D.damage; for (const [lx, lz] of [[1, .8], [-1, -.6], [.3, 1], [-.4, -1]]) { if (left <= 0) break; dentCar(D.car, lx * d.W / 2, .6, lz * d.L / 2, Math.min(.1, left * .002)); left -= 25; } }
 function stopDrive() {
-  if (!D.tr) return; const s = H.save; s.damage = s.damage || {}; s.damage[D.id] = Math.round(D.damage); Save.write();
+  if (!D.tr) return; raceStop(); const s = H.save; s.damage = s.damage || {}; s.damage[D.id] = Math.round(D.damage); Save.write();
   disposeTree(D.tr.sc); if (D.tr.sc.environment) D.tr.sc.environment.dispose(); D.on = false; D.tr = null; W.track = null; Snd.engine(0, 0, false); Snd.tires(0);
 }
 
@@ -134,7 +135,7 @@ function physStep(dt) {
   D.rpm = damp(D.rpm, rpmT, D.spin || D.count > 0 ? 7 : 18, dt); if (D.rpm > st.redline) D.rpm = st.redline;
   // коробка-автомат
   if (D.shiftT > 0) D.shiftT -= dt;
-  else if (D.gear > 0 && D.count <= 0) {
+  else if (D.gear > 0 && D.count <= 0 && !D.manual) {
     if (groundRpm > st.redline * .95 && D.gear < 6 && !D.spin) { D.gear++; D.shiftT = .16; D.popT = .25; D.pops = 1 + (Math.random() * 2 | 0); Snd.shift(); }
     else if (groundRpm < 2900 && D.gear > 1) D.gear--;
   }
@@ -178,7 +179,7 @@ function driveStep(dt) {
   }
   // очки за дрифт
   const ang = Math.abs(D.beta); D.angle = ang; D.slip = clamp((D.slipRear - .12) * 2.4, 0, 1) * Math.min(1, D.speed / 8);
-  const drifting = D.speed > CFG.DRIFT_MIN_SPEED && ang > CFG.DRIFT_MIN_ANGLE && ang < 1.9 && D.u > 0 && D.count <= 0 && !D.ended;
+  const drifting = !D.noDrift && D.speed > CFG.DRIFT_MIN_SPEED && ang > CFG.DRIFT_MIN_ANGLE && ang < 1.9 && D.u > 0 && D.count <= 0 && !D.ended;
   if (drifting) {
     D.dT += dt; D.grace = CFG.DRIFT_BANK_DELAY; D.dMul = Math.min(CFG.DRIFT_MULT_MAX, 1 + Math.floor(D.dT / CFG.DRIFT_MULT_EVERY));
     D.dPts += dt * D.speed * (ang * 57.3) * .09 * D.dMul; D.maxMul = Math.max(D.maxMul, D.dMul); D.longest = Math.max(D.longest, D.dT); D.nitro = Math.min(1, D.nitro + dt * .1);
@@ -186,13 +187,14 @@ function driveStep(dt) {
   if (!D.nosOn) D.nitro = Math.min(1, D.nitro + dt * .025);
   if (D.count > 0) { D.count -= dt; const c = Math.ceil(D.count); if (c !== D.lastCount && c > 0) { Snd.play('count'); D.lastCount = c; } if (D.count <= 0) Snd.play('go'); }
   else if (!D.ended) { D.t += dt; if (D.mode === 'chal') { D.left -= dt; if (D.left <= 0) { D.left = 0; endDrive(); } } }
+  if (RC.on) raceStep(dt);
 }
 function bankDrift() {
   const pts = Math.round(D.dPts); D.score += pts;
   if (pts > 50) { UI.driftMsg('+' + fmt(pts) + (pts > 8000 ? ' ' + T('insane') : pts > 3000 ? ' ' + T('great') : pts > 800 ? ' ' + T('perfect') : ''), true); Snd.play('bank'); }
   D.dPts = 0; D.dT = 0; D.dMul = 1;
 }
-function endDrive() { if (D.ended) return; if (D.dPts > 0) bankDrift(); D.ended = true; setTimeout(() => { if (D.on) UI.results(); }, 1400); }
+function endDrive() { if (D.ended) return; if (D.dPts > 0) bankDrift(); D.ended = true; setTimeout(() => { if (D.on) (RC.on ? UI.raceResults() : UI.results()); }, RC.on ? 2200 : 1400); }
 
 // ---------- визуализация ----------
 function driveVisual(dt) {
@@ -232,7 +234,7 @@ function driveVisual(dt) {
   Snd.tires(Math.max(D.slip * Math.min(1, D.speed / 10), D.locked && D.speed > 4 ? .7 : 0));
   cameraUpdate(dt, fx, fz, lx, lz);
   const tr = D.tr, sp = tr.th.sunPos; tr.sun.position.set(D.x + sp[0], sp[1], D.z + sp[2]); tr.sun.target.position.set(D.x, 0, D.z);
-  updateWeather(dt, D.x, D.z); updateLamps(D.x, D.z); animateTrack(now, dt);
+  updateWeather(dt, D.x, D.z); updateLamps(D.x, D.z); animateTrack(now, dt); raceVisual(dt);
 }
 // 5 камер: сзади, дальняя, с капота, с бампера, кинематографичная сбоку
 function cameraUpdate(dt, fx, fz, lx, lz) {

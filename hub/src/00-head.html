@@ -96,6 +96,12 @@ input[type=range]{width:100%;accent-color:var(--accent)} input[type=color]{width
 #tB{right:calc(112px + var(--sar));bottom:calc(150px + var(--sab));width:64px;height:64px}
 #tH{right:calc(112px + var(--sar));bottom:calc(230px + var(--sab));width:64px;height:64px}
 #tC{right:calc(24px + var(--sar));bottom:calc(306px + var(--sab));width:56px;height:56px;font-size:12px;color:#fcd34d}
+#tU,#tD{display:none;left:calc(18px + var(--sal));width:64px;height:64px;color:#4ade80}#tU{bottom:calc(120px + var(--sab))}#tD{bottom:calc(196px + var(--sab));left:calc(92px + var(--sal))}body.drag #tU,body.drag #tD{display:flex}
+#tX{right:calc(24px + var(--sar));bottom:calc(378px + var(--sab));width:48px;height:48px;font-size:18px}
+.race{position:absolute;left:50%;top:calc(52px + var(--sat));transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;min-width:220px}
+.race .rb{display:grid;grid-template-columns:70px 160px;gap:8px;align-items:center;font:700 .8em var(--head);letter-spacing:.1em;text-transform:uppercase}.race .bar{height:8px}
+.shiftL{font:italic 900 1.6em var(--head);color:#39414f;letter-spacing:.1em}.shiftL.on{color:#4ade80;text-shadow:0 0 14px #4ade80}.shiftL.late{color:var(--bad)}
+.rtab{display:grid;grid-template-columns:auto 1fr auto auto;gap:6px 14px;text-align:left;align-items:center}.rtab .me{color:var(--accent2);font-weight:800}
 #tN{right:calc(24px + var(--sar));bottom:calc(228px + var(--sab));width:64px;height:64px;color:#a5f3fc}
 body.touch .speedo{bottom:auto;top:calc(64px + var(--sat));right:calc(14px + var(--sar));transform:none;text-align:right}
 body.touch .speedo .v{font-size:44px}
@@ -121,7 +127,7 @@ body.touch #mini{bottom:auto;top:calc(64px + var(--sat));width:100px;height:100p
 <canvas id="gl"></canvas>
 <div id="hud">
   <div class="score"><div class="muted small" id="hScoreL"></div><div class="big" id="hScore">0</div><div class="small muted" id="hBest"></div></div>
-  <div class="timer" id="hTimer"></div>
+  <div class="timer" id="hTimer"></div><div class="race" id="hRace"></div>
   <div class="drift" id="hDrift" style="opacity:0"><div class="pts" id="hPts">0</div><div class="mul" id="hMul">×1</div><div class="ang" id="hAng"></div><div class="msg" id="hMsg"></div></div>
   <canvas id="mini" width="180" height="180"></canvas>
   <div class="speedo"><span class="gear" id="hGear">N</span> <span class="v" id="hSpd">0</span> <span class="u" id="hUnit">КМ/Ч</span><div class="rpm"><i id="hRpm"></i></div><div class="nitro"><i id="hNos"></i></div></div>
@@ -129,7 +135,7 @@ body.touch #mini{bottom:auto;top:calc(64px + var(--sat));width:100px;height:100p
 </div>
 <div id="touch">
   <div class="tb" id="tL">◀</div><div class="tb" id="tR">▶</div>
-  <div class="tb" id="tG">GAS</div><div class="tb" id="tB">BRK</div><div class="tb" id="tH">HB</div><div class="tb" id="tN">NOS</div><div class="tb" id="tC">CAM</div>
+  <div class="tb" id="tG">GAS</div><div class="tb" id="tB">BRK</div><div class="tb" id="tH">HB</div><div class="tb" id="tN">NOS</div><div class="tb" id="tC">CAM</div><div class="tb" id="tU">▲</div><div class="tb" id="tD">▼</div><div class="tb" id="tX">↺</div>
 </div>
 <div id="ui"></div>
 <div id="toast" aria-live="polite"></div>

@@ -38,10 +38,10 @@ const UI = {
         s.money -= price; cfg.up[d.key]++; Save.write(); Snd.play('buy'); UI.garage(); break; }
       case 'race': if (!s.owned[id]) { UI.toast(T('lockedCar')); break; } UI.trackSel(); break;
       case 'track': UI.sel.track = d.id; UI.trackSel(); break;
-      case 'mode': UI.sel.mode = d.id; UI.trackSel(); break;
-      case 'start': UI.clear(); Game.toDrive(UI.sel.track, UI.sel.mode); break;
+      case 'mode': UI.sel.mode = d.id; if (d.id === 'drag') UI.sel.track = 'drag'; else if (UI.sel.track === 'drag' && isRaceMode(d.id)) UI.sel.track = 'city'; UI.trackSel(); break;
+      case 'start': UI.clear(); UI.sel.opts = {}; Game.toDrive(UI.sel.track, UI.sel.mode, UI.sel.opts); break;
       case 'resume': UI.clear(); H.state = 'DRIVE'; UI.hud(true); break;
-      case 'restart': Game.leaveDrive(); UI.clear(); Game.toDrive(UI.sel.track, UI.sel.mode); break;
+      case 'restart': Game.leaveDrive(); UI.clear(); Game.toDrive(UI.sel.track, UI.sel.mode, UI.sel.opts); break;
       case 'toGarage': Game.leaveDrive(); UI.garage(); break;
       case 'toHub': Game.leaveDrive(); UI.hubMenu(); break;
       case 'settings': UI.settings(d.from); break;
@@ -122,7 +122,9 @@ const UI = {
     const wIcon = { rain: '🌧', clear: '🌅', snow: '❄', dust: '🌪', night: '🌃', sunny: '☀' }, wName = { rain: 'wRain', clear: 'wClear', snow: 'wSnow', dust: 'wDust', night: 'wNight', sunny: 'wSunny' };
     const tracks = Object.entries(TRACKS).map(([k, t]) => `<button class="card ${UI.sel.track === k ? 'on' : ''}" data-act="track" data-id="${k}"><b>${esc(t.name[H.lang] || t.name.ru)}</b>
       <span class="muted small">${wIcon[t.weather]} ${esc(T(wName[t.weather]))} · ${esc(T('grip'))} ${Math.round(t.grip * 100)}%</span><span class="small">${esc(T('best'))}: <span class="num">${fmt(s.best[k + ':chal'] || 0)}</span> · ${s.best[k + ':time'] ? fmtT(s.best[k + ':time']) : '—'}</span></button>`).join('');
-    const modes = [['free', 'modeFree', 'modeFreeD'], ['chal', 'modeChal', 'modeChalD'], ['time', 'modeTime', 'modeTimeD']].map(([k, n, dd]) => `<button class="card ${UI.sel.mode === k ? 'on' : ''}" data-act="mode" data-id="${k}"><b>${esc(T(n))}</b><span class="muted small">${esc(T(dd))}</span></button>`).join('');
+    const mc = list => list.map(([k, n, dd, ic]) => `<button class="card ${UI.sel.mode === k ? 'on' : ''}" data-act="mode" data-id="${k}"><b>${ic} ${esc(T(n))}</b><span class="muted small">${esc(T(dd))}</span></button>`).join('');
+    const modes = `<h4 class="muted small" style="grid-column:1/-1;margin:4px 0 0;letter-spacing:.2em;text-transform:uppercase">${esc(T('catRace'))}</h4>` + mc([['circuit', 'modeCircuit', 'modeCircuitD', '🏁'], ['sprint', 'modeSprint', 'modeSprintD', '⚡'], ['knockout', 'modeKO', 'modeKOD', '✖'], ['speedtrap', 'modeTrap', 'modeTrapD', '📷'], ['drag', 'modeDrag', 'modeDragD', '⏱'], ['pursuit', 'modePursuit', 'modePursuitD', '🚨']])
+      + `<h4 class="muted small" style="grid-column:1/-1;margin:8px 0 0;letter-spacing:.2em;text-transform:uppercase">${esc(T('catDrift'))}</h4>` + mc([['free', 'modeFree', 'modeFreeD', '∞'], ['chal', 'modeChal', 'modeChalD', '🔥'], ['time', 'modeTime', 'modeTimeD', '⏲']]);
     UI.show(`${UI.top(T('chooseTrack'), 'drift')}<div class="cards">${tracks}</div><h3 style="margin:16px 0 8px">${esc(T('chooseMode'))}</h3><div class="cards">${modes}</div>
       <p class="muted small" style="margin:14px 0">${esc(Inp.usingTouch ? T('helpTouch') : T('help'))}</p><button class="btn primary" data-act="start" autofocus><span>${esc(T('start'))} ▶</span></button>`, '');
     UI.root.querySelector('.screen').style.background = 'linear-gradient(180deg,rgba(7,8,11,.85),rgba(7,8,11,.6))';
@@ -165,6 +167,21 @@ const UI = {
       <div class="row" style="justify-content:center"><button class="btn primary" data-act="restart" autofocus><span>${esc(T('restart'))}</span></button><button class="btn" data-act="toGarage"><span>${esc(T('toGarage'))}</span></button><button class="btn ghost" data-act="toHub"><span>${esc(T('toHub'))}</span></button></div></div>`, '');
     UI.root.querySelector('.screen').style.background = 'rgba(7,8,11,.75)';
   },
+  raceResults() {
+    const s = H.save, M = RC.M, cls = CARS[D.id].cls, cm = CLASS_MULT[RC.cls] || 1; H.state = 'RESULT'; UI.hud(false); Snd.engine(0, 0, false, 0); Snd.tires(0);
+    const st = raceStanding(), pos = st.findIndex(r => r.me) + 1; let earn = 0, title, win;
+    if (M.police) { win = RC.win; earn = win ? Math.round(RC.bounty) : Math.round(RC.bounty * .1); title = win ? T('escaped') : T('busted'); }
+    else { win = RC.win !== false && pos === 1; earn = RC.meOut ? 100 : Math.round((PRIZES[pos - 1] || 100) * cm); title = RC.meOut ? T('eliminated') : win ? T('raceWin') : `${pos} ${T('place')}`; }
+    s.money += earn; s.stats.runs++; const key = D.trackId + ':' + D.mode; if (!M.police && !RC.meOut && (!s.best[key] || pos < s.best[key])) s.best[key] = pos; Save.write();
+    Snd.play(win ? 'medal' : 'lose'); UI.lastRace = { win, pos, mode: D.mode };
+    const unit = H.save.settings.units === 'mph', tcol = r => M.traps ? fmt(Math.round(unit ? r.trap / 1.609 : r.trap)) : r.elim ? T('eliminated') : r.t != null ? fmtT(r.t) : '—';
+    const table = M.police ? `<div class="panel kv" style="min-width:min(360px,92vw)"><span>${esc(T('time'))}</span><span>${fmtT(RC.t)}</span><span>${esc(T('copsDown'))}</span><span>${RC.wrecked}</span><span>${esc(T('bounty'))}</span><span>$ ${fmt(Math.round(RC.bounty))}</span><span>${esc(T('earned'))}</span><span style="color:var(--accent2)">$ ${fmt(earn)}</span></div>`
+      : `<div class="panel rtab" style="min-width:min(460px,94vw)">${st.map((r, i) => `<span class="num ${r.me ? 'me' : ''}">${i + 1}</span><span class="${r.me ? 'me' : ''}">${r.boss ? '★ ' : ''}${esc(r.name)} <span class="muted small">${esc(r.car)}</span></span><span class="num ${r.me ? 'me' : ''}">${tcol(r)}</span><span></span>`).join('')}
+        <span></span><span>${esc(T('earned'))}</span><span style="color:var(--accent2)" class="num">$ ${fmt(earn)}</span><span></span></div>`;
+    UI.show(`<div class="center"><h2 style="color:${win ? 'var(--accent2)' : 'var(--text)'}">${esc(title)}</h2>${RC.bestLap ? `<div class="muted">${esc(T('bestLap'))}: ${fmtT(RC.bestLap)}</div>` : ''}${table}
+      <div class="row" style="justify-content:center">${UI.sel.opts && UI.sel.opts.event ? `<button class="btn primary" data-act="careerBack" autofocus><span>${esc(T('continue'))}</span></button>` : ''}<button class="btn ${UI.sel.opts && UI.sel.opts.event ? '' : 'primary'}" data-act="restart"><span>${esc(T('restart'))}</span></button><button class="btn" data-act="toGarage"><span>${esc(T('toGarage'))}</span></button><button class="btn ghost" data-act="toHub"><span>${esc(T('toHub'))}</span></button></div></div>`, '');
+    UI.root.querySelector('.screen').style.background = 'rgba(7,8,11,.78)';
+  },
   // ---------- HUD ----------
   driftMsg(m, good) { const el = document.getElementById('hMsg'); el.textContent = m; el.style.color = good ? 'var(--good)' : 'var(--bad)'; D.msgT = 1.6; },
   drawMini() {
@@ -180,7 +197,7 @@ const UI = {
     D.hudT -= dt; if (D.msgT > 0) { D.msgT -= dt; if (D.msgT <= 0) document.getElementById('hMsg').textContent = ''; }
     const mph = H.save.settings.units === 'mph', spd = D.speed * (mph ? 2.237 : 3.6);
     document.getElementById('hRpm').style.width = (D.rpm * 100).toFixed(1) + '%'; document.getElementById('hNos').style.width = (D.nitro * 100).toFixed(1) + '%';
-    const dr = document.getElementById('hDrift'); dr.style.opacity = D.dPts > 0 || D.msgT > 0 ? 1 : 0;
+    const dr = document.getElementById('hDrift'); dr.style.opacity = D.dPts > 0 || D.msgT > 0 ? 1 : 0; if (!RC.on) document.getElementById('hRace').innerHTML = '';
     if (D.hudT > 0) return; D.hudT = 1 / 15;
     document.getElementById('hSpd').textContent = Math.round(spd); document.getElementById('hUnit').textContent = T(mph ? 'mph' : 'kmh');
     document.getElementById('hGear').textContent = D.vf < -.5 ? 'R' : D.speed < .5 ? 'N' : D.gear;
@@ -191,13 +208,14 @@ const UI = {
     document.getElementById('hTimer').textContent = D.count > 0 ? Math.ceil(D.count) : D.mode === 'chal' ? fmtT(D.left) : D.mode === 'time' ? `${T('lap')} ${Math.min(D.lap, CFG.LAPS)}/${CFG.LAPS} · ${fmtT(D.lapT)}` : fmtT(D.t);
     const c = document.getElementById('mini'), g = c.getContext('2d'), m = UI.mini; g.clearRect(0, 0, 180, 180); g.drawImage(UI.miniBg, 0, 0);
     const x = m.ox + (D.x - m.x0) * m.sc, y = m.oz + (D.z - m.z0) * m.sc; g.save(); g.translate(x, y); g.rotate(-D.h + Math.PI); g.fillStyle = '#ff5a1f'; g.beginPath(); g.moveTo(0, -8); g.lineTo(6, 6); g.lineTo(-6, 6); g.fill(); g.restore();
+    if (RC.on) { raceMini(g, m); raceHud(); }
   },
 };
 
 // ==== 11. GAME LOOP & BOOT ====
 const Game = {
-  toDrive(track, mode) { startDrive(track, mode); },
-  leaveDrive() { if (D.on) stopDrive(); UI.hud(false); },
+  toDrive(track, mode, opts) { startDrive(track, mode, opts); document.body.classList.toggle('drag', mode === 'drag'); },
+  leaveDrive() { if (D.on) stopDrive(); UI.hud(false); document.body.classList.remove('drag'); },
 };
 function renderGarage(dt) {
   const g = W.garage, o = UI.orbit, car = g.userData.car; if (o.auto) o.a += dt * .18;
@@ -226,7 +244,7 @@ function boot() {
     } else renderGarage(dt);
   };
   requestAnimationFrame(loop);
-  H.dev = { D, W, UI, Save, CARS, CFG, startDrive, stopDrive, driveStep, physStep, Inp };
+  H.dev = { D, W, UI, Save, CARS, CFG, RC, startDrive, stopDrive, driveStep, physStep, Inp, raceStanding };
 }
 boot();
 })();
