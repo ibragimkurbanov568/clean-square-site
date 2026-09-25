@@ -28,6 +28,7 @@ const UI = {
       case 'drift': UI.garage(); break;
       case 'torch': if (/\/hub\/(index\.html)?$/.test(location.pathname)) location.href = location.pathname.replace(/hub\/(index\.html)?$/, 'game/index.html'); else UI.toast(T('mTorchD')); break;
       case 'tab': UI.tab = d.id; UI.garage(); break;
+      case 'cls': UI.cls = d.id; UI.garage(); break;
       case 'buyCar': { const c = CARS[d.id]; if (s.owned[d.id]) { s.car = d.id; } else if (s.money >= c.price) { s.money -= c.price; s.owned[d.id] = true; s.car = d.id; Snd.play('buy'); UI.toast(T('bought')); } else { UI.toast(T('notEnough')); break; }
         Save.write(); UI.rebuildGarageCar(); UI.garage(); break; }
       case 'part': UI.buyPart(d.key, +d.v); break;
@@ -93,13 +94,14 @@ const UI = {
     const hp = x => Math.round(x.power), dmg = (s.damage || {})[id] || 0;
     let body = '';
     if (UI.tab === 'cars') body = (dmg ? `<div class="panel" style="padding:12px;display:flex;justify-content:space-between;align-items:center;gap:8px"><span>${esc(T('damage'))}: <b class="num" style="color:var(--bad)">${dmg}%</b></span><button class="btn" data-act="repair"><span>🔧 ${esc(T('repair'))}</span></button></div>` : '')
-      + Object.entries(CARS).map(([cid, c]) => { const cs = carStats(cid, carConfig(cid)), own = s.owned[cid];
-      return `<div class="panel" style="padding:12px"><div class="row" style="justify-content:space-between"><b class="head" style="font-size:1.3em;font-style:italic">${esc(c.name)}</b>
+      + `<div class="tabs" style="margin-bottom:8px">${['*', ...CLASSES].map(k => `<button class="${(UI.cls || '*') === k ? 'on' : ''}" data-act="cls" data-id="${k}">${k === '*' ? esc(T('allCls')) : esc(T('cls')) + ' ' + k}</button>`).join('')}</div>`
+      + Object.entries(CARS).filter(([, c]) => !UI.cls || UI.cls === '*' || c.cls === UI.cls).map(([cid, c]) => { const cs = carStats(cid, carConfig(cid)), own = s.owned[cid];
+      return `<div class="panel" style="padding:10px 12px;${s.car === cid ? 'border-color:var(--accent)' : ''}"><div class="row" style="justify-content:space-between"><span><span class="cls cls${c.cls}">${c.cls}</span> <b class="head" style="font-size:1.2em;font-style:italic">${esc(c.name)}</b></span>
         ${own ? (s.car === cid ? `<span class="muted small">${esc(T('selected'))}</span>` : `<button class="btn" data-act="buyCar" data-id="${cid}"><span>${esc(T('select'))}</span></button>`) : `<button class="btn primary" data-act="buyCar" data-id="${cid}"><span>$ ${fmt(c.price)}</span></button>`}</div>
-        ${bar(T('sPower'), hp(cs) / 650, hp(cs) + ' ' + T('hp'))}${bar(T('sWeight'), 1 - cs.mass / 2200, Math.round(cs.mass) + ' ' + T('kg'))}${bar(T('sGrip'), cs.mu / 1.5, cs.mu.toFixed(2))}</div>`; }).join('');
+        ${bar(T('sPower'), hp(cs) / 1300, hp(cs) + ' ' + T('hp'))}${bar(T('sWeight'), 1 - cs.mass / 2200, Math.round(cs.mass) + ' ' + T('kg'))}${bar(T('sGrip'), cs.mu / 1.5, cs.mu.toFixed(2))}</div>`; }).join('');
     if (UI.tab === 'paint') body = `<h3>${esc(T('paint'))}</h3>${sw('paint', PAINTS, cfg.paint, 'paint')}
       <div class="row"><label for="cPick">${esc(T('custom'))}</label><input id="cPick" type="color" value="${cfg.paint}" data-cfg="paint"></div>
-      <h3>${esc(T('finish'))}</h3>${opts('finish')}<h3>${esc(T('stripes'))}</h3>${opts('stripes')}<h3>${esc(T('stripeCol'))}</h3>${sw('stripeCol', STRIPE_COLS, cfg.stripeCol)}`;
+      <h3>${esc(T('finish'))}</h3>${opts('finish')}<h3>${esc(T('vinyl'))}</h3>${opts('vinyl')}<h3>${esc(T('vcol'))}</h3>${sw('vcol', VINYL_COLS, cfg.vcol)}<h3>${esc(T('vcol2'))}</h3>${sw('vcol2', VINYL_COLS, cfg.vcol2)}<h3>${esc(T('stripes'))}</h3>${opts('stripes')}<h3>${esc(T('stripeCol'))}</h3>${sw('stripeCol', STRIPE_COLS, cfg.stripeCol)}`;
     if (UI.tab === 'wheels') body = `<h3>${esc(T('wheelStyle'))}</h3>${opts('wheel')}<h3>${esc(T('wheelColor'))}</h3>${sw('wcol', WHEEL_COLORS, cfg.wcol)}<h3>${esc(T('wheelSize'))}</h3>${opts('wsize')}<h3>${esc(T('caliper'))}</h3>${sw('caliper', CALIPERS, cfg.caliper)}`;
     if (UI.tab === 'stance') body = `<div class="slider"><label for="sH"><span>${esc(T('height'))}</span><span class="num">${cfg.height > 0 ? '−' : cfg.height < 0 ? '+' : ''}${Math.abs(cfg.height * 35)} ${T('mm')}</span></label><input id="sH" type="range" min="-2" max="4" step="1" value="${cfg.height}" data-cfg="height"></div>
       <div class="slider"><label for="sC"><span>${esc(T('camber'))}</span><span class="num">${(cfg.camber * 1.7).toFixed(1)}°</span></label><input id="sC" type="range" min="0" max="6" step="1" value="${cfg.camber}" data-cfg="camber"></div>
@@ -110,7 +112,7 @@ const UI = {
     if (UI.tab === 'engine') body = UPGRADES.map(k => { const lv = cfg.up[k], max = PRICES[k].length, price = PRICES[k][lv];
       return `<div class="panel" style="padding:12px;display:flex;flex-direction:column;gap:8px"><div class="row" style="justify-content:space-between"><b class="head">${esc(T('up' + k[0].toUpperCase() + k.slice(1)))}</b>
         ${lv < max ? `<button class="btn" data-act="up" data-key="${k}"><span>$ ${fmt(price)}</span></button>` : '<span class="muted small">MAX</span>'}</div><div class="pips">${Array.from({ length: max }, (_, i) => `<i class="${i < lv ? 'on' : ''}"></i>`).join('')}</div></div>`; }).join('')
-      + `<div class="panel" style="padding:12px;display:flex;flex-direction:column;gap:6px">${bar(T('sPower'), hp(st) / 650, hp(st) + ' ' + T('hp'))}${bar(T('sGrip'), st.mu / 1.5, st.mu.toFixed(2))}${bar(T('sHandling'), st.resp / 1.5, st.resp.toFixed(2))}${bar(T('sWeight'), 1 - st.mass / 2200, Math.round(st.mass) + ' ' + T('kg'))}</div>`;
+      + `<div class="panel" style="padding:12px;display:flex;flex-direction:column;gap:6px">${bar(T('sPower'), hp(st) / 1300, hp(st) + ' ' + T('hp'))}${bar(T('sGrip'), st.mu / 1.5, st.mu.toFixed(2))}${bar(T('sHandling'), st.resp / 1.5, st.resp.toFixed(2))}${bar(T('sWeight'), 1 - st.mass / 2200, Math.round(st.mass) + ' ' + T('kg'))}</div>`;
     UI.show(`<div class="topbar"><button class="btn ghost" data-act="hub"><span>← ${esc(T('back'))}</span></button><h2>${esc(T('garage'))} · ${esc(CARS[id].name)}</h2><div class="row">${UI.money()}<button class="btn primary" data-act="race"><span>${esc(T('race'))} ▶</span></button></div></div>
       <div class="garage"><div class="tabs">${tabs.map(([k, n]) => `<button class="${UI.tab === k ? 'on' : ''}" data-act="tab" data-id="${k}">${esc(n)}</button>`).join('')}</div><div class="gbody">${body}</div></div>`, 'clear');
     const gb = UI.root.querySelector('.gbody'); if (gb && UI.gScroll && UI.gScrollTab === UI.tab) gb.scrollTop = UI.gScroll; if (gb) gb.addEventListener('scroll', () => { UI.gScroll = gb.scrollTop; UI.gScrollTab = UI.tab; });

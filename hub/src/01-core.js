@@ -31,7 +31,7 @@ const STR = {
     angle: 'угол', paused: 'Пауза', resume: 'Продолжить', restart: 'Заново', toGarage: 'В гараж', toHub: 'В меню', results: 'Итоги',
     earned: 'Заработано', bronze: 'Бронза', silver: 'Серебро', gold: 'Золото', noMedal: 'Без медали', bestLap: 'Лучший круг', newRecord: 'Новый рекорд!',
     quality: 'Графика', qLow: 'Низкая', qMid: 'Средняя', qHigh: 'Высокая', volume: 'Громкость', music: 'Музыка', lang: 'Язык', units: 'Единицы', kmh: 'КМ/Ч', mph: 'MPH',
-    camBumper: 'С бампера', camCine: 'Кино', assist: 'Помощь в контруле', repair: 'Починить бесплатно', damage: 'Повреждения', repaired: 'Машина как новая', tHeads: 'Свет', tExtra: 'Детали', heads: 'Фары', lightCol: 'Цвет света', tails: 'Стопы', exhaust: 'Выхлоп', fenders: 'Расширители', stripes: 'Полосы', stripeCol: 'Цвет полос', free: 'Бесплатно', camHint: 'Камера', wNight: 'Ясная ночь', wSunny: 'Солнечно', 
+    camBumper: 'С бампера', camCine: 'Кино', assist: 'Помощь в контруле', repair: 'Починить бесплатно', damage: 'Повреждения', repaired: 'Машина как новая', tHeads: 'Свет', tExtra: 'Детали', heads: 'Фары', lightCol: 'Цвет света', tails: 'Стопы', exhaust: 'Выхлоп', fenders: 'Расширители', stripes: 'Полосы', stripeCol: 'Цвет полос', free: 'Бесплатно', camHint: 'Камера', wNight: 'Ясная ночь', wSunny: 'Солнечно', vinyl: 'Винил', vcol: 'Цвет винила', vcol2: 'Второй цвет', cls: 'Класс', allCls: 'Все', 
     camera: 'Камера', camChase: 'Сзади', camFar: 'Дальняя', camHood: 'С капота', controls: 'Управление',
     help: 'W/↑ газ · S/↓ тормоз · A/D руль · Пробел ручник · Shift нитро · C камера (5 видов) · Esc пауза', helpTouch: 'Кнопки на экране: руль слева, газ/тормоз/ручник/нитро справа',
     notEnough: 'Не хватает денег', bought: 'Куплено', lockedCar: 'Сначала купите машину', saved: 'Сохранено',
@@ -58,7 +58,7 @@ const STR = {
     angle: 'angle', paused: 'Paused', resume: 'Resume', restart: 'Restart', toGarage: 'Garage', toHub: 'Menu', results: 'Results',
     earned: 'Earned', bronze: 'Bronze', silver: 'Silver', gold: 'Gold', noMedal: 'No medal', bestLap: 'Best lap', newRecord: 'New record!',
     quality: 'Graphics', qLow: 'Low', qMid: 'Medium', qHigh: 'High', volume: 'Volume', music: 'Music', lang: 'Language', units: 'Units', kmh: 'KM/H', mph: 'MPH',
-    camBumper: 'Bumper', camCine: 'Cinematic', assist: 'Countersteer assist', repair: 'Repair for free', damage: 'Damage', repaired: 'Good as new', tHeads: 'Lights', tExtra: 'Parts', heads: 'Headlights', lightCol: 'Light colour', tails: 'Tail lights', exhaust: 'Exhaust', fenders: 'Fenders', stripes: 'Stripes', stripeCol: 'Stripe colour', free: 'Free', camHint: 'Camera', wNight: 'Clear night', wSunny: 'Sunny', 
+    camBumper: 'Bumper', camCine: 'Cinematic', assist: 'Countersteer assist', repair: 'Repair for free', damage: 'Damage', repaired: 'Good as new', tHeads: 'Lights', tExtra: 'Parts', heads: 'Headlights', lightCol: 'Light colour', tails: 'Tail lights', exhaust: 'Exhaust', fenders: 'Fenders', stripes: 'Stripes', stripeCol: 'Stripe colour', free: 'Free', camHint: 'Camera', wNight: 'Clear night', wSunny: 'Sunny', vinyl: 'Vinyl', vcol: 'Vinyl colour', vcol2: 'Second colour', cls: 'Class', allCls: 'All', 
     camera: 'Camera', camChase: 'Chase', camFar: 'Far', camHood: 'Hood', controls: 'Controls',
     help: 'W/↑ throttle · S/↓ brake · A/D steer · Space handbrake · Shift nitro · C camera (5 views) · Esc pause', helpTouch: 'On-screen buttons: steering left, gas/brake/handbrake/nitro right',
     notEnough: 'Not enough money', bought: 'Purchased', lockedCar: 'Buy the car first', saved: 'Saved',
@@ -88,6 +88,7 @@ const Save = {
     let d = Save.defaults();
     try { const raw = localStorage.getItem(CFG.SAVE_KEY); if (raw) { const p = JSON.parse(raw); d = Object.assign(d, p); d.settings = Object.assign(Save.defaults().settings, p.settings || {}); } }
     catch (e) { Save.ok = false; }
+    if (typeof CARS !== 'undefined') { if (!CARS[d.car]) d.car = 'kaze'; d.owned.kaze = true; for (const k of Object.keys(d.owned)) if (!CARS[k]) delete d.owned[k]; }
     H.save = d; return d;
   },
   write() { if (!Save.ok) return; try { localStorage.setItem(CFG.SAVE_KEY, JSON.stringify(H.save)); } catch (e) { Save.ok = false; } },

@@ -1,20 +1,55 @@
 // ==== 7. CARS: каталог, детали и процедурные 3D-модели ====
 // Размеры в метрах. Перед машины смотрит в +Z. Физика: масса, момент, распределение веса.
-const CARS = {
-  kaze: { name: 'Kaze GT', price: 0, L: 4.3, W: 1.76, wb: 2.5, tr: 1.56, R: .33, mass: 1240, torque: 310, redline: 7800, cyl: 4, snd: 'i4', front: .53, paint: '#d7263d',
-    p: { noseY: .54, hoodF: .82, hoodR: .9, belt: .93, zA: .55, zB: -.28, zC: -.95, zD: -1.5, roof: 1.3, trunk: .98, tail: .95 } },
-  hornet: { name: 'Hornet RS', price: 8000, L: 4.0, W: 1.74, wb: 2.46, tr: 1.54, R: .32, mass: 1110, torque: 285, redline: 8200, cyl: 4, snd: 'i4t', front: .55, paint: '#f5c518',
-    p: { noseY: .58, hoodF: .86, hoodR: .95, belt: .98, zA: .62, zB: .02, zC: -1.5, zD: -1.86, roof: 1.43, trunk: 1.02, tail: 1.02 } },
-  titan: { name: 'Titan V8', price: 15000, L: 4.75, W: 1.9, wb: 2.78, tr: 1.7, R: .35, mass: 1560, torque: 560, redline: 6600, cyl: 8, snd: 'v8', front: .54, paint: '#1c3faa',
-    p: { noseY: .64, hoodF: .92, hoodR: .99, belt: .99, zA: .15, zB: -.48, zC: -1.08, zD: -1.62, roof: 1.33, trunk: 1.03, tail: 1.0 } },
-  raijin: { name: 'Raijin R', price: 40000, L: 4.5, W: 1.96, wb: 2.66, tr: 1.74, R: .35, mass: 1380, torque: 540, redline: 8600, cyl: 10, snd: 'v10', front: .45, paint: '#16a34a',
-    p: { noseY: .5, hoodF: .8, hoodR: .82, belt: .86, zA: .95, zB: .08, zC: -.8, zD: -1.65, roof: 1.16, trunk: .95, tail: .92 } },
+// Семейства кузовов: базовые размеры и профиль (z — вдоль длины, перед в +z)
+const FAMILY = {
+  coupe: { L: 4.3, W: 1.76, wb: 2.5, tr: 1.56, R: .33, p: { noseY: .54, hoodF: .82, hoodR: .9, belt: .93, zA: .55, zB: -.28, zC: -.95, zD: -1.5, roof: 1.3, trunk: .98, tail: .95 } },
+  hatch: { L: 4.0, W: 1.74, wb: 2.46, tr: 1.54, R: .32, p: { noseY: .58, hoodF: .86, hoodR: .95, belt: .98, zA: .62, zB: .02, zC: -1.5, zD: -1.86, roof: 1.43, trunk: 1.02, tail: 1.02 } },
+  muscle: { L: 4.75, W: 1.9, wb: 2.78, tr: 1.7, R: .35, p: { noseY: .64, hoodF: .92, hoodR: .99, belt: .99, zA: .15, zB: -.48, zC: -1.08, zD: -1.62, roof: 1.33, trunk: 1.03, tail: 1.0 } },
+  super: { L: 4.5, W: 1.96, wb: 2.66, tr: 1.74, R: .35, p: { noseY: .5, hoodF: .8, hoodR: .82, belt: .86, zA: .95, zB: .08, zC: -.8, zD: -1.65, roof: 1.16, trunk: .95, tail: .92 } },
+  sedan: { L: 4.7, W: 1.8, wb: 2.75, tr: 1.56, R: .33, p: { noseY: .58, hoodF: .84, hoodR: .92, belt: .95, zA: .75, zB: .15, zC: -1.25, zD: -1.75, roof: 1.42, trunk: 1.0, tail: .98 } },
+  wagon: { L: 4.75, W: 1.8, wb: 2.78, tr: 1.56, R: .33, p: { noseY: .58, hoodF: .84, hoodR: .92, belt: .96, zA: .75, zB: .15, zC: -1.95, zD: -2.18, roof: 1.45, trunk: 1.05, tail: 1.05 } },
+  gt: { L: 4.6, W: 1.9, wb: 2.7, tr: 1.66, R: .35, p: { noseY: .52, hoodF: .8, hoodR: .88, belt: .9, zA: .35, zB: -.35, zC: -1.0, zD: -1.85, roof: 1.28, trunk: .95, tail: .93 } },
+  mini: { L: 3.5, W: 1.62, wb: 2.2, tr: 1.42, R: .29, p: { noseY: .6, hoodF: .85, hoodR: .95, belt: 1.0, zA: .9, zB: .5, zC: -1.3, zD: -1.55, roof: 1.45, trunk: 1.02, tail: 1.02 } },
 };
+// Машины: семейство, класс, цена, мощность; x — особенности кузова
+const CAR_LIST = [
+  ['kaze', 'Kaze GT', 'coupe', 'D', 0, 310, 1240, 7800, 4, 'i4', .53, '#d7263d', {}],
+  ['hornet', 'Hornet RS', 'hatch', 'D', 3000, 285, 1110, 8200, 4, 'i4t', .55, '#f5c518', {}],
+  ['pico', 'Pico Sprint', 'mini', 'D', 2000, 210, 880, 8400, 4, 'i4', .56, '#22d3ee', { round: true }],
+  ['aster', 'Aster Sedan', 'sedan', 'D', 4000, 330, 1380, 7200, 4, 'i4t', .54, '#64748b', {}],
+  ['nomad', 'Nomad Wagon', 'wagon', 'D', 5000, 350, 1450, 7000, 6, 'i4t', .53, '#0b3d2e', { rails: true }],
+  ['ronin', 'Ronin S', 'coupe', 'C', 9000, 380, 1260, 8000, 6, 'i4t', .52, '#f4f4f5', { popups: true, L: 4.2 }],
+  ['vesper', 'Vesper Sport', 'sedan', 'C', 11000, 450, 1470, 7400, 6, 'i4t', .53, '#1e3a8a', { ducktail: true }],
+  ['bolt', 'Bolt Evo', 'hatch', 'C', 12000, 400, 1180, 8000, 4, 'i4t', .56, '#7c3aed', { wing: 1, L: 4.1 }],
+  ['titan', 'Titan V8', 'muscle', 'C', 15000, 560, 1560, 6600, 8, 'v8', .54, '#1c3faa', { bulge: true }],
+  ['mako', 'Mako GT', 'gt', 'C', 16000, 470, 1420, 7600, 6, 'i4t', .5, '#8e8e93', {}],
+  ['raiden', 'Raiden R34X', 'coupe', 'B', 24000, 520, 1340, 8200, 6, 'i4t', .53, '#1d4ed8', { wing: 1, round: true, L: 4.45, W: 1.8 }],
+  ['kitsune', 'Kitsune 7', 'coupe', 'B', 26000, 480, 1250, 9000, 4, 'v10', .5, '#ff6a00', { popups: true, louvers: true, W: 1.78 }],
+  ['condor', 'Condor GTS', 'gt', 'B', 32000, 600, 1480, 7400, 8, 'v8', .5, '#7f1d1d', { sidepipes: true }],
+  ['brutus', 'Brutus SS', 'muscle', 'B', 30000, 680, 1620, 6400, 8, 'v8', .55, '#0f0f12', { bulge: true, ducktail: true }],
+  ['aurora', 'Aurora Lite', 'super', 'B', 38000, 520, 1150, 8800, 6, 'v10', .44, '#ec4899', { L: 4.2 }],
+  ['kodiak', 'Kodiak Wagon RS', 'wagon', 'B', 28000, 620, 1650, 7200, 8, 'v8', .52, '#3f3f46', { rails: true, wing: 0 }],
+  ['raijin', 'Raijin R', 'super', 'A', 55000, 640, 1380, 8600, 10, 'v10', .45, '#16a34a', { louvers: true }],
+  ['fenrir', 'Fenrir SV', 'super', 'A', 70000, 720, 1420, 8800, 12, 'v10', .44, '#c9a227', { wing: 2 }],
+  ['oni', 'Oni V12', 'gt', 'A', 80000, 760, 1560, 8400, 12, 'v10', .48, '#0b0b0f', { louvers: true, W: 1.95 }],
+  ['havoc', 'Havoc SC', 'muscle', 'A', 60000, 850, 1700, 6800, 8, 'v8', .54, '#b6ff4a', { bulge: true, wing: 1 }],
+  ['specter', 'Specter X', 'super', 'S', 120000, 900, 1350, 9000, 12, 'v10', .43, '#f4f4f5', { wing: 2, L: 4.7, W: 2.02 }],
+  ['zenith', 'Zenith Hyper', 'super', 'S', 160000, 1000, 1320, 9200, 16, 'v10', .42, '#06b6d4', { louvers: true, wing: 2, L: 4.75, W: 2.05 }],
+  ['eclipse', 'Eclipse GT1', 'gt', 'S', 140000, 950, 1400, 8800, 12, 'v10', .46, '#9f1239', { wing: 2, sidepipes: true, L: 4.8 }],
+  ['leviathan', 'Leviathan 1000', 'muscle', 'S', 150000, 1100, 1720, 7000, 8, 'v8', .55, '#f5c518', { bulge: true, wing: 2, W: 2.0 }],
+];
+const CLASSES = ['D', 'C', 'B', 'A', 'S'];
+const CARS = {};
+for (const [id, name, fam, cls, price, torque, mass, redline, cyl, snd, front, paint, x] of CAR_LIST) {
+  const F = FAMILY[fam], L = x.L || F.L, k = L / F.L, p = {}; for (const [kk, v] of Object.entries(F.p)) p[kk] = kk.startsWith('z') ? v * k : v;
+  CARS[id] = { name, fam, cls, price, L, W: x.W || F.W, wb: F.wb * k, tr: (x.W || F.W) - .2, R: F.R, mass, torque, redline, cyl, snd, front, paint, p, x };
+}
 const PAINTS = ['#d7263d', '#f5c518', '#1c3faa', '#16a34a', '#0f0f12', '#f4f4f5', '#8e8e93', '#ff6a00', '#7c3aed', '#ec4899', '#06b6d4', '#7f1d1d', '#0b3d2e', '#c9a227', '#3b3024', '#64748b', '#9ad0ff', '#b6ff4a', '#ff9eb1', '#5a3e2b'];
 const WHEEL_COLORS = ['#c0c4ca', '#1a1a1c', '#d4af37', '#e5e7eb', '#7f1d1d', '#1e3a8a', '#3f3f46', '#ff6a00', '#16a34a', '#ec4899', '#8b5a2b', '#22d3ee'];
 const CALIPERS = ['#b91c1c', '#facc15', '#2563eb', '#16a34a', '#e5e7eb', '#1a1a1c', '#ff6a00', '#a855f7'];
 const NEONS = [null, '#22d3ee', '#ec4899', '#4ade80', '#ff6a00', '#a855f7', '#ffffff', '#ef4444'];
 const LIGHT_COLS = ['#fff6e4', '#ffd9a0', '#cfe4ff', '#ffe066'];
+const VINYL_COLS = ['#f4f4f5', '#0f0f12', '#d7263d', '#f5c518', '#22d3ee', '#16a34a', '#ff6a00', '#7c3aed', '#ec4899', '#c9a227'];
 const STRIPE_COLS = ['#f4f4f5', '#0f0f12', '#d7263d', '#f5c518', '#22d3ee', '#16a34a'];
 const WHEEL_STYLES = ['5spoke', 'mesh', 'deepdish', 'turbine', 'multi', 'star6', 'cross', 'split5', 'steelie', 'rotor'];
 // Каталог деталей: названия и цены (0 — бесплатно)
@@ -36,6 +71,8 @@ const PARTS = {
   exhaust: [[N2('Двойной', 'Dual'), 0], [N2('Четыре трубы', 'Quad'), 0], [N2('Центральный', 'Center'), 900], [N2('Боковой', 'Side exit'), 1200]],
   stripes: [[N2('Нет', 'None'), 0], [N2('Двойные', 'Twin'), 0], [N2('Одна широкая', 'Wide'), 0], [N2('Боковые', 'Side'), 0]],
   tint: [['0%', 0], ['35%', 0], ['70%', 0], [N2('Лимузин', 'Limo'), 0]],
+  vinyl: [[N2('Нет', 'None'), 0], [N2('Пламя', 'Flames'), 0], [N2('Трайбл', 'Tribal'), 1200], [N2('Брызги', 'Splash'), 0], [N2('Боковая полоса', 'Side stripe'), 0], [N2('Шахматка', 'Checker'), 800],
+    [N2('Камуфляж', 'Camo'), 1500], [N2('Молнии', 'Lightning'), 1000], [N2('Круг со звездой', 'Roundel'), 0], [N2('Сакура', 'Sakura'), 1800], [N2('Двухцветка', 'Two-tone'), 0], [N2('Скорость', 'Speed lines'), 600]],
   neon: NEONS.map((c, i) => [i ? '●' : N2('Нет', 'None'), 0]),
 };
 const PRICES = { engine: [2000, 3500, 5500, 8000, 12000], turbo: [4000, 7000, 11000], tires: [1500, 2500, 4000, 6000], susp: [1800, 3000, 5000], weight: [2500, 4500, 7000], nitro: [2000, 4000, 7000] };
@@ -43,8 +80,8 @@ const UPGRADES = ['engine', 'turbo', 'tires', 'susp', 'weight', 'nitro'];
 function partName(n) { return typeof n === 'string' ? n : (n[H.lang] || n.ru); }
 function partPrice(key, v) { const o = PARTS[key] && PARTS[key][v]; return o ? o[1] : 0; }
 function defaultConfig(id) {
-  return { paint: CARS[id].paint, finish: 0, wheel: 0, wcol: 0, wsize: 1, caliper: 0, height: 0, camber: 1, front: 0, rear: 0, hood: 0, fenders: 0, skirts: 0, spoiler: 0,
-    heads: 0, lightCol: 0, tails: 0, exhaust: 0, stripes: 0, stripeCol: 0, tint: 1, neon: 0, up: { engine: 0, turbo: 0, tires: 0, susp: 0, weight: 0, nitro: 0 } };
+  return { paint: CARS[id].paint, finish: 0, wheel: 0, wcol: 0, wsize: 1, caliper: 0, height: 0, camber: 1, front: 0, rear: 0, hood: CARS[id].x.bulge ? 4 : 0, fenders: 0, skirts: 0, spoiler: CARS[id].x.wing === 2 ? 7 : CARS[id].x.wing === 1 ? 4 : CARS[id].x.ducktail ? 1 : 0,
+    heads: CARS[id].x.popups ? 4 : CARS[id].x.round ? 3 : 0, lightCol: 0, tails: 0, exhaust: CARS[id].x.sidepipes ? 3 : 0, stripes: 0, stripeCol: 0, tint: 1, neon: 0, vinyl: 0, vcol: 1, vcol2: 3, up: { engine: 0, turbo: 0, tires: 0, susp: 0, weight: 0, nitro: 0 } };
 }
 function carConfig(id) { const s = H.save; if (!s.cars[id]) s.cars[id] = defaultConfig(id); const c = s.cars[id]; for (const [k, v] of Object.entries(defaultConfig(id))) if (c[k] === undefined) c[k] = v; c.up = Object.assign(defaultConfig(id).up, c.up); return c; }
 function owns(id, part, v) { if (!partPrice(part, v)) return true; return !!H.save.parts[`${id}:${part}:${v}`]; }
@@ -79,8 +116,35 @@ function initMaterials() {
 function carbonTex() { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); for (let y = 0; y < 64; y += 8) for (let x = 0; x < 64; x += 8) { g.fillStyle = ((x + y) / 8) % 2 ? '#2a2c30' : '#16171a'; g.fillRect(x, y, 8, 8); g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(x, y, 8, 2); } const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6, 6); t.colorSpace = THREE.SRGBColorSpace; return t; }
 function plateTex() { const c = document.createElement('canvas'); c.width = 256; c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#eef0f2'; g.fillRect(0, 0, 256, 64); g.strokeStyle = '#111'; g.lineWidth = 4; g.strokeRect(3, 3, 250, 58); g.fillStyle = '#111'; g.font = 'bold 40px Arial Narrow, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('М 0 0 1 Н Ч', 128, 34); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
 function blobTex(light) { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); if (light) { gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.4, 'rgba(255,255,255,.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); } else { gr.addColorStop(0, 'rgba(0,0,0,.85)'); gr.addColorStop(.6, 'rgba(0,0,0,.45)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); } g.fillStyle = gr; g.fillRect(0, 0, 128, 128); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
+// Винил рисуется в UV кузова: u — от кормы к носу, v — по кругу сечения (0 — правый борт, .25 — верх, .5 — левый борт)
+function vinylTexture(cfg) {
+  const W = 1024, Hh = 512, c = document.createElement('canvas'); c.width = W; c.height = Hh; const g = c.getContext('2d');
+  g.fillStyle = cfg.paint; g.fillRect(0, 0, W, Hh);
+  const side = document.createElement('canvas'), SH = 128; side.width = W; side.height = SH; const s = side.getContext('2d'), c1 = VINYL_COLS[cfg.vcol], c2 = VINYL_COLS[cfg.vcol2], rnd = mulberry32(cfg.vinyl * 97 + 3);
+  // рисунок борта: x — от кормы (0) к носу (W), y — от верха борта (0) к низу (SH)
+  const V = cfg.vinyl;
+  if (V === 1) { for (let i = 0; i < 7; i++) { const y = 20 + i * 14, len = 380 + rnd() * 300; const gr = s.createLinearGradient(W, 0, W - len, 0); gr.addColorStop(0, c2); gr.addColorStop(.35, c1); gr.addColorStop(1, c1);
+      s.fillStyle = gr; s.beginPath(); s.moveTo(W, y - 10); s.bezierCurveTo(W - len * .4, y - 26, W - len * .7, y + 12, W - len, y - 6); s.bezierCurveTo(W - len * .75, y + 20, W - len * .4, y + 22, W, y + 14); s.fill(); } }
+  if (V === 2) { s.fillStyle = c1; for (let i = 0; i < 6; i++) { const x = 120 + i * 150; s.beginPath(); s.moveTo(x, 90); s.quadraticCurveTo(x + 60, 10, x + 150, 30); s.quadraticCurveTo(x + 70, 40, x + 40, 110); s.quadraticCurveTo(x + 100, 70, x + 170, 90); s.quadraticCurveTo(x + 60, 120, x, 90); s.fill(); } }
+  if (V === 3) { for (let i = 0; i < 90; i++) { s.fillStyle = rnd() < .5 ? c1 : c2; s.globalAlpha = .9; s.beginPath(); s.arc(W * .55 + (rnd() - .5) * 700 * rnd(), 40 + rnd() * 80, 4 + rnd() * 26 * rnd(), 0, TAU); s.fill(); } s.globalAlpha = 1; }
+  if (V === 4) { s.fillStyle = c1; s.fillRect(0, 44, W, 30); s.fillStyle = c2; s.fillRect(0, 80, W, 6); s.fillRect(0, 36, W, 4); }
+  if (V === 5) { for (let x = 0; x < W; x += 24) for (let y = 30; y < 110; y += 24) { if (((x + y) / 24) % 2 < 1) continue; s.globalAlpha = clamp(1 - x / W * 1.2 + .3, 0, 1); s.fillStyle = c1; s.fillRect(x, y, 24, 24); } s.globalAlpha = 1; }
+  if (V === 6) { for (let i = 0; i < 160; i++) { s.fillStyle = [c1, c2, '#2f3a26', '#5a5a44'][i % 4]; s.beginPath(); s.ellipse(rnd() * W, rnd() * SH, 20 + rnd() * 40, 10 + rnd() * 20, rnd() * 3, 0, TAU); s.fill(); } }
+  if (V === 7) { s.strokeStyle = c1; s.lineWidth = 10; s.lineJoin = 'miter'; for (let k = 0; k < 2; k++) { s.beginPath(); let x = W - 40, y = 50 + k * 30; s.moveTo(x, y); while (x > 100) { x -= 60 + rnd() * 60; y = 30 + k * 30 + (rnd() < .5 ? 0 : 40); s.lineTo(x, y); } s.stroke(); s.strokeStyle = c2; s.lineWidth = 4; } }
+  if (V === 8) { const cx = W * .52; s.fillStyle = c1; s.beginPath(); s.arc(cx, 64, 46, 0, TAU); s.fill(); s.fillStyle = c2; s.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 16 : 38; s.lineTo(cx + Math.cos(a) * r, 64 + Math.sin(a) * r); } s.fill(); }
+  if (V === 9) { s.strokeStyle = '#3a2a2a'; s.lineWidth = 5; s.beginPath(); s.moveTo(0, 100); s.bezierCurveTo(200, 60, 400, 110, 700, 40); s.stroke(); for (let i = 0; i < 60; i++) { const x = rnd() * W * .8, y = 20 + rnd() * 90; s.fillStyle = rnd() < .6 ? c1 : c2; for (let p = 0; p < 5; p++) { s.beginPath(); s.ellipse(x + Math.cos(p * 1.26) * 6, y + Math.sin(p * 1.26) * 6, 6, 3.5, p * 1.26, 0, TAU); s.fill(); } } }
+  if (V === 10) { s.fillStyle = c1; s.fillRect(0, 70, W, SH - 70); s.fillStyle = c2; s.fillRect(0, 66, W, 5); }
+  if (V === 11) { s.fillStyle = c1; for (let i = 0; i < 9; i++) { const y = 26 + i * 10, x0 = W * (.2 + rnd() * .3); s.fillRect(x0, y, W * .8 - x0 + rnd() * 100, 4); } }
+  // правый борт (v≈0, развёртка вверх) и левый борт (v≈.5, вниз)
+  const band = Hh * .22;
+  g.save(); g.translate(0, band / 2); g.scale(1, -1); g.drawImage(side, 0, 0, W, band); g.restore();
+  g.save(); g.translate(0, Hh); g.scale(1, -1); g.drawImage(side, 0, 0, W, band / 2 + 1, 0, 0, W, band / 2); g.restore();
+  g.drawImage(side, 0, Hh * .5 - band / 2, W, band);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
 function paintMaterial(cfg) {
   const f = cfg.finish, m = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(cfg.paint), envMapIntensity: 1.25 });
+  if (cfg.vinyl && cfg.withVinyl) { m.map = vinylTexture(cfg); m.color.set('#ffffff'); }
   if (f === 0) Object.assign(m, { metalness: .15, roughness: .3, clearcoat: 1, clearcoatRoughness: .03 });
   if (f === 1) Object.assign(m, { metalness: .75, roughness: .3, clearcoat: 1, clearcoatRoughness: .05 });
   if (f === 2) Object.assign(m, { metalness: .1, roughness: .78, clearcoat: 0 });
@@ -102,15 +166,15 @@ function keysAt(keys, z) {
   return keys[keys.length - 1][1];
 }
 function loftGeo(zs, M, ring) {
-  const pos = [], idx = [];
-  for (const z of zs) for (let j = 0; j < M; j++) { const [x, y] = ring(z, j / M); pos.push(x, y, z); }
+  const pos = [], idx = [], uv = [], z0 = zs[0], zl = zs[zs.length - 1] - z0;
+  for (const z of zs) for (let j = 0; j < M; j++) { const [x, y] = ring(z, j / M); pos.push(x, y, z); uv.push((z - z0) / zl, j / M); }
   for (let i = 0; i < zs.length - 1; i++) for (let j = 0; j < M; j++) { const a = i * M + j, b = i * M + (j + 1) % M, c = (i + 1) * M + j, d = (i + 1) * M + (j + 1) % M; idx.push(a, b, c, b, d, c); }
   for (const [i, dir] of [[0, -1], [zs.length - 1, 1]]) {
     let cx = 0, cy = 0; for (let j = 0; j < M; j++) { cx += pos[(i * M + j) * 3]; cy += pos[(i * M + j) * 3 + 1]; }
-    const ci = pos.length / 3; pos.push(cx / M, cy / M, zs[i] + dir * .01);
+    const ci = pos.length / 3; pos.push(cx / M, cy / M, zs[i] + dir * .01); uv.push(i ? 1 : 0, .75);
     for (let j = 0; j < M; j++) { const a = i * M + j, b = i * M + (j + 1) % M; if (dir > 0) idx.push(ci, a, b); else idx.push(ci, b, a); }
   }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g;
 }
 function superRing(hw, yb, yt, t, n, tumble) {
   const a = t * TAU, c = Math.cos(a), s = Math.sin(a), e = 2 / n, mid = (yt + yb) / 2;
@@ -188,25 +252,29 @@ function makeWheel(cfg, d, left) {
 // ---------- сборка машины ----------
 function buildCar(id, cfg, opts = {}) {
   const d = CARS[id], p = d.p, root = new THREE.Group(), body = new THREE.Group(); root.add(body);
-  const paint = paintMaterial(cfg), glass = glassMaterial(cfg.tint), wide = cfg.fenders, lightCol = new THREE.Color(LIGHT_COLS[cfg.lightCol]);
+  const paint = paintMaterial({ ...cfg, withVinyl: true }), paintP = cfg.vinyl ? paintMaterial(cfg) : paint, glass = glassMaterial(cfg.tint), wide = cfg.fenders, lightCol = new THREE.Color(LIGHT_COLS[cfg.lightCol]);
   const add = (m, parent = body) => { m.castShadow = true; m.receiveShadow = true; parent.add(m); return m; };
   const pr = bodyProfile(d, wide), F = d.L / 2, Rr = -d.L / 2;
   const bodyMesh = add(new THREE.Mesh(bodyGeo(d, wide), paint));
-  const Wc = d.W * .86, cabin = add(new THREE.Mesh(cabinGeo(d, Wc), glass)), roofM = add(new THREE.Mesh(cabinGeo(d, Wc, .014, .07), paint));
+  const Wc = d.W * .86, cabin = add(new THREE.Mesh(cabinGeo(d, Wc), glass)), roofM = add(new THREE.Mesh(cabinGeo(d, Wc, .014, .07), paintP));
   // стойки, молдинги, зеркала
   for (const sx of [-1, 1]) {
     const x = sx * (Wc / 2 - .01), xt = x * .76;
-    add(beam(new THREE.Vector3(x, p.belt, p.zA - .05), new THREE.Vector3(xt, p.roof - .02, p.zB + .02), .05, paint));
-    add(beam(new THREE.Vector3(xt, p.roof - .02, p.zC - .02), new THREE.Vector3(x, p.belt, p.zD + .05), .08, paint));
+    add(beam(new THREE.Vector3(x, p.belt, p.zA - .05), new THREE.Vector3(xt, p.roof - .02, p.zB + .02), .05, paintP));
+    add(beam(new THREE.Vector3(xt, p.roof - .02, p.zC - .02), new THREE.Vector3(x, p.belt, p.zD + .05), .08, paintP));
     add(beam(new THREE.Vector3(x * 1.005, p.belt - .01, p.zA - .08), new THREE.Vector3(x * 1.005, p.belt - .01, p.zD + .1), .025, cfg.finish === 5 ? Mat.gloss : Mat.chrome));
     const mx = sx * (pr.hw(p.zA - .1) * .9 + .02);
-    add(box(.1, .03, .05, Mat.black, mx, p.belt + .03, p.zA - .12)); add(box(.15, .09, .12, paint, mx + sx * .1, p.belt + .07, p.zA - .14)); add(box(.01, .07, .1, Mat.chrome, mx + sx * .18, p.belt + .07, p.zA - .14));
+    add(box(.1, .03, .05, Mat.black, mx, p.belt + .03, p.zA - .12)); add(box(.15, .09, .12, paintP, mx + sx * .1, p.belt + .07, p.zA - .14)); add(box(.01, .07, .1, Mat.chrome, mx + sx * .18, p.belt + .07, p.zA - .14));
     add(box(.02, .025, .14, Mat.black, sx * (pr.hw(0) * .95 + .005), p.belt - .1, (p.zA + p.zD) / 2 + .1));
     // швы дверей
     for (const z of [p.zA - .05, (p.zB + p.zC) / 2 - .1]) add(box(.012, p.belt - .38, .012, Mat.black, sx * pr.hw(z) * .985, (p.belt + .38) / 2, z));
     // боковые воздухозаборники суперкара
-    if (id === 'raijin') { const v = add(box(.05, .16, .5, Mat.grille, sx * pr.hw(-.9) * .96, .62, -.85)); v.rotation.y = sx * .08; }
+    if (d.fam === 'super') { const v = add(box(.05, .16, .5, Mat.grille, sx * pr.hw(-.9) * .96, .62, -.85)); v.rotation.y = sx * .08; }
   }
+  // жалюзи на заднем стекле, рейлинги, двери седана
+  if (d.x.louvers) for (let i = 0; i < 6; i++) { const t = (i + .5) / 6, z = lerp(p.zC - .05, p.zD + .1, t), y = lerp(p.roof, p.belt, t) + .03; add(box(Wc * .72 * (1 - t * .1), .025, .06, Mat.black, 0, y, z)); }
+  if (d.x.rails) for (const sx of [-1, 1]) { add(box(.04, .05, (p.zB - p.zC) + .2, Mat.black, sx * Wc * .34, p.roof + .07, (p.zB + p.zC) / 2)); for (const z of [p.zB - .05, p.zC + .05]) add(box(.04, .06, .04, Mat.black, sx * Wc * .34, p.roof + .03, z)); }
+  if (d.fam === 'sedan' || d.fam === 'wagon') for (const sx of [-1, 1]) { const z = (p.zB + p.zC) / 2 - .35; add(box(.012, p.belt - .38, .012, Mat.black, sx * pr.hw(z) * .985, (p.belt + .38) / 2, z)); add(box(.02, .025, .12, Mat.black, sx * (pr.hw(z) * .95 + .005), p.belt - .1, z - .3)); }
   // салон
   const seatZ = (p.zB + p.zC) / 2 + .15;
   for (const sx of [-1, 1]) { add(box(.4, .08, .42, Mat.interior, sx * .34, p.belt - .06, seatZ)); const bk = add(box(.4, .34, .09, Mat.interior, sx * .34, p.belt + .12, seatZ - .24)); bk.rotation.x = -.18; }
@@ -223,7 +291,7 @@ function buildCar(id, cfg, opts = {}) {
     if (cfg.heads === 1) { add(box(.4, .018, .1, headMat, 0, .03, .02), g); for (const px of [-.1, .1]) { const pj = cyl(.03, .03, .06, headMat, 12); pj.rotation.x = Math.PI / 2; pj.position.set(px, -.01, .03); g.add(pj); } }
     if (cfg.heads === 2) for (const px of [-.1, .1]) { const r = new THREE.Mesh(new THREE.TorusGeometry(.04, .008, 6, 20), headMat); r.position.set(px, 0, .055); g.add(r); const pj = cyl(.022, .022, .04, Mat.chrome, 12); pj.rotation.x = Math.PI / 2; pj.position.set(px, 0, .04); g.add(pj); }
     if (cfg.heads === 3) for (let i = 0; i < 4; i++) { const pj = cyl(.022, .022, .06, headMat, 12); pj.rotation.x = Math.PI / 2; pj.position.set(-.14 + i * .093, 0, .03); g.add(pj); }
-    if (cfg.heads === 4) { add(box(.36, .05, .1, headMat, 0, -.015, .015), g); const lid = add(box(.43, .05, .11, paint, 0, .04, .012), g); lid.rotation.x = .25; }
+    if (cfg.heads === 4) { add(box(.36, .05, .1, headMat, 0, -.015, .015), g); const lid = add(box(.43, .05, .11, paintP, 0, .04, .012), g); lid.rotation.x = .25; }
     const lens = new THREE.Mesh(new THREE.BoxGeometry(.43, .12, .02), Mat.lens); lens.position.z = .06; g.add(lens);
     head.push(g); const gl = new THREE.Sprite(Mat.glow.clone()); gl.material.color.copy(lightCol); gl.scale.set(.9, .9, 1); gl.position.set(sx * hx, hy, hz + .15); gl.visible = false; body.add(gl); headGlow.push(gl);
   }
@@ -253,13 +321,13 @@ function buildCar(id, cfg, opts = {}) {
   if (cfg.hood === 1) for (const sx of [-1, 1]) for (let i = 0; i < 4; i++) { const z = F - .75 - i * .1, v = add(box(.36, .015, .05, Mat.grille, sx * .36, hoodY(z) + .004, z)); v.rotation.x = -.15; }
   if (cfg.hood === 2 || cfg.hood === 3) {
     const z0 = p.zA + .22, z1 = F - .35, zs = []; for (let i = 0; i <= 20; i++) zs.push(z0 + (z1 - z0) * i / 20);
-    add(new THREE.Mesh(loftGeo(zs, 24, (z, t) => { const yt = pr.yt0(z); return superRing(pr.hw(z) * .7, yt - .03, yt + .062, t, 6, .1).slice(0, 2); }), cfg.hood === 2 ? Mat.carbon : paint));
-    const zm = (z0 + z1) / 2 + .1, sc = add(box(.5, .12, .55, cfg.hood === 2 ? Mat.carbon : paint, 0, hoodY(zm) + .08, zm)); sc.rotation.x = -Math.atan2(pr.yt0(zm + .3) - pr.yt0(zm - .3), .6); add(box(.42, .07, .02, Mat.grille, 0, hoodY(zm) + .08, zm + .28));
+    add(new THREE.Mesh(loftGeo(zs, 24, (z, t) => { const yt = pr.yt0(z); return superRing(pr.hw(z) * .7, yt - .03, yt + .062, t, 6, .1).slice(0, 2); }), cfg.hood === 2 ? Mat.carbon : paintPP));
+    const zm = (z0 + z1) / 2 + .1, sc = add(box(.5, .12, .55, cfg.hood === 2 ? Mat.carbon : paintPP, 0, hoodY(zm) + .08, zm)); sc.rotation.x = -Math.atan2(pr.yt0(zm + .3) - pr.yt0(zm - .3), .6); add(box(.42, .07, .02, Mat.grille, 0, hoodY(zm) + .08, zm + .28));
   }
   if (cfg.hood === 4) { const z0 = p.zA + .2, z1 = F - .5, zs = []; for (let i = 0; i <= 20; i++) zs.push(z0 + (z1 - z0) * i / 20);
-    add(new THREE.Mesh(loftGeo(zs, 20, (z, t) => { const yt = pr.yt0(z), q = Math.sin(clamp((z - z0) / (z1 - z0), 0, 1) * Math.PI); return superRing(.32, yt - .03, yt + .04 + .05 * q, t, 3, 0).slice(0, 2); }), paint)); }
+    add(new THREE.Mesh(loftGeo(zs, 20, (z, t) => { const yt = pr.yt0(z), q = Math.sin(clamp((z - z0) / (z1 - z0), 0, 1) * Math.PI); return superRing(.32, yt - .03, yt + .04 + .05 * q, t, 3, 0).slice(0, 2); }), paintP)); }
   if (cfg.fenders) for (const ax of [pr.fa, pr.ra]) for (const sx of [-1, 1]) { // накладные расширители
-    const arc = new THREE.Mesh(new THREE.TorusGeometry(d.R + .1, .045 + wide * .02, 8, 24, Math.PI), cfg.fenders === 1 ? Mat.black : paint); arc.rotation.y = Math.PI / 2; arc.position.set(sx * (d.tr / 2 + .06 + wide * .05), d.R, ax); add(arc);
+    const arc = new THREE.Mesh(new THREE.TorusGeometry(d.R + .1, .045 + wide * .02, 8, 24, Math.PI), cfg.fenders === 1 ? Mat.black : paintPP); arc.rotation.y = Math.PI / 2; arc.position.set(sx * (d.tr / 2 + .06 + wide * .05), d.R, ax); add(arc);
     if (cfg.fenders === 2) for (let i = 0; i < 6; i++) { const a = .3 + i / 5 * (Math.PI - .6), bl = cyl(.012, .012, .02, Mat.chrome, 6); bl.rotation.z = Math.PI / 2; bl.position.set(sx * (d.tr / 2 + .12 + wide * .06), d.R + Math.sin(a) * (d.R + .1), ax + Math.cos(a) * (d.R + .1)); body.add(bl); }
   }
   if (cfg.skirts) for (const sx of [-1, 1]) add(box(.07 + cfg.skirts * .03, .08, d.wb - .5, cfg.skirts === 2 ? Mat.carbon : Mat.black, sx * (pr.hw(0) * .93 + .03 + wide * .04), .29, .04));
@@ -271,9 +339,9 @@ function buildCar(id, cfg, opts = {}) {
     for (const sx of [-1, 1]) { if (neck) { const n = add(beam(new THREE.Vector3(sx * .45, p.trunk + h + .06, wz - .05), new THREE.Vector3(sx * .45, p.trunk, wz + .25), .04, Mat.black)); } else add(box(.04, h, .16, Mat.carbon, sx * .5, p.trunk + h / 2, wz)); }
     if (big) for (const sx of [-1, 1]) add(box(.02, .18, .44, Mat.carbon, sx * span / 2, p.trunk + h + .03, wz));
   };
-  if (sp === 1) { const dt = add(box(d.W * .86, .05, .2, paint, 0, p.trunk + .03, Rr + .22)); dt.rotation.x = -.35; }
+  if (sp === 1) { const dt = add(box(d.W * .86, .05, .2, paintP, 0, p.trunk + .03, Rr + .22)); dt.rotation.x = -.35; }
   if (sp === 2) add(box(d.W * .8, .025, .08, Mat.carbon, 0, pr.yt0(Rr + .1) + .01, Rr + .1));
-  if (sp === 3) { const rs = add(box(Wc * .72, .03, .3, paint, 0, p.roof + .02, p.zC - .12)); rs.rotation.x = .12; }
+  if (sp === 3) { const rs = add(box(Wc * .72, .03, .3, paintP, 0, p.roof + .02, p.zC - .12)); rs.rotation.x = .12; }
   if (sp === 4) wingAt(.2, Rr + .3, d.W * .9, false);
   if (sp === 5) wingAt(.38, Rr + .3, d.W * .95, true);
   if (sp === 6) wingAt(.34, Rr + .25, d.W * .98, true, true);
