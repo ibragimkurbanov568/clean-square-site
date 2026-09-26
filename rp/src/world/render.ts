@@ -13,7 +13,7 @@ export const R = {
   sun: new THREE.DirectionalLight(0xffffff, 3), hemi: new THREE.HemisphereLight(0xbfd8ff, 0x3a3a30, 1), sky: null as unknown as Sky,
   composer: null as EffectComposer | null, bloom: null as UnrealBloomPass | null, quality: 'high' as Quality,
   // общие униформы для шейдеров города
-  U: { uNight: { value: 0 }, uTime: { value: 0 }, uWet: { value: 0 }, uSkyCol: { value: new THREE.Color() }, uSnow: { value: 0 } },
+  U: { uNight: { value: 0 }, uTime: { value: 0 }, uWet: { value: 0 }, uSkyCol: { value: new THREE.Color() }, uSnow: { value: 0 }, uWind: { value: .15 } }, flash: 0,
   night: 0, stars: null as THREE.Points | null, moon: null as THREE.Mesh | null, clouds: null as THREE.Mesh | null,
 };
 
@@ -53,7 +53,7 @@ export function resize() {
 }
 // время суток: 0..24; погода: облачность 0..1, дождь 0..1
 const sunCol = new THREE.Color(), tmp = new THREE.Color(), fogDay = new THREE.Color(0xa9bdd2), fogSet = new THREE.Color(0xd8a080), fogNight = new THREE.Color(0x0b1220), fogRain = new THREE.Color(0x7d8894);
-export function updateSky(hour: number, cloud: number, rain: number, focus: THREE.Vector3) {
+export function updateSky(hour: number, cloud: number, rain: number, focus: THREE.Vector3, fog = 0, dt = .016) {
   const a = (hour - 6) / 24 * Math.PI * 2, elev = Math.sin(a), azi = Math.cos(a);
   const sunDir = new THREE.Vector3(azi * .8, elev, .45).normalize();
   const day = smooth(-.12, .18, elev), sunset = smooth(.35, 0, Math.abs(elev)) * smooth(-.2, .05, elev);
@@ -69,9 +69,11 @@ export function updateSky(hour: number, cloud: number, rain: number, focus: THRE
   R.hemi.color.setRGB(lerp(.3, .75, day), lerp(.38, .85, day), lerp(.6, 1, day));
   R.hemi.groundColor.setRGB(lerp(.05, .32, day), lerp(.05, .3, day), lerp(.07, .26, day));
   const f = R.scene.fog as THREE.Fog; tmp.copy(fogDay).lerp(fogSet, sunset * .8).lerp(fogNight, 1 - day).lerp(fogRain, rain * day * .8); f.color.copy(tmp);
-  f.near = lerp(220, 30, rain); f.far = lerp(R.quality === 'low' ? 520 : R.quality === 'mid' ? 750 : 1100, 320, rain);
+  f.near = lerp(lerp(220, 30, rain), 8, fog); f.far = lerp(lerp(R.quality === 'low' ? 520 : R.quality === 'mid' ? 750 : 1100, 320, rain), 140, fog);
   R.scene.background = null; R.sky.visible = true;
   R.U.uSkyCol.value.copy(tmp);
+  // молния: короткая вспышка всего неба
+  if (R.flash > 0) { R.flash = Math.max(0, R.flash - dt * 4); const k = R.flash * (Math.random() < .7 ? 1 : .3); R.hemi.intensity += k * 3; f.color.lerp(new THREE.Color(0xdde6ff), k * .6); }
   (R.stars!.material as THREE.PointsMaterial).opacity = (1 - day) * (1 - cloud) * .9; R.stars!.position.copy(focus);
   R.moon!.position.copy(focus).addScaledVector(moonDir, 1800); (R.moon!.material as THREE.MeshBasicMaterial).opacity = (1 - day) * (1 - cloud * .8);
   R.renderer.toneMappingExposure = lerp(1.05, .82, day) * lerp(1, .9, rain);

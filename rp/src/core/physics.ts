@@ -47,22 +47,22 @@ export function createCharacter(x: number, y: number, z: number) {
 
 // ---------- машина ----------
 export interface VehPhys { body: RAPIER.RigidBody; ctl: RAPIER.DynamicRayCastVehicleController; col: RAPIER.Collider; half: [number, number, number]; rear: number[]; front: number[] }
-export function createVehicle(def: { L: number; W: number; wb: number; tr: number; R: number; mass: number; kind: string }, x: number, y: number, z: number, heading: number): VehPhys {
-  const { world, R } = PH, half: [number, number, number] = [def.W / 2 - .05, def.kind === 'bus' ? .9 : .38, def.L / 2 - .05];
+export function createVehicle(def: { L: number; W: number; H?: number; wb: number; tr: number; R: number; mass: number; kind: string }, x: number, y: number, z: number, heading: number): VehPhys {
+  const { world, R } = PH, H = def.H || 1.45, half: [number, number, number] = [def.W / 2 - .05, Math.max(.3, (H - .4) / 2), def.L / 2 - .05];
   const body = world.createRigidBody(R.RigidBodyDesc.dynamic().setTranslation(x, y, z).setRotation(quatY(heading)).setLinearDamping(.05).setAngularDamping(.6).setCanSleep(false).setCcdEnabled(true));
-  const vol = half[0] * half[1] * half[2] * 8, cy = def.kind === 'bus' ? 1.2 : .72;
+  const vol = half[0] * half[1] * half[2] * 8, cy = .4 + half[1];
   const col = world.createCollider(R.ColliderDesc.cuboid(...half).setTranslation(0, cy, 0).setDensity(def.mass / vol).setFriction(.3).setRestitution(.05)
     .setCollisionGroups(groups(GROUP_CAR, GROUP_STATIC | GROUP_CAR | GROUP_CHAR | GROUP_TRAFFIC)).setActiveEvents(R.ActiveEvents.CONTACT_FORCE_EVENTS).setContactForceEventThreshold(def.mass * 6), body);
   // центр масс пониже — меньше опрокидываний
   body.setAdditionalMassProperties(0, { x: 0, y: -.35, z: 0 }, { x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0, w: 1 }, true);
   const ctl = world.createVehicleController(body);
   (ctl as any).indexUpAxis = 1; (ctl as any).setIndexForwardAxis = 2;
-  const rest = def.kind === 'bus' ? .35 : .28;
+  const heavy = def.kind === 'bus' || def.kind === 'truck' || def.kind === 'tram', rest = heavy ? .35 : .28;
   for (const [sx, sz] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
     ctl.addWheel({ x: sx * def.tr / 2, y: def.R + rest * .6, z: sz * def.wb / 2 }, { x: 0, y: -1, z: 0 }, { x: -1, y: 0, z: 0 }, rest, def.R);
   }
   for (let i = 0; i < 4; i++) {
-    ctl.setWheelSuspensionStiffness(i, def.kind === 'bus' ? 40 : 28); ctl.setWheelSuspensionCompression(i, 4.4); ctl.setWheelSuspensionRelaxation(i, 3.3);
+    ctl.setWheelSuspensionStiffness(i, heavy ? 40 : 28); ctl.setWheelSuspensionCompression(i, 4.4); ctl.setWheelSuspensionRelaxation(i, 3.3);
     ctl.setWheelFrictionSlip(i, i < 2 ? 2.1 : 1.9); ctl.setWheelSideFrictionStiffness(i, 1); ctl.setWheelMaxSuspensionTravel(i, .25); ctl.setWheelMaxSuspensionForce(i, def.mass * 40);
   }
   return { body, ctl, col, half, front: [0, 1], rear: [2, 3] };

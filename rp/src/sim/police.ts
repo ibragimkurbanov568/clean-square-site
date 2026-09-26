@@ -35,7 +35,7 @@ export const Police = {
     for (let t = 0; t < 10; t++) {
       const i = clamp(ni + Math.round(rand(-2, 2)), 0, 13), j = clamp(nj + Math.round(rand(-2, 2)), 0, 13), p = nodePos(i, j), d = Math.hypot(p.x - pl.x, p.z - pl.z);
       if (d < 110 || d > 300) continue;
-      const v = spawnVehicle('police', 0xf4f4f4, p.x + 2, p.z, Math.atan2(pl.x - p.x, pl.z - p.z)); v.lights = true;
+      const v = spawnVehicle('v09p', 0xf4f4f4, p.x + 2, p.z, Math.atan2(pl.x - p.x, pl.z - p.z)); v.lights = true;
       this.cops.push({ v, path: [], repath: 0, stuck: 0, back: 0 }); return;
     }
   },

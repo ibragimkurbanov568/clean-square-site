@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { CITY, HALF, LANES, PITCH, roadLine } from '../world/citygen';
 import { Fleet, FleetSlot } from '../vehicles/fleet';
-import { CARS } from '../vehicles/carModel';
+import { CAR_BY_ID, CarDef, idsOfKind } from '../vehicles/carModel';
 import { createKinematicBox, PH, quatY } from '../core/physics';
 import { clamp, pick, rand } from '../core/util';
 import type RAPIER from '@dimforge/rapier3d-compat';
@@ -19,7 +19,7 @@ export function lightState(i: number, j: number, axis: 0 | 1, t: number) {
 
 type Node = [number, number];
 export interface TCar {
-  slot: FleetSlot; model: number; color: number; def: typeof CARS[number];
+  slot: FleetSlot; model: string; color: number; def: CarDef;
   a: Node; b: Node; lane: number; s: number; L: number; v: number; vmax: number;
   turn: { p0: THREE.Vector3; p1: THREE.Vector3; p2: THREE.Vector3; len: number; t: number; to: [Node, Node] } | null;
   next: [Node, Node] | null; x: number; z: number; h: number; spin: number; steer: number; brake: boolean;
@@ -38,12 +38,14 @@ export const Traffic = {
   cars: [] as TCar[], t: 0, target: 40, nextId: 1,
   radius: 220, player: new THREE.Vector3(), playerV: new THREE.Vector3(), obstacles: [] as { x: number; z: number; r: number }[],
   init(target: number) { this.target = target; },
-  spawnAt(a: Node, b: Node, lane: number, s: number, kind: TCar['kind'] = 'civ', model?: number, color?: number): TCar | null {
-    const mi = model ?? pick([0, 0, 1, 1, 2, 3, 4, 5, 5, 2, 7], Math.random); const d = CARS[mi];
+  spawnAt(a: Node, b: Node, lane: number, s: number, kind: TCar['kind'] = 'civ', model?: string, color?: number): TCar | null {
+    // состав потока как в реальном городе: в основном легковые, иногда такси, автобусы, фургоны, грузовики, скорая, полиция
+    const r = Math.random(), pool = r < .06 && lane === 1 ? idsOfKind('bus') : r < .12 ? ['taxi'] : r < .17 ? [...idsOfKind('van'), ...idsOfKind('truck')] : r < .19 ? idsOfKind('ambulance') : r < .21 ? idsOfKind('police') : idsOfKind('car');
+    const mi = model ?? pick(pool.length ? pool : idsOfKind('car'), Math.random); const d = CAR_BY_ID[mi];
     const col = color ?? (d.kind === 'police' ? 0xf4f4f4 : d.kind === 'taxi' ? 0xffd21f : d.kind === 'bus' ? 0xe8e0c8 : pick([0xf2f2f2, 0x1a1a1c, 0x8a8f96, 0xb3b7bc, 0x7a1e1e, 0x1f3a6b, 0x2f5d3a, 0xc9b28a, 0x5a3b2a, 0x9c2a2a, 0x3b4a5a, 0xd8d0b8, 0x274b8c, 0x6b6b30]));
     const slot = Fleet.alloc(mi, col); if (!slot) return null;
     const L = PITCH;
-    const c: TCar = { slot, model: mi, color: col, def: d, a, b, lane, s, L, v: 8, vmax: (d.kind === 'bus' ? 11 : rand(12.5, 16.5)), turn: null, next: null, x: 0, z: 0, h: 0, spin: 0, steer: 0, brake: false, wait: 0, honk: 0, body: null, kind: d.kind === 'police' ? 'police' : d.kind === 'taxi' ? 'taxi' : d.kind === 'bus' ? 'bus' : kind, id: this.nextId++ };
+    const c: TCar = { slot, model: mi, color: col, def: d, a, b, lane, s, L, v: 8, vmax: (d.kind === 'bus' || d.kind === 'truck' ? rand(10, 12) : rand(12.5, 16.5)), turn: null, next: null, x: 0, z: 0, h: 0, spin: 0, steer: 0, brake: false, wait: 0, honk: 0, body: null, kind: d.kind === 'police' ? 'police' : d.kind === 'taxi' ? 'taxi' : d.kind === 'bus' ? 'bus' : kind, id: this.nextId++ };
     c.body = createKinematicBox(d.W / 2, d.kind === 'bus' ? 1.3 : .65, d.L / 2);
     this.pose(c); c.body.setTranslation({ x: c.x, y: 0, z: c.z }, true); c.body.setRotation(quatY(c.h), true);
     this.cars.push(c); return c;

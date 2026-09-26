@@ -10,6 +10,7 @@ export interface Vehicle {
   fuel: number; dmg: number; speed: number; rpm: number; gear: number; steer: number; lights: boolean; brake: boolean; slip: number; job?: string;
 }
 let nextId = 1;
+const FWD = new Set(['l15', 'l04', 'dn', 'k3', 'kac', 'v09p', 'taxi', 'raf']), AWD = new Set(['ldx', 'stc', 'ssp', 'u469']);
 export function spawnVehicle(model: string, color: number, x: number, z: number, h: number, owned: string | null = null, plate = ''): Vehicle {
   const def = CAR_BY_ID[model], obj = buildCarObject(model, color); R.scene.add(obj);
   const ph = createVehicle(def, x, .6, z, h);
@@ -40,7 +41,8 @@ export function driveVehicle(v: Vehicle, dt: number, gas: number, brake: number,
   // сопротивление воздуха: на максималке уравновешивает мощность
   const vm = d.maxSpeed / 3.6, kd = d.power * 745.7 / (vm * vm * vm), sp = Math.hypot(vel.x, vel.z);
   if (sp > 1) body.applyImpulse({ x: -vel.x * sp * kd * dt, y: 0, z: -vel.z * sp * kd * dt }, true);
-  const drive = d.kind === 'bus' ? [2, 3] : d.id === 'hatch' || d.id === 'jsedan' || d.id === 'taxi' || d.id === 'police' ? [0, 1] : [2, 3];
+  // привод: классика и грузовые — задний, современные легковые — передний, внедорожники — полный
+  const drive = FWD.has(d.id) ? [0, 1] : AWD.has(d.id) ? [0, 1, 2, 3] : [2, 3];
   for (let i = 0; i < 4; i++) { ctl.setWheelEngineForce(i, drive.includes(i) ? force / drive.length : 0); ctl.setWheelBrake(i, brakeF / 4); }
   // ручник: блок задних колёс и меньше сцепления — занос
   for (const i of [2, 3]) { ctl.setWheelFrictionSlip(i, hb ? .9 : 1.9); if (hb) ctl.setWheelBrake(i, d.mass * .06); }
@@ -60,15 +62,17 @@ const tq = new THREE.Quaternion();
 export function syncVehicle(v: Vehicle, dt: number) {
   const b = v.ph.body, p = b.translation(), r = b.rotation(), ctl = v.ph.ctl;
   v.obj.position.set(p.x, p.y, p.z); v.obj.quaternion.set(r.x, r.y, r.z, r.w);
-  const w = (v.obj.userData.wheels as { pivot: THREE.Group; spin: THREE.Mesh; front: boolean }[]);
+  const w = (v.obj.userData.wheels as { pivot: THREE.Group; spin: THREE.Object3D; front: boolean; rest: THREE.Vector3 }[]);
   w.forEach((wh, i) => {
     const conn = ctl.wheelChassisConnectionPointCs(i), len = ctl.wheelSuspensionLength(i) ?? .2;
-    if (conn) wh.pivot.position.set(conn.x, conn.y - len, conn.z);
+    if (conn) wh.pivot.position.set(wh.rest.x, conn.y - len, wh.rest.z);
     wh.pivot.rotation.y = wh.front ? ctl.wheelSteering(i) ?? 0 : 0; wh.spin.rotation.x = ctl.wheelRotation(i) ?? 0;
   });
-  const ud = v.obj.userData; (ud.tail as THREE.MeshStandardMaterial).emissiveIntensity = v.brake ? 3.5 : v.lights ? 1 : .3;
-  (ud.head as THREE.MeshStandardMaterial).emissiveIntensity = v.lights ? 4 : .3;
-  if (ud.extra && v.def.kind === 'police') { const on = Math.floor(performance.now() / 180) % 2; (ud.extra as THREE.MeshStandardMaterial).emissive.setHex(on ? 0x2050ff : 0xff2030); }
+  const ud = v.obj.userData;
+  for (const m of ud.lightMats.tail as THREE.MeshStandardMaterial[]) m.emissiveIntensity = v.brake ? 4 : v.lights ? 1.2 : .15;
+  for (const m of ud.lightMats.head as THREE.MeshStandardMaterial[]) m.emissiveIntensity = v.lights ? 3 : .15;
+  if (ud.glow) { ud.glow.visible = v.lights; for (const c of ud.tglow.children) c.material.opacity = v.brake ? 1 : v.lights ? .45 : 0; }
+  if (ud.beacon) { const on = Math.floor(performance.now() / 180) % 2; ud.beacon.children[0].visible = !!on; ud.beacon.children[1].visible = !on; }
   void dt; void tq;
 }
 export function vehicleForward(v: Vehicle) { const r = v.ph.body.rotation(); return new THREE.Vector3(0, 0, 1).applyQuaternion(new THREE.Quaternion(r.x, r.y, r.z, r.w)); }

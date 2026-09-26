@@ -169,14 +169,14 @@ export function facadeMaterial() {
 // ветер для деревьев
 export function windMaterial(base: THREE.MeshStandardMaterial) {
   base.onBeforeCompile = sh => {
-    sh.uniforms.uTime = R.U.uTime;
-    sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+    sh.uniforms.uTime = R.U.uTime; sh.uniforms.uWind = R.U.uWind;
+    sh.vertexShader = 'uniform float uTime, uWind;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
       #ifdef USE_INSTANCING
       vec3 ip = vec3(instanceMatrix[3][0], 0., instanceMatrix[3][2]);
       #else
       vec3 ip = vec3(0.);
       #endif
-      float sw = max(0., transformed.y - 1.5) * .018;
+      float sw = max(0., transformed.y - 1.5) * (.008 + uWind * .05);
       transformed.x += sin(uTime*1.3 + ip.x*.05 + ip.z*.03) * sw; transformed.z += cos(uTime*1.1 + ip.z*.05) * sw*.7;`);
   };
   return base;

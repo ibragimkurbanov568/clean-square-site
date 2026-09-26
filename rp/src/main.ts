@@ -3,14 +3,14 @@ import './ui/style.css';
 import * as THREE from 'three';
 import { initRender, R, updateSky, render, detectQuality, Quality } from './world/render';
 import { loadTextures } from './world/materials';
-import { generateCity, City, nearestNode, nodePos, routeGrid } from './world/citygen';
+import { generateCity, City, nearestNode, nodePos, routeGrid, blockAt, PITCH, HALF, RIVER, CITY } from './world/citygen';
 import { buildCity, updateCity, CityMeshes } from './world/cityBuild';
 import { loadHumans, play, Look, randomLook, createHuman } from './actors/human';
 import { initPhysics, PH, buildStaticColliders } from './core/physics';
 import { initInput, pollInput, endFrameInput, Inp } from './core/input';
 import { Snd } from './core/audio';
 import { Fleet } from './vehicles/fleet';
-import { CARS, CAR_BY_ID } from './vehicles/carModel';
+import { CARS, CAR_BY_ID, loadCars, idsOfKind } from './vehicles/carModel';
 import { spawnVehicle, destroyVehicle, syncVehicle, Vehicle, vehicleHeading, flipIfNeeded, driveVehicle } from './vehicles/vehicle';
 import { Traffic, lightState, TCar } from './sim/traffic';
 import { Peds } from './actors/peds';
@@ -25,7 +25,7 @@ import { clamp, damp, fmtMoney, rand, $ } from './core/util';
 
 const G = {
   s: newState() as GameState, mode: 'loading' as 'loading' | 'menu' | 'play' | 'pause', city: null as unknown as City, cm: null as unknown as CityMeshes,
-  vehicles: [] as Vehicle[], tsim: 0, weather: { cloud: .2, rain: 0, target: 0, wet: 0, next: 3 }, route: null as THREE.Vector3[] | null, routeTarget: null as THREE.Vector3 | null,
+  vehicles: [] as Vehicle[], tsim: 0, weather: { cloud: .2, rain: 0, target: 0, wet: 0, next: 3, wind: .15, windT: .15, fog: 0, fogT: 0, storm: false, bolt: 0, kind: 'Ясно', passT: 0, dogT: 20 }, route: null as THREE.Vector3[] | null, routeTarget: null as THREE.Vector3 | null,
   saveT: 60, lightT: 0, rain: null as THREE.Points | null, carry: null as THREE.Mesh | null, menuT: 0, wantedFlash: 0, lastPosT: 0,
 };
 (window as any).KRAI = { G, Player, Traffic, Peds, Police, Jobs, Markers, R, PH, Menu, HUD, Inp, dev: {} as any };
@@ -51,9 +51,10 @@ async function boot() {
   loading(.38, 'Строим Новоозёрск'); await new Promise(r => setTimeout(r, 30));
   G.city = generateCity(); G.cm = buildCity(G.city); buildStaticColliders(G.city);
   loading(.55, 'Жители города');
-  await loadHumans(k => loading(.55 + k * .35, 'Жители города'));
+  await loadHumans(k => loading(.55 + k * .2, 'Жители города'));
+  await loadCars(k => loading(.75 + k * .15, 'Машины'));
   // машины: инстансы для трафика и припаркованных
-  Fleet.init(CARS.map(c => c.kind === 'bus' ? 4 : c.kind === 'police' ? 6 : c.kind === 'taxi' ? 8 : 40));
+  Fleet.init(Object.fromEntries(CARS.map(c => [c.id, c.kind === 'car' ? 14 : c.kind === 'taxi' ? 8 : 4])));
   Traffic.init(q === 'low' ? 16 : q === 'mid' ? 26 : 40); Peds.target = q === 'low' ? 10 : q === 'mid' ? 18 : 28;
   drawMapImage(G.city); HUD.init();
   for (const p of G.city.pois) { const ic = POI_ICON[p.kind]; Markers.add('poi:' + p.id, p.door[0], p.door[1], parseInt((ic?.[1] || '#ffffff').slice(1), 16), p.name, ic?.[0] || '●', 'poi', 1.4, p); }
@@ -64,10 +65,10 @@ async function boot() {
   loading(.93, 'Подготовка шейдеров');
   const warm = [createHuman({ ...randomLook(), sex: 'male', hair: 'hair_buzzed' }), createHuman({ ...randomLook(), sex: 'female', hair: 'hair_long' })];
   warm.forEach((h, i) => { h.root.position.set(i * 2, 0, -HALF_W); R.scene.add(h.root); });
-  const ws = Fleet.alloc(0, 0xffffff); if (ws) Fleet.place(ws, 0, 0, -HALF_W, 0);
+  const ws = CARS.map((c, i) => { const sl = Fleet.alloc(c.id); if (sl) Fleet.place(sl, (i % 8) * 6 - 20, 0, -HALF_W - 8 - Math.floor(i / 8) * 12, 0); return sl; });
   try { await R.renderer.compileAsync(R.scene, R.cam); } catch { /* старые браузеры */ }
   R.cam.position.set(1, 1.6, -HALF_W + 6); R.cam.lookAt(1, 1, -HALF_W); render();
-  warm.forEach(h => h.root.removeFromParent()); if (ws) Fleet.release(ws);
+  warm.forEach(h => h.root.removeFromParent()); ws.forEach(sl => sl && Fleet.release(sl));
   Menu.init(host);
   buildRain();
   G.mode = 'menu'; Menu.main();
@@ -154,7 +155,7 @@ function teleport(x: number, z: number, h: number) { Player.ch.body.setTranslati
 function nearestVehicle(max: number): Vehicle | null { let best: Vehicle | null = null, bd = max; for (const v of G.vehicles) { const d = v.obj.position.distanceTo(Player.pos) - v.def.L / 2 + 1; if (d < bd) { bd = d; best = v; } } return best; }
 function nearestTraffic(max: number): TCar | null { let best: TCar | null = null, bd = max; for (const c of Traffic.cars) { const d = Math.hypot(c.x - Player.pos.x, c.z - Player.pos.z) - c.def.L / 2 + 1; if (d < bd && c.v < 4 && c.kind !== 'bus') { bd = d; best = c; } } return best; }
 function enterCar(v: Vehicle) {
-  Player.inCar = v; Player.h.root.visible = false; Player.ch.body.setTranslation({ x: 0, y: -50, z: 0 }, true); Snd.play('door'); HUD.touchMode(true);
+  Player.inCar = v; Player.h.root.visible = false; Player.ch.body.setTranslation({ x: 0, y: -50, z: 0 }, true); Snd.play('door_open'); setTimeout(() => { Snd.play('door'); Snd.play('start'); }, 450); HUD.touchMode(true);
   if (v.job === 'taxi' && Jobs.active === 'taxi') HUD.toast('Катайся по городу — заказы придут сами');
 }
 function exitCar() {
@@ -164,7 +165,7 @@ function exitCar() {
   Snd.engine(false, 0, 0); Snd.tire(0); Snd.play('door'); HUD.touchMode(false); persist();
 }
 function carjack(c: TCar) {
-  const v = spawnVehicle(CARS[c.model].id, c.color, c.x, c.z, c.h, null, randomPlate()); G.vehicles.push(v);
+  const v = spawnVehicle(c.model, c.color, c.x, c.z, c.h, null, randomPlate()); G.vehicles.push(v);
   // водитель выскакивает и убегает
   const ped = Peds.spawn(new THREE.Vector3(c.x, 0, c.z), 0); if (ped) { ped.x = c.x - Math.cos(c.h) * 1.8; ped.z = c.z + Math.sin(c.h) * 1.8; ped.state = 'flee'; ped.timer = 5; ped.heading = c.h + Math.PI / 2; }
   Traffic.despawn(c); enterCar(v); crime(1, 'Угон автомобиля');
@@ -183,15 +184,51 @@ function buildRain() {
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   G.rain = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xaabbcc, size: .08, transparent: true, opacity: 0, depthWrite: false })); G.rain.frustumCulled = false; R.scene.add(G.rain);
 }
+// погода: ясно / облачно / ветрено / дождь / гроза / утренний туман — с плавными переходами
+const WEATHER: [string, number, number, number, number][] = [ // название, облачность, дождь, ветер, туман
+  ['Ясно', .1, 0, .15, 0], ['Облачно', .5, 0, .3, 0], ['Ветрено', .45, 0, .85, 0], ['Дождь', .85, .6, .45, .2], ['Ливень', 1, 1, .6, .3], ['Гроза', 1, 1, .9, .25], ['Туман', .6, 0, .05, 1]];
 function updateWeather(dt: number, gameDt: number) {
-  const w = G.weather; w.next -= gameDt; if (w.next <= 0) { w.next = rand(3, 8); const r = Math.random(); w.target = r < .55 ? 0 : r < .8 ? .35 : 1; }
-  w.rain = damp(w.rain, w.target > .5 ? 1 : 0, .15, dt); w.cloud = damp(w.cloud, w.target, .12, dt); w.wet = damp(w.wet, w.rain > .3 ? 1 : 0, w.rain > .3 ? .08 : .02, dt);
-  R.U.uWet.value = w.wet;
+  const w = G.weather; w.next -= gameDt;
+  if (w.next <= 0) {
+    w.next = rand(2.5, 7); const h = G.s.hour, r = Math.random();
+    const pick = h > 4 && h < 8 && r < .25 ? 6 : r < .35 ? 0 : r < .55 ? 1 : r < .68 ? 2 : r < .84 ? 3 : r < .93 ? 4 : 5;
+    const [name, cl, rn, wd, fg] = WEATHER[pick]; w.kind = name; w.target = cl; w.windT = wd; w.fogT = fg; w.storm = pick === 5; (w as any).rainT = rn;
+    if (G.mode === 'play') HUD.chatTick(0, `[Погода] ${name}`);
+  }
+  const rainT = (w as any).rainT ?? 0;
+  w.rain = damp(w.rain, rainT, .12, dt); w.cloud = damp(w.cloud, w.target, .1, dt); w.wind = damp(w.wind, w.windT + Math.sin(G.tsim * .7) * .12 * w.windT, .3, dt); w.fog = damp(w.fog, w.fogT, .08, dt);
+  w.wet = damp(w.wet, w.rain > .25 ? 1 : 0, w.rain > .25 ? .08 : .015, dt);
+  R.U.uWet.value = w.wet; R.U.uWind.value = w.wind;
+  // гроза: вспышки молний и гром с задержкой
+  w.bolt -= dt; if (w.storm && w.rain > .6 && w.bolt <= 0) { w.bolt = rand(6, 18); R.flash = 1; const delay = rand(.4, 3); setTimeout(() => Snd.play('thunder', 1 - delay / 4), delay * 1000); }
   if (G.rain) {
     const m = G.rain.material as THREE.PointsMaterial; m.opacity = w.rain * .55; G.rain.visible = w.rain > .02;
-    if (G.rain.visible) { const a = G.rain.geometry.attributes.position as THREE.BufferAttribute, c = R.cam.position; for (let i = 0; i < a.count; i++) { let y = a.getY(i) - dt * 22; if (y < 0) y += 30; a.setY(i, y); } a.needsUpdate = true; G.rain.position.set(c.x, c.y - 12, c.z); }
+    if (G.rain.visible) { const a = G.rain.geometry.attributes.position as THREE.BufferAttribute, c = R.cam.position, wx = w.wind * 6 * dt; for (let i = 0; i < a.count; i++) { let y = a.getY(i) - dt * 22; if (y < 0) y += 30; a.setY(i, y); a.setX(i, ((a.getX(i) + wx + 40) % 80) - 40); } a.needsUpdate = true; G.rain.position.set(c.x, c.y - 12, c.z); }
   }
-  Snd.ambient(G.mode === 'play' ? .7 : .3, w.rain);
+  soundscape(dt);
+}
+// звуковая картина: где стоит слушатель (центр, двор, парк, река) и что вокруг
+function soundscape(dt: number) {
+  const cam = R.cam, f = new THREE.Vector3(); cam.getWorldDirection(f); Snd.listener(cam.position.x, cam.position.y, cam.position.z, f.x, f.y, f.z);
+  const p = G.mode === 'play' ? Player.pos : cam.position, w = G.weather, [bi, bj] = blockAt(p.x, p.z), d = G.city.districts[bi]?.[bj];
+  const P = PITCH, lx = ((p.x + HALF) % P + P) % P, lz = ((p.z + HALF) % P + P) % P, toRoad = Math.min(lx, P - lx, lz, P - lz);
+  const onRoad = toRoad < 14 ? 1 : 0, inCity = Math.abs(p.x) < HALF + 30 && Math.abs(p.z) < HALF + 30;
+  const city = !inCity ? .2 : d === 'center' || d === 'office' || d === 'plaza' ? .9 : onRoad ? .75 : .35;
+  const yard = inCity && (d === 'res' || d === 'khrush') && !onRoad ? .9 : 0, park = !inCity || d === 'park' || d === 'private' ? .8 : 0, river = clamp(1 - Math.abs(p.z - RIVER.z0) / 90, 0, 1);
+  Snd.ambient({ city, yard, park, river, hour: G.s.hour, rain: w.rain, wind: w.wind, inCar: !!Player.inCar && G.mode === 'play', night: R.U.uNight.value });
+  if (G.mode !== 'play') return;
+  // ближайшие машины — объёмный звук; пролёт мимо
+  const near = Traffic.cars.map(c => ({ c, d: Math.hypot(c.x - p.x, c.z - p.z) })).filter(o => o.d < 70).sort((a, b) => a.d - b.d).slice(0, 5);
+  Snd.traffic(near.map(o => ({ id: o.c.id, x: o.c.x, z: o.c.z, v: o.c.v, bus: o.c.def.kind === 'bus' || o.c.def.kind === 'truck' })));
+  w.passT -= dt; const fast = near.find(o => o.d < 9 && o.c.v > 11); if (fast && w.passT <= 0 && !Player.inCar) { w.passT = 2.5; Snd.play('pass', .8, fast.c.x, fast.c.z); }
+  // светофор у ближайшего перекрёстка: тиканье для пешеходов
+  const [ni, nj] = nearestNode(p.x, p.z), np = nodePos(ni, nj), dn = Math.hypot(np.x - p.x, np.z - p.z);
+  const crossingVertical = Math.abs(p.x - np.x) < Math.abs(p.z - np.z) ? 0 : 1, walk = lightState(ni, nj, crossingVertical ? 1 : 0, G.tsim) === 2;
+  Snd.pedSignal(np.x + (p.x > np.x ? 9 : -9), np.z + (p.z > np.z ? 9 : -9), walk, dn < 30 && !Player.inCar && ni > 0 && nj > 0 && ni < CITY.N && nj < CITY.N);
+  // собаки лают ночью во дворах
+  w.dogT -= dt; if (w.dogT <= 0) { w.dogT = rand(15, 45); if (yard || park) Snd.play('dog', .7, p.x + rand(-60, 60), p.z + rand(-60, 60)); }
+  // сирена погони
+  const cop = Police.cops[0]; if (cop) Snd.sirenAt(cop.v.obj.position.x, cop.v.obj.position.z, 1); else Snd.sirenLevel(0);
 }
 
 // ---------- игровой цикл ----------
@@ -230,7 +267,7 @@ function tick(dt: number, draw: boolean) {
   Traffic.render(R.cam.position);
   G.lightT -= dt; if (G.lightT <= 0) { G.lightT = .25; updateBulbs(); streamParked(R.cam.position); }
   const night = R.U.uNight.value;
-  updateSky(G.s.hour, G.weather.cloud, G.weather.rain, focus); updateWeather(dt, gameDt);
+  updateSky(G.s.hour, G.weather.cloud, G.weather.rain, focus, G.weather.fog, dt); updateWeather(dt, gameDt);
   updateCity(G.cm, R.cam.position, night); Fleet.setNight(night); Markers.update(G.tsim, R.cam.position);
   render();
   endFrameInput();
@@ -240,7 +277,7 @@ const parkedSlots = new Map<number, any>();
 function streamParked(c: THREE.Vector3) {
   G.city.parked.forEach((p, i) => {
     const d = Math.hypot(p.x - c.x, p.z - c.z), has = parkedSlots.get(i);
-    if (d < 230 && !has) { const slot = Fleet.alloc(p.model, p.color); if (slot) { Fleet.place(slot, p.x, 0, p.z, p.rot); parkedSlots.set(i, slot); } }
+    if (d < 230 && !has) { const ids = idsOfKind('car'), slot = Fleet.alloc(ids[(i * 7 + p.model) % ids.length]); if (slot) { Fleet.place(slot, p.x, 0, p.z, p.rot, 0, 0, false, 0, false); parkedSlots.set(i, slot); } }
     else if (d > 270 && has) { Fleet.release(has); parkedSlots.delete(i); }
   });
 }

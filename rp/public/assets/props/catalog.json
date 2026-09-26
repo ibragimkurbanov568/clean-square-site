@@ -1,0 +1,452 @@
+[
+ {
+  "id": "lamp",
+  "dims": [
+   1.547,
+   8.5,
+   0.849
+  ],
+  "tris": 3163,
+  "tree": false,
+  "author": "Josh Dean",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "lamp2",
+  "dims": [
+   0.969,
+   4.2,
+   2.023
+  ],
+  "tris": 2656,
+  "tree": false,
+  "author": "Josh Dean",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "bin",
+  "dims": [
+   1.864,
+   0.95,
+   0.583
+  ],
+  "tris": 1620,
+  "tree": false,
+  "author": "GurJas Studios",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "seat",
+  "dims": [
+   3.655,
+   0.8,
+   0.649
+  ],
+  "tris": 8949,
+  "tree": false,
+  "author": "Stuart Attenborrow",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "bench",
+  "dims": [
+   1.179,
+   0.9,
+   0.503
+  ],
+  "tris": 630,
+  "tree": false,
+  "author": "Kirill Sannikov",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "manhole",
+  "dims": [
+   0.715,
+   0.07,
+   0.715
+  ],
+  "tris": 938,
+  "tree": false,
+  "author": "Raunox",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "ubox",
+  "dims": [
+   0.52,
+   1.12,
+   0.432
+  ],
+  "tris": 1200,
+  "tree": false,
+  "author": "James Ray Cock",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "ubox2",
+  "dims": [
+   0.92,
+   1.12,
+   0.432
+  ],
+  "tris": 1199,
+  "tree": false,
+  "author": "James Ray Cock",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "pbox",
+  "dims": [
+   0.458,
+   0.5,
+   0.396
+  ],
+  "tris": 3953,
+  "tree": false,
+  "author": "Rico Cilliers, Yann Kervran",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "aircon",
+  "dims": [
+   1.804,
+   0.93,
+   0.375
+  ],
+  "tris": 1724,
+  "tree": false,
+  "author": "Monsta3D",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "barrier",
+  "dims": [
+   1.562,
+   0.84,
+   0.646
+  ],
+  "tris": 1500,
+  "tree": false,
+  "author": "Amal Kumar",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "trashbag",
+  "dims": [
+   0.505,
+   0.55,
+   0.443
+  ],
+  "tris": 800,
+  "tree": false,
+  "author": "Benny Weimer",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "cardboard",
+  "dims": [
+   0.385,
+   0.34,
+   0.513
+  ],
+  "tris": 600,
+  "tree": false,
+  "author": "Rahul Chaudhary",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "crate",
+  "dims": [
+   0.826,
+   0.35,
+   0.409
+  ],
+  "tris": 892,
+  "tree": false,
+  "author": "James Ray Cock",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "pcrate",
+  "dims": [
+   0.293,
+   0.26,
+   0.402
+  ],
+  "tris": 10278,
+  "tree": false,
+  "author": "PierreB3D",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "planter",
+  "dims": [
+   0.902,
+   0.42,
+   0.409
+  ],
+  "tris": 1198,
+  "tree": false,
+  "author": "James Ray Cock",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "picnic",
+  "dims": [
+   2.253,
+   0.75,
+   3.039
+  ],
+  "tris": 1571,
+  "tree": false,
+  "author": "Ulan Cabanilla",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "tyre",
+  "dims": [
+   0.6,
+   0.6,
+   0.165
+  ],
+  "tris": 800,
+  "tree": false,
+  "author": "MP",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "shutter",
+  "dims": [
+   3.08,
+   2.4,
+   0.3
+  ],
+  "tris": 600,
+  "tree": false,
+  "author": "MP",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "fence",
+  "dims": [
+   7.076,
+   2.2,
+   1.874
+  ],
+  "tris": 12088,
+  "tree": false,
+  "author": "James Ray Cock, Amal Kumar",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "shrub",
+  "dims": [
+   6.756,
+   1.9,
+   2.55
+  ],
+  "tris": 2475,
+  "tree": false,
+  "author": "Rico Cilliers",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "shrub2",
+  "dims": [
+   2.13,
+   0.8,
+   0.533
+  ],
+  "tris": 1389,
+  "tree": false,
+  "author": "Rico Cilliers",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "stump",
+  "dims": [
+   1.245,
+   0.5,
+   1.389
+  ],
+  "tris": 800,
+  "tree": false,
+  "author": "Rob Tuytel",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "pot",
+  "dims": [
+   0.587,
+   1.35,
+   0.633
+  ],
+  "tris": 8323,
+  "tree": false,
+  "author": "Rico Cilliers",
+  "title": "",
+  "url": "",
+  "license": "CC0",
+  "source": "Poly Haven"
+ },
+ {
+  "id": "tree_urban",
+  "dims": [
+   5.983,
+   9,
+   5.681
+  ],
+  "tris": 13377,
+  "tree": true,
+  "author": "rodrigogelmi",
+  "title": "Fast Urban Tree",
+  "url": "https://sketchfab.com/3d-models/c6c7cebef37544ee8a80780034a03737",
+  "license": "CC-BY 4.0",
+  "source": "Sketchfab/Objaverse"
+ },
+ {
+  "id": "tree_poplar",
+  "dims": [
+   4.281,
+   17,
+   4.816
+  ],
+  "tris": 4059,
+  "tree": true,
+  "author": "evseevdaniil0011",
+  "title": "POPLAR TREE - HIGHT TEXTURE LOW-POLY MODEL",
+  "url": "https://sketchfab.com/3d-models/ec7c1d301bbc43dca5fe5f0650148d13",
+  "license": "CC-BY 4.0",
+  "source": "Sketchfab/Objaverse"
+ },
+ {
+  "id": "tree_maple",
+  "dims": [
+   7.45,
+   10,
+   7.577
+  ],
+  "tris": 2994,
+  "tree": true,
+  "author": "atrodler",
+  "title": "Maple tree",
+  "url": "https://sketchfab.com/3d-models/4b27adcf92f644bdabf8ecc6c5bef399",
+  "license": "CC-BY 4.0",
+  "source": "Sketchfab/Objaverse"
+ },
+ {
+  "id": "tree_birch",
+  "dims": [
+   8.083,
+   12,
+   8.962
+  ],
+  "tris": 5854,
+  "tree": true,
+  "author": "myochii",
+  "title": "birch tree",
+  "url": "https://sketchfab.com/3d-models/43a94afe9fc849cc98574c80d94b2e5e",
+  "license": "CC-BY 4.0",
+  "source": "Sketchfab/Objaverse"
+ },
+ {
+  "id": "tree_leafy",
+  "dims": [
+   5.911,
+   8,
+   5.197
+  ],
+  "tris": 4527,
+  "tree": true,
+  "author": "dangry",
+  "title": "Tree For Games",
+  "url": "https://sketchfab.com/3d-models/f91d3c3c527d47fdb217c291e4c7df4b",
+  "license": "CC-BY 4.0",
+  "source": "Sketchfab/Objaverse"
+ },
+ {
+  "id": "tree_oak",
+  "dims": [
+   13.506,
+   12,
+   13.759
+  ],
+  "tris": 3999,
+  "tree": true,
+  "author": "massive-graphisme",
+  "title": "Oak tree",
+  "url": "https://sketchfab.com/3d-models/3dc59560f2d24345bdbe65c44636453b",
+  "license": "CC-BY 4.0",
+  "source": "Sketchfab/Objaverse"
+ }
+]
