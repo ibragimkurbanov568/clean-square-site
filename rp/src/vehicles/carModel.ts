@@ -48,8 +48,8 @@ function ring(hw: number, yb: number, yt: number, t: number, n: number, tumble: 
 function bodyGeo(d: CarDef) {
   const p = d.p, F = d.L / 2, Rr = -d.L / 2, fa = d.wb / 2, ra = -d.wb / 2, aR = d.R + .07;
   const top = [[Rr, p.tail - .06], [Rr + .12, p.tail + .02], [Rr + .35, p.trunk], [p.zD, p.belt], [p.zA, p.belt], [p.zA + .2, p.hoodR], [F - .4, p.hoodF], [F - .1, p.noseY + .06], [F, p.noseY - .06]];
-  const zs: number[] = []; const n = d.kind === 'bus' ? 60 : 72; for (let i = 0; i <= n; i++) zs.push(Rr + d.L * i / n);
-  return loft(zs, 28, (z, t) => {
+  const zs: number[] = []; const n = d.kind === 'bus' ? 30 : 44; for (let i = 0; i <= n; i++) zs.push(Rr + d.L * i / n);
+  return loft(zs, 22, (z, t) => {
     const u = (z - Rr) / d.L; let yt = keysAt(top, z); let yb = .26 + .06 * (1 - sstep(0, .05, u)) + .04 * sstep(.95, 1, u);
     for (const ax of [fa, ra]) { const dz = z - ax; if (Math.abs(dz) < aR) yb = Math.max(yb, d.R + Math.sqrt(aR * aR - dz * dz) * .95); }
     if (d.kind === 'bus') yb = Math.max(.35, yb);
@@ -61,8 +61,8 @@ function bodyGeo(d: CarDef) {
 }
 function cabinGeo(d: CarDef, lift = 0, thick = 0) {
   const p = d.p, Wc = d.W * (d.kind === 'bus' ? .99 : .86), keys = [[p.zD, p.belt - .02], [p.zC, p.roof], [p.zB, p.roof], [p.zA, p.belt - .02]], zs: number[] = [];
-  const z0 = thick ? p.zC - .04 : p.zD, z1 = thick ? p.zB + .04 : p.zA; for (let i = 0; i <= 30; i++) zs.push(z0 + (z1 - z0) * i / 30);
-  return loft(zs, 22, (z, t) => {
+  const z0 = thick ? p.zC - .04 : p.zD, z1 = thick ? p.zB + .04 : p.zA; for (let i = 0; i <= 18; i++) zs.push(z0 + (z1 - z0) * i / 18);
+  return loft(zs, 16, (z, t) => {
     const yt = keysAt(keys, z) + lift, yb = thick ? yt - thick : p.belt - .06, u = (z - z0) / (z1 - z0), w = Wc / 2 * (1 - .05 * Math.pow(Math.abs(u - .5) * 2, 3)) * (thick ? 1.015 : 1);
     return ring(w, yb, yt, t, thick ? 6 : Math.max(4, d.boxy - 1), d.kind === 'bus' ? .02 : .22);
   });
@@ -105,8 +105,8 @@ export function buildCarParts(d: CarDef): CarParts {
 // колесо: шина + диск (цвета вершин), ось вдоль X
 export function wheelGeo() {
   const pts = [[.62, -.5], [.93, -.5], [.99, -.38], [1, 0], [.99, .38], [.93, .5], [.62, .5]].map(([x, y]) => new THREE.Vector2(x, y));
-  const tire = new THREE.LatheGeometry(pts, 20).rotateZ(Math.PI / 2).toNonIndexed(); tire.deleteAttribute('uv');
-  const rim = new THREE.CylinderGeometry(.62, .62, .9, 16, 1).rotateZ(Math.PI / 2).toNonIndexed(); rim.deleteAttribute('uv');
+  const tire = new THREE.LatheGeometry(pts, 14).rotateZ(Math.PI / 2).toNonIndexed(); tire.deleteAttribute('uv');
+  const rim = new THREE.CylinderGeometry(.62, .62, .9, 12, 1).rotateZ(Math.PI / 2).toNonIndexed(); rim.deleteAttribute('uv');
   const hub = new THREE.CylinderGeometry(.2, .2, .96, 8).rotateZ(Math.PI / 2).toNonIndexed(); hub.deleteAttribute('uv');
   const color = (g: THREE.BufferGeometry, c: number) => { const col = new THREE.Color(c), n = g.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) a.set([col.r, col.g, col.b], i * 3); g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; };
   return mergeGeometries([color(tire, 0x151515), color(rim, 0x9a9ea3), color(hub, 0x6a6e73)]);

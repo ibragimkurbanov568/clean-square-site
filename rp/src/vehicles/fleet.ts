@@ -4,7 +4,7 @@ import { CARS, carParts, sharedWheel, MATS } from './carModel';
 import { R } from '../world/render';
 
 export interface FleetSlot { model: number; idx: number; color: number }
-interface ModelSet { meshes: THREE.InstancedMesh[]; paint: THREE.InstancedMesh; tail: THREE.InstancedMesh; head: THREE.InstancedMesh; free: number[]; used: number }
+interface ModelSet { meshes: THREE.InstancedMesh[]; paint: THREE.InstancedMesh; tail: THREE.InstancedMesh; head: THREE.InstancedMesh; free: number[]; used: Set<number> }
 const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), P = new THREE.Vector3(), S = new THREE.Vector3(1, 1, 1), Y = new THREE.Vector3(0, 1, 0), E = new THREE.Euler(), C = new THREE.Color();
 const HIDE = new THREE.Matrix4().makeScale(0, 0, 0);
 
@@ -27,25 +27,28 @@ export const Fleet = {
       mk(parts.glass, MATS.glass, false); mk(parts.dark, MATS.dark); mk(parts.chrome, MATS.chrome, false);
       const head = mk(parts.head, headMat, false), tail = mk(parts.tail, tailMat, false); for (let i = 0; i < cap; i++) tail.setColorAt(i, C.setScalar(1));
       if (parts.extra) mk(parts.extra, extraMats[d.kind] || MATS.extra, false);
-      this.sets.push({ meshes: list, paint, tail, head, free: Array.from({ length: cap }, (_, i) => cap - 1 - i), used: 0 });
+      this.sets.push({ meshes: list, paint, tail, head, free: Array.from({ length: cap }, (_, i) => cap - 1 - i), used: new Set() }); for (const im of list) im.count = 0;
     });
     const total = capacity.reduce((a, b) => a + b, 0) * 4;
     this.wheels = new THREE.InstancedMesh(sharedWheel(), MATS.wheel, total); this.wheels.frustumCulled = false; this.wheels.castShadow = false;
     for (let i = 0; i < total; i++) this.wheels.setMatrixAt(i, HIDE);
-    this.wheelFree = Array.from({ length: total }, (_, i) => total - 1 - i); g.add(this.wheels);
+    this.wheelFree = Array.from({ length: total }, (_, i) => total - 1 - i); g.add(this.wheels); this.wheels.count = 0;
     R.scene.add(g);
   },
   alloc(model: number, color: number): FleetSlot | null {
-    const s = this.sets[model]; const idx = s.free.pop(); if (idx === undefined) return null;
+    const s = this.sets[model]; s.free.sort((a, b) => b - a); const idx = s.free.pop(); if (idx === undefined) return null; s.used.add(idx); this.recount(s);
     s.paint.setColorAt(idx, C.set(color)); s.paint.instanceColor!.needsUpdate = true;
-    const slot: any = { model, idx, color, wheels: [this.wheelFree.pop(), this.wheelFree.pop(), this.wheelFree.pop(), this.wheelFree.pop()] };
+    this.wheelFree.sort((a, b) => b - a); const slot: any = { model, idx, color, wheels: [this.wheelFree.pop(), this.wheelFree.pop(), this.wheelFree.pop(), this.wheelFree.pop()] };
+    this.wheels.count = Math.max(this.wheels.count, ...slot.wheels.map((w: number) => w + 1));
     return slot;
   },
   release(slot: FleetSlot) {
     const s = this.sets[slot.model]; for (const im of s.meshes) { im.setMatrixAt(slot.idx, HIDE); im.instanceMatrix.needsUpdate = true; }
     for (const w of (slot as any).wheels) if (w !== undefined) { this.wheels.setMatrixAt(w, HIDE); this.wheelFree.push(w); }
-    this.wheels.instanceMatrix.needsUpdate = true; s.free.push(slot.idx);
+    this.wheels.instanceMatrix.needsUpdate = true; s.free.push(slot.idx); s.used.delete(slot.idx); this.recount(s);
   },
+  // рисуем только до последнего занятого слота
+  recount(s: ModelSet) { let m = -1; for (const i of s.used) if (i > m) m = i; for (const im of s.meshes) im.count = m + 1; },
   // положение: x,z, курс, наклон по тангажу/крену, вращение колёс, поворот руля, тормоз
   place(slot: FleetSlot, x: number, y: number, z: number, heading: number, spin = 0, steer = 0, brake = false, roll = 0) {
     const d = CARS[slot.model], s = this.sets[slot.model];

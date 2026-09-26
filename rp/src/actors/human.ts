@@ -52,7 +52,11 @@ function clothedMaterial(src: THREE.MeshStandardMaterial, look: Look) {
         vec4 cw = vec4(step(.5, vCloth.x), step(.5, vCloth.y)*uSleeve, step(.5, vCloth.z), step(.5, vCloth.w));
         clothK = clamp(cw.x + cw.y + cw.z + cw.w, 0., 1.);
         vec3 cc = cTop*(cw.x + cw.y) + cBot*cw.z + cShoe*cw.w;
-        float fab = .92 + .08*sin(vNormal.y*18.);
+        #ifdef USE_MAP
+        float fab = .86 + .07*sin(vMapUv.x*1400.)*sin(vMapUv.y*1400.) + .07*sin(vMapUv.y*300.);
+        #else
+        float fab = 1.;
+        #endif
         diffuseColor.rgb = mix(diffuseColor.rgb * cSkin * 1.08, cc * fab, clothK);`)
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, .92, clothK);')
       .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nnormal = normalize(mix(normal, nonPerturbedNormal, clothK));');

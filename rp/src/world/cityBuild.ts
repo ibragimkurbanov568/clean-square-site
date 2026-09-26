@@ -186,7 +186,7 @@ export function buildCity(city: City): CityMeshes {
   root.add(glow);
   // светофоры: столбы на углах, по три лампы на каждую из 4 сторон
   const poles: THREE.BufferGeometry[] = [], bulbMap: CityMeshes['bulbMap'] = [];
-  const bulbs = new THREE.InstancedMesh(new THREE.SphereGeometry(.14, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), city.lights.length * 4 * 3);
+  const bulbs = new THREE.InstancedMesh(new THREE.BoxGeometry(.2, .2, .08), new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), city.lights.length * 4 * 3);
   let bi = 0; const hr = CITY.ROAD / 2 + 1;
   for (const L of city.lights) {
     const cx = roadLine(L.i), cz = roadLine(L.j);

@@ -36,7 +36,7 @@ function lanePoint(a: Node, b: Node, lane: number, s: number, out = new THREE.Ve
 const HR = CITY.ROAD / 2, STOP = HR + 5.4, ENTER = HR + 1;
 export const Traffic = {
   cars: [] as TCar[], t: 0, target: 40, nextId: 1,
-  radius: 260, player: new THREE.Vector3(), playerV: new THREE.Vector3(), obstacles: [] as { x: number; z: number; r: number }[],
+  radius: 220, player: new THREE.Vector3(), playerV: new THREE.Vector3(), obstacles: [] as { x: number; z: number; r: number }[],
   init(target: number) { this.target = target; },
   spawnAt(a: Node, b: Node, lane: number, s: number, kind: TCar['kind'] = 'civ', model?: number, color?: number): TCar | null {
     const mi = model ?? pick([0, 0, 1, 1, 2, 3, 4, 5, 5, 2, 7], Math.random); const d = CARS[mi];
@@ -91,7 +91,7 @@ export const Traffic = {
       const a: Node = vertical ? [line, seg] : [seg, line], b: Node = vertical ? [line, seg + 1] : [seg + 1, line];
       const fwd = Math.random() < .5, A = fwd ? a : b, B = fwd ? b : a, lane = Math.random() < .5 ? 0 : 1, s = rand(ENTER + 4, PITCH - STOP - 4);
       const p = lanePoint(A, B, lane, s), d = Math.hypot(p.x - px, p.z - pz);
-      if (d < 90 || d > this.radius) continue;
+      if (d < 70 || d > this.radius) continue;
       if (this.cars.some(o => Math.abs(o.x - p.x) < 9 && Math.abs(o.z - p.z) < 9)) continue;
       return this.spawnAt(A, B, lane, s);
     }

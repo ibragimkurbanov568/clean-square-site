@@ -5,7 +5,7 @@ import { initRender, R, updateSky, render, detectQuality, Quality } from './worl
 import { loadTextures } from './world/materials';
 import { generateCity, City, nearestNode, nodePos, routeGrid } from './world/citygen';
 import { buildCity, updateCity, CityMeshes } from './world/cityBuild';
-import { loadHumans, play, Look, randomLook } from './actors/human';
+import { loadHumans, play, Look, randomLook, createHuman } from './actors/human';
 import { initPhysics, PH, buildStaticColliders } from './core/physics';
 import { initInput, pollInput, endFrameInput, Inp } from './core/input';
 import { Snd } from './core/audio';
@@ -43,7 +43,10 @@ async function boot() {
   const q: Quality = qParam || (G.s.settings.quality !== 'auto' ? G.s.settings.quality as Quality : detectQuality());
   loading(.05, 'Запуск движка');
   initRender(canvas, q); initInput(canvas);
-  await initPhysics(); loading(.15, 'Текстуры');
+  try { await initPhysics(); } catch (e) {
+    $('#ui').innerHTML = `<div class="screen" style="display:flex;align-items:center;justify-content:center"><div class="panel win" style="max-width:520px"><h2>Не удалось запустить физику</h2><p>Браузер заблокировал WebAssembly. Откройте игру в обычной вкладке Chrome, Firefox или Safari (или запустите локально: <code>npm run dev</code> в папке rp).</p><p class="small muted">${String(e)}</p></div></div>`; return;
+  }
+  loading(.15, 'Текстуры');
   await loadTextures(k => loading(.15 + k * .2, 'Текстуры'));
   loading(.38, 'Строим Новоозёрск'); await new Promise(r => setTimeout(r, 30));
   G.city = generateCity(); G.cm = buildCity(G.city); buildStaticColliders(G.city);
@@ -51,13 +54,20 @@ async function boot() {
   await loadHumans(k => loading(.55 + k * .35, 'Жители города'));
   // машины: инстансы для трафика и припаркованных
   Fleet.init(CARS.map(c => c.kind === 'bus' ? 4 : c.kind === 'police' ? 6 : c.kind === 'taxi' ? 8 : 40));
-  for (const p of G.city.parked) { const slot = Fleet.alloc(p.model, p.color); if (slot) Fleet.place(slot, p.x, 0, p.z, p.rot); }
-  Traffic.init(q === 'low' ? 14 : q === 'mid' ? 24 : 38); Peds.target = q === 'low' ? 10 : q === 'mid' ? 18 : 28;
+  Traffic.init(q === 'low' ? 16 : q === 'mid' ? 26 : 40); Peds.target = q === 'low' ? 10 : q === 'mid' ? 18 : 28;
   drawMapImage(G.city); HUD.init();
   for (const p of G.city.pois) { const ic = POI_ICON[p.kind]; Markers.add('poi:' + p.id, p.door[0], p.door[1], parseInt((ic?.[1] || '#ffffff').slice(1), 16), p.name, ic?.[0] || '●', 'poi', 1.4, p); }
   Traffic.onHonk = c => { if (Math.hypot(c.x - Player.pos.x, c.z - Player.pos.z) < 40) Snd.play('horn', .6); };
   Peds.onHit = (_p, car: any) => { if (car?.player) { Snd.play('hit', .6); crime(1, 'Наезд на пешехода'); } };
   Police.onBust = busted; Police.onDrop = w => { G.s.wanted = Math.max(0, w); if (w <= 0) { HUD.toast('Розыск снят'); Police.clear(); } else HUD.toast('Вас потеряли из виду: розыск снижен'); };
+  // прогрев шейдеров на экране загрузки, чтобы не было рывков при появлении первых людей и машин
+  loading(.93, 'Подготовка шейдеров');
+  const warm = [createHuman({ ...randomLook(), sex: 'male', hair: 'hair_buzzed' }), createHuman({ ...randomLook(), sex: 'female', hair: 'hair_long' })];
+  warm.forEach((h, i) => { h.root.position.set(i * 2, 0, -HALF_W); R.scene.add(h.root); });
+  const ws = Fleet.alloc(0, 0xffffff); if (ws) Fleet.place(ws, 0, 0, -HALF_W, 0);
+  try { await R.renderer.compileAsync(R.scene, R.cam); } catch { /* старые браузеры */ }
+  R.cam.position.set(1, 1.6, -HALF_W + 6); R.cam.lookAt(1, 1, -HALF_W); render();
+  warm.forEach(h => h.root.removeFromParent()); if (ws) Fleet.release(ws);
   Menu.init(host);
   buildRain();
   G.mode = 'menu'; Menu.main();
@@ -68,7 +78,7 @@ async function boot() {
 }
 
 // ---------- связь с меню ----------
-const menuSpot = { x: 12, z: -28 };
+const menuSpot = { x: 12, z: -28 }, HALF_W = 700;
 const host = {
   get state() { return G.s; }, get hasSave() { return !!G.s.name; }, get pois() { return G.city.pois; }, get player() { return { x: Player.pos.x, z: Player.pos.z }; },
   newGame(look: Look, name: string) {
@@ -218,12 +228,21 @@ function tick(dt: number, draw: boolean) {
     for (const v of G.vehicles) if (v !== Player.inCar) { driveVehicle(v, dt, 0, 0, 0, true, false); syncVehicle(v, dt); }
   }
   Traffic.render(R.cam.position);
-  G.lightT -= dt; if (G.lightT <= 0) { G.lightT = .25; updateBulbs(); }
+  G.lightT -= dt; if (G.lightT <= 0) { G.lightT = .25; updateBulbs(); streamParked(R.cam.position); }
   const night = R.U.uNight.value;
   updateSky(G.s.hour, G.weather.cloud, G.weather.rain, focus); updateWeather(dt, gameDt);
   updateCity(G.cm, R.cam.position, night); Fleet.setNight(night); Markers.update(G.tsim, R.cam.position);
   render();
   endFrameInput();
+}
+// припаркованные машины показываем только рядом с камерой
+const parkedSlots = new Map<number, any>();
+function streamParked(c: THREE.Vector3) {
+  G.city.parked.forEach((p, i) => {
+    const d = Math.hypot(p.x - c.x, p.z - c.z), has = parkedSlots.get(i);
+    if (d < 230 && !has) { const slot = Fleet.alloc(p.model, p.color); if (slot) { Fleet.place(slot, p.x, 0, p.z, p.rot); parkedSlots.set(i, slot); } }
+    else if (d > 270 && has) { Fleet.release(has); parkedSlots.delete(i); }
+  });
 }
 const bulbCol = [new THREE.Color(0xff2a1a).multiplyScalar(4), new THREE.Color(0xffb000).multiplyScalar(4), new THREE.Color(0x20ff60).multiplyScalar(4), new THREE.Color(0x151515)];
 function updateBulbs() {
