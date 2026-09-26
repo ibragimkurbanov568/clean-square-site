@@ -18,8 +18,9 @@ export const R = {
 };
 
 export function detectQuality(): Quality {
-  const coarse = matchMedia('(pointer:coarse)').matches, mem = (navigator as any).deviceMemory || 8;
-  return coarse ? (mem <= 3 ? 'low' : 'mid') : 'high';
+  // телефоны — «низкое» по умолчанию (iPhone не сообщает память, а у встроенных окон приложений её мало); «среднее» — только если браузер сам сообщил ≥ 6 ГБ
+  const coarse = matchMedia('(pointer:coarse)').matches, mem = (navigator as any).deviceMemory || 0;
+  return coarse ? (mem >= 6 ? 'mid' : 'low') : 'high';
 }
 export function initRender(canvas: HTMLCanvasElement, q: Quality) {
   R.quality = q;

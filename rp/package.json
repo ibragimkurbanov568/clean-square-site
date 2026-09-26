@@ -9,7 +9,9 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "assets": "node tools/build-assets.mjs"
+    "assets": "node tools/build-assets.mjs",
+    "lite": "node tools/build-lite.mjs .lite && python3 tools/build-lite-snd.py .lite",
+    "one": "vite build --base ./ && python3 tools/pack-single.py dist .lite krai-one.html"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.19.3",
