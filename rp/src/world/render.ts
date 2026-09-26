@@ -44,6 +44,7 @@ export function detectQuality(): Quality {
 export function initRender(canvas: HTMLCanvasElement, q: Quality) {
   R.quality = q;
   const r = R.renderer = new THREE.WebGLRenderer({ canvas, antialias: q !== 'high', powerPreference: 'high-performance', stencil: false });
+  r.debug.checkShaderErrors = !import.meta.env.PROD; // в сборке не ждём журнал компиляции шейдеров — меньше рывков
   r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1;
   r.shadowMap.enabled = q !== 'low'; r.shadowMap.type = THREE.PCFSoftShadowMap;
   const sc = R.scene; sc.fog = new THREE.Fog(0xbfd0e0, 120, q === 'low' ? 520 : q === 'mid' ? 750 : 1100);

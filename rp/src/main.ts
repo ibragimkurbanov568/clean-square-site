@@ -73,8 +73,12 @@ async function boot() {
   const warm = [createHuman({ ...randomLook(), sex: 'male', hair: 'hair_buzzed' }), createHuman({ ...randomLook(), sex: 'female', hair: 'hair_long' })];
   warm.forEach((h, i) => { h.root.position.set(i * 2, 0, -HALF_W); R.scene.add(h.root); });
   const ws = CARS.map((c, i) => { const sl = Fleet.alloc(c.id); if (sl) Fleet.place(sl, (i % 8) * 6 - 20, 0, -HALF_W - 8 - Math.floor(i / 8) * 12, 0); return sl; });
+  Props.warm(1, -HALF_W - 3, true);
   try { await R.renderer.compileAsync(R.scene, R.cam); } catch { /* старые браузеры */ }
   R.cam.position.set(1, 1.6, -HALF_W + 6); R.cam.lookAt(1, 1, -HALF_W); render();
+  // днём и ночью разные наборы света — рисуем оба, чтобы все варианты шейдеров были готовы
+  const h0 = G.s.hour; for (const h of [13, 22]) { updateSky(h, 0, 0, R.cam.position, 0, 0); render(); } G.s.hour = h0;
+  Props.warm(0, 0, false);
   warm.forEach(h => h.root.removeFromParent()); ws.forEach(sl => sl && Fleet.release(sl));
   Menu.init(host);
   buildRain();

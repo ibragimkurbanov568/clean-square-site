@@ -179,6 +179,13 @@ export const Props = {
       for (const im of k.meshes) { im.count = n; im.instanceMatrix.needsUpdate = true; }
     }
   },
+  // прогрев: по одному экземпляру каждого вида перед камерой экрана загрузки — чтобы шейдеры
+  // собрались до игры, а не рывком при первом появлении предмета в кадре
+  warm(x: number, z: number, on: boolean) {
+    const M = new THREE.Matrix4(); let k = 0;
+    for (const [, kind] of KINDS) { M.makeTranslation(x + (k % 6) * 1.5 - 4, 0, z - Math.floor(k / 6) * 1.5); k++; for (const im of kind.meshes) { im.setMatrixAt(0, M); im.count = on ? 1 : 0; im.instanceMatrix.needsUpdate = true; } }
+    if (!on) this.last.set(1e9, 1e9);
+  },
   // стекло фонарей светится вечером и ночью
   glass: [] as THREE.MeshStandardMaterial[],
   setNight(k: number) { for (const m of this.glass) m.emissiveIntensity = k * 3; },
