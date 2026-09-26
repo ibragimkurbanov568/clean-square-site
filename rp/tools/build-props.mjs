@@ -15,10 +15,8 @@ const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies(
 // h — высота в метрах (масштаб по ней), tris — бюджет, tex — текстуры, drop — убрать сетки с такими именами (земля под деревом и т.п.)
 const LIST = [
   { id: 'lamp', src: 'ph/street_lamp_01/street_lamp_01.gltf', h: 8.5, tris: 3000, tex: 512, src2: 'Poly Haven', author: 'Josh Dean', license: 'CC0' },
-  { id: 'lamp2', src: 'ph/street_lamp_02/street_lamp_02.gltf', h: 4.2, tris: 2500, tex: 512, author: 'Josh Dean', license: 'CC0' },
+  { id: 'lamp2', src: 'ph/street_lamp_02/street_lamp_02.gltf', h: .95, tris: 2500, tex: 512, author: 'Josh Dean', license: 'CC0' },
   { id: 'bin', src: 'ph/metal_trash_can/metal_trash_can.gltf', h: .95, tris: 1500, tex: 512, author: 'GurJas Studios', license: 'CC0' },
-  { id: 'seat', src: 'ph/modular_street_seating/modular_street_seating.gltf', h: .8, tris: 2500, tex: 512, author: 'Stuart Attenborrow', license: 'CC0' },
-  { id: 'bench', src: 'ph/painted_wooden_bench/painted_wooden_bench.gltf', h: .9, tris: 1000, tex: 512, author: 'Kirill Sannikov', license: 'CC0' },
   { id: 'manhole', src: 'ph/water_manhole_cover/water_manhole_cover.gltf', h: .07, tris: 600, tex: 512, author: 'Raunox', license: 'CC0' },
   { id: 'ubox', src: 'ph/utility_box_01/utility_box_01.gltf', h: 1.12, tris: 1200, tex: 512, author: 'James Ray Cock', license: 'CC0' },
   { id: 'ubox2', src: 'ph/utility_box_02/utility_box_02.gltf', h: 1.12, tris: 1200, tex: 512, author: 'James Ray Cock', license: 'CC0' },
@@ -32,17 +30,9 @@ const LIST = [
   { id: 'planter', src: 'ph/planter_box_01/planter_box_01.gltf', h: .42, tris: 1200, tex: 512, author: 'James Ray Cock', license: 'CC0' },
   { id: 'picnic', src: 'ph/wooden_picnic_table/wooden_picnic_table.gltf', h: .75, tris: 1500, tex: 512, author: 'Ulan Cabanilla', license: 'CC0' },
   { id: 'tyre', src: 'ph/old_tyre/old_tyre.gltf', h: .6, tris: 800, tex: 512, author: 'MP', license: 'CC0' },
-  { id: 'shutter', src: 'ph/rollershutter_door/rollershutter_door.gltf', h: 2.4, tris: 600, tex: 512, author: 'MP', license: 'CC0' },
-  { id: 'fence', src: 'ph/modular_chainlink_fence/modular_chainlink_fence.gltf', h: 2.2, tris: 3000, tex: 512, author: 'James Ray Cock, Amal Kumar', license: 'CC0' },
-  { id: 'shrub', src: 'ph/shrub_02/shrub_02.gltf', h: 1.9, tris: 2500, tex: 512, author: 'Rico Cilliers', license: 'CC0' },
-  { id: 'shrub2', src: 'ph/shrub_04/shrub_04.gltf', h: .8, tris: 1500, tex: 512, author: 'Rico Cilliers', license: 'CC0' },
-  { id: 'stump', src: 'ph/tree_stump_01/tree_stump_01.gltf', h: .5, tris: 800, tex: 512, author: 'Rob Tuytel', license: 'CC0' },
-  { id: 'pot', src: 'ph/potted_plant_01/potted_plant_01.gltf', h: 1.35, tris: 1500, tex: 512, author: 'Rico Cilliers', license: 'CC0' },
-  // деревья (Objaverse, CC-BY)
+  // деревья (Objaverse, CC-BY); отбракованы: мультяшная берёза, клён с куском газона, «прозрачные» кусты Poly Haven
   { id: 'tree_urban', src: 'trees/c6c7cebef3.glb', h: 9, tris: 4000, tex: 1024, tree: true },
   { id: 'tree_poplar', src: 'trees/ec7c1d301b.glb', h: 17, tris: 3000, tex: 1024, tree: true },
-  { id: 'tree_maple', src: 'trees/4b27adcf92.glb', h: 10, tris: 4000, tex: 1024, tree: true, drop: /plane|ground|grass|soil/i },
-  { id: 'tree_birch', src: 'trees/43a94afe9f.glb', h: 12, tris: 4000, tex: 1024, tree: true },
   { id: 'tree_leafy', src: 'trees/f91d3c3c52.glb', h: 8, tris: 4000, tex: 1024, tree: true },
   { id: 'tree_oak', src: 'trees/3dc59560f2.glb', h: 12, tris: 4000, tex: 1024, tree: true },
 ];

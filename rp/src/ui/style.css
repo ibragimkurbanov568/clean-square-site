@@ -84,3 +84,13 @@ input[type=range]{width:100%;accent-color:var(--red)}
 .creator{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,380px);gap:16px;min-height:100%;align-items:end}
 @media (max-width:760px){.creator{grid-template-columns:1fr;align-items:end}.creator>div:first-child{display:none}#mini{width:130px;height:130px}.chat{width:60vw;font-size:12px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* потребности и меню персонажа */
+.needs{display:flex;gap:6px;font-size:11px}.needs span{display:flex;align-items:center;gap:3px}.needs b{display:block;width:30px;height:5px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden}.needs i{display:block;height:100%;background:#8fd16a}.needs i.low{background:#ff5a4a;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.35}}
+.char{width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 32px);display:flex;flex-direction:column;gap:10px}
+.char .tabs{display:flex;flex-wrap:wrap;gap:6px}.char .tabs .btn{padding:6px 10px;font-size:13px}
+.char .pane{overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:240px}
+.char .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.char .bar{height:8px;background:rgba(255,255,255,.12);border-radius:4px;overflow:hidden}.char .bar i{display:block;height:100%;background:var(--red)}
+.char .doc{border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:4px}

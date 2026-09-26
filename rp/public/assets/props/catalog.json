@@ -17,9 +17,9 @@
  {
   "id": "lamp2",
   "dims": [
-   0.969,
-   4.2,
-   2.023
+   0.219,
+   0.95,
+   0.458
   ],
   "tris": 2656,
   "tree": false,
@@ -39,36 +39,6 @@
   "tris": 1620,
   "tree": false,
   "author": "GurJas Studios",
-  "title": "",
-  "url": "",
-  "license": "CC0",
-  "source": "Poly Haven"
- },
- {
-  "id": "seat",
-  "dims": [
-   3.655,
-   0.8,
-   0.649
-  ],
-  "tris": 8949,
-  "tree": false,
-  "author": "Stuart Attenborrow",
-  "title": "",
-  "url": "",
-  "license": "CC0",
-  "source": "Poly Haven"
- },
- {
-  "id": "bench",
-  "dims": [
-   1.179,
-   0.9,
-   0.503
-  ],
-  "tris": 630,
-  "tree": false,
-  "author": "Kirill Sannikov",
   "title": "",
   "url": "",
   "license": "CC0",
@@ -270,96 +240,6 @@
   "source": "Poly Haven"
  },
  {
-  "id": "shutter",
-  "dims": [
-   3.08,
-   2.4,
-   0.3
-  ],
-  "tris": 600,
-  "tree": false,
-  "author": "MP",
-  "title": "",
-  "url": "",
-  "license": "CC0",
-  "source": "Poly Haven"
- },
- {
-  "id": "fence",
-  "dims": [
-   7.076,
-   2.2,
-   1.874
-  ],
-  "tris": 12088,
-  "tree": false,
-  "author": "James Ray Cock, Amal Kumar",
-  "title": "",
-  "url": "",
-  "license": "CC0",
-  "source": "Poly Haven"
- },
- {
-  "id": "shrub",
-  "dims": [
-   6.756,
-   1.9,
-   2.55
-  ],
-  "tris": 2475,
-  "tree": false,
-  "author": "Rico Cilliers",
-  "title": "",
-  "url": "",
-  "license": "CC0",
-  "source": "Poly Haven"
- },
- {
-  "id": "shrub2",
-  "dims": [
-   2.13,
-   0.8,
-   0.533
-  ],
-  "tris": 1389,
-  "tree": false,
-  "author": "Rico Cilliers",
-  "title": "",
-  "url": "",
-  "license": "CC0",
-  "source": "Poly Haven"
- },
- {
-  "id": "stump",
-  "dims": [
-   1.245,
-   0.5,
-   1.389
-  ],
-  "tris": 800,
-  "tree": false,
-  "author": "Rob Tuytel",
-  "title": "",
-  "url": "",
-  "license": "CC0",
-  "source": "Poly Haven"
- },
- {
-  "id": "pot",
-  "dims": [
-   0.587,
-   1.35,
-   0.633
-  ],
-  "tris": 8323,
-  "tree": false,
-  "author": "Rico Cilliers",
-  "title": "",
-  "url": "",
-  "license": "CC0",
-  "source": "Poly Haven"
- },
- {
   "id": "tree_urban",
   "dims": [
    5.983,
@@ -386,36 +266,6 @@
   "author": "evseevdaniil0011",
   "title": "POPLAR TREE - HIGHT TEXTURE LOW-POLY MODEL",
   "url": "https://sketchfab.com/3d-models/ec7c1d301bbc43dca5fe5f0650148d13",
-  "license": "CC-BY 4.0",
-  "source": "Sketchfab/Objaverse"
- },
- {
-  "id": "tree_maple",
-  "dims": [
-   7.45,
-   10,
-   7.577
-  ],
-  "tris": 2994,
-  "tree": true,
-  "author": "atrodler",
-  "title": "Maple tree",
-  "url": "https://sketchfab.com/3d-models/4b27adcf92f644bdabf8ecc6c5bef399",
-  "license": "CC-BY 4.0",
-  "source": "Sketchfab/Objaverse"
- },
- {
-  "id": "tree_birch",
-  "dims": [
-   8.083,
-   12,
-   8.962
-  ],
-  "tris": 5854,
-  "tree": true,
-  "author": "myochii",
-  "title": "birch tree",
-  "url": "https://sketchfab.com/3d-models/43a94afe9fc849cc98574c80d94b2e5e",
   "license": "CC-BY 4.0",
   "source": "Sketchfab/Objaverse"
  },

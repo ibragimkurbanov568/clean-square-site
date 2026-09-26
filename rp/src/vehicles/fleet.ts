@@ -14,7 +14,7 @@ function glowTexture(r: number, g: number, b: number) {
 }
 export const Fleet = {
   sets: {} as Record<string, ModelSet>, group: new THREE.Group(),
-  heads: null as unknown as THREE.Points, tails: null as unknown as THREE.Points, glowFree: [] as number[], glowCap: 0,
+  heads: null as unknown as THREE.Points, tails: null as unknown as THREE.Points, blinks: null as unknown as THREE.Points, glowFree: [] as number[], glowCap: 0,
   init(capacity: Record<string, number>) {
     const g = this.group; g.name = 'fleet';
     const mk = (geo: THREE.BufferGeometry, mat: THREE.Material, cap: number) => { const im = new THREE.InstancedMesh(geo, mat, cap); im.count = 0; im.frustumCulled = false; im.castShadow = R.quality === 'high'; im.receiveShadow = true; g.add(im); return im; };
@@ -28,7 +28,7 @@ export const Fleet = {
     }
     // ореолы фар и стопов: по 2 точки на машину
     this.glowCap = total; const mkPts = (tex: THREE.Texture, size: number) => { const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(total * 2 * 3).fill(-9999), 3)); geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(total * 2 * 3), 3)); const p = new THREE.Points(geo, new THREE.PointsMaterial({ map: tex, size, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 })); p.frustumCulled = false; g.add(p); return p; };
-    this.heads = mkPts(glowTexture(255, 240, 210), 1.3); this.tails = mkPts(glowTexture(255, 40, 30), .9);
+    this.heads = mkPts(glowTexture(255, 240, 210), 1.3); this.tails = mkPts(glowTexture(255, 40, 30), .9); this.blinks = mkPts(glowTexture(255, 150, 20), .8); (this.blinks.material as THREE.PointsMaterial).opacity = 1;
     this.glowFree = Array.from({ length: total }, (_, i) => total - 1 - i);
     R.scene.add(g);
   },
@@ -41,7 +41,7 @@ export const Fleet = {
     if (slot.glow >= 0) this.glowFree.push(slot.glow);
   },
   recount(s: ModelSet) { let m = -1; for (const i of s.used) if (i > m) m = i; for (const im of s.body) im.count = m + 1; for (const w of s.wheels) for (const im of w) im.count = m + 1; },
-  place(slot: FleetSlot, x: number, y: number, z: number, heading: number, spin = 0, steer = 0, brake = false, roll = 0, lit = true) {
+  place(slot: FleetSlot, x: number, y: number, z: number, heading: number, spin = 0, steer = 0, brake = false, roll = 0, lit = true, signal = 0) {
     const s = this.sets[slot.model], A = ASSETS[slot.model], d = A.def;
     E.set(0, heading, roll, 'YXZ'); Q.setFromEuler(E); M.compose(P.set(x, y, z), Q, S.set(1, 1, 1));
     for (const im of s.body) { im.setMatrixAt(slot.idx, M); im.instanceMatrix.needsUpdate = true; }
@@ -58,11 +58,16 @@ export const Fleet = {
         const h = lit ? 1 : 0; hc.setXYZ(slot.glow * 2 + k, h, h, h); const b = !lit ? 0 : brake ? 1 : .35; tc.setXYZ(slot.glow * 2 + k, b, b, b);
       }
       hp.needsUpdate = tp.needsUpdate = hc.needsUpdate = tc.needsUpdate = true;
+      // поворотник: мигает 1,5 раза в секунду, спереди и сзади на стороне поворота
+      const bp = this.blinks.geometry.attributes.position as THREE.BufferAttribute, bc = this.blinks.geometry.attributes.color as THREE.BufferAttribute;
+      const on = signal !== 0 && (performance.now() / 1000 + slot.glow * .13) % .66 < .33, sx = -signal * d.W * .47, hy = d.H * .45;
+      for (let k = 0; k < 2; k++) { const z2 = k ? d.L / 2 - .1 : -d.L / 2 + .1; bp.setXYZ(slot.glow * 2 + k, x + sx * c + z2 * sn, y + hy, z - sx * sn + z2 * c); const b = on ? 1 : 0; bc.setXYZ(slot.glow * 2 + k, b, b, b); }
+      bp.needsUpdate = bc.needsUpdate = true;
     }
   },
   hide(slot: FleetSlot) {
     const s = this.sets[slot.model]; for (const im of s.body) { im.setMatrixAt(slot.idx, HIDE); im.instanceMatrix.needsUpdate = true; } for (const w of s.wheels) for (const im of w) { im.setMatrixAt(slot.idx, HIDE); im.instanceMatrix.needsUpdate = true; }
-    if (slot.glow >= 0) { const hp = this.heads.geometry.attributes.position as THREE.BufferAttribute, tp = this.tails.geometry.attributes.position as THREE.BufferAttribute; for (let k = 0; k < 2; k++) { hp.setXYZ(slot.glow * 2 + k, 0, -9999, 0); tp.setXYZ(slot.glow * 2 + k, 0, -9999, 0); } hp.needsUpdate = tp.needsUpdate = true; }
+    if (slot.glow >= 0) { const hp = this.heads.geometry.attributes.position as THREE.BufferAttribute, tp = this.tails.geometry.attributes.position as THREE.BufferAttribute; const bp = this.blinks.geometry.attributes.position as THREE.BufferAttribute; for (let k = 0; k < 2; k++) { hp.setXYZ(slot.glow * 2 + k, 0, -9999, 0); tp.setXYZ(slot.glow * 2 + k, 0, -9999, 0); bp.setXYZ(slot.glow * 2 + k, 0, -9999, 0); } hp.needsUpdate = tp.needsUpdate = bp.needsUpdate = true; }
   },
   // вечером и ночью фары горят, днём — только стопы при торможении
   setNight(k: number, rain = 0) { (this.heads.material as THREE.PointsMaterial).opacity = Math.max(k, rain * .6) * .9; (this.tails.material as THREE.PointsMaterial).opacity = .35 + Math.max(k, rain * .5) * .55; },

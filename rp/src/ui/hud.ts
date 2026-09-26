@@ -30,10 +30,10 @@ export const HUD = {
     const hud = $('#hud');
     hud.innerHTML = `<div class="chat" id="chat"></div><div class="objective" id="obj"></div>
       <div class="hud-tr"><div class="hud-clock"><span id="clock" class="num"></span><span id="wx"></span></div><div class="hud-money num" id="money"></div><div class="hud-bank num" id="bank"></div>
-      <div class="hud-lvl"><b id="lvl">1</b><div class="xp"><i id="xp"></i></div></div><div class="health"><i id="hp"></i></div><div class="stars" id="stars"></div></div>
+      <div class="hud-lvl"><b id="lvl">1</b><div class="xp"><i id="xp"></i></div></div><div class="health"><i id="hp"></i></div><div class="needs"><span title="Сытость">🍞<b><i id="nf"></i></b></span><span title="Жажда">💧<b><i id="nw"></i></b></span><span title="Бодрость">⚡<b><i id="ne"></i></b></span></div><div class="stars" id="stars"></div></div>
       <canvas id="mini" width="380" height="380"></canvas><div class="hint" id="hint"></div><div class="bust" id="bust"></div>
       <div class="speedo" id="speedo"><div><span class="v num" id="spd">0</span> <span class="u">КМ/Ч</span></div><div class="row"><span id="gear">1</span><span>⛽</span><div class="fuel"><i id="fuel"></i></div></div></div>`;
-    for (const id of ['chat', 'obj', 'clock', 'wx', 'money', 'bank', 'lvl', 'xp', 'hp', 'stars', 'hint', 'bust', 'speedo', 'spd', 'gear', 'fuel']) this.el[id] = document.getElementById(id)!;
+    for (const id of ['chat', 'obj', 'clock', 'wx', 'money', 'bank', 'lvl', 'xp', 'hp', 'stars', 'hint', 'bust', 'speedo', 'spd', 'gear', 'fuel', 'nf', 'nw', 'ne']) this.el[id] = document.getElementById(id)!;
     this.mini = (document.getElementById('mini') as HTMLCanvasElement).getContext('2d')!;
     // сенсорные кнопки
     const t = $('#touch');
@@ -60,11 +60,12 @@ export const HUD = {
     document.querySelectorAll<HTMLElement>('#touch .tb').forEach(el => { const b = el.dataset.b!, car = ['gas', 'brake', 'hb', 'horn'].includes(b), foot = ['jump', 'sprint', 'attack'].includes(b); el.classList.toggle('hide', inCar ? foot : car); if (b === 'enter') el.textContent = inCar ? 'ВЫЙТИ' : 'СЕСТЬ'; });
     const j = document.getElementById('joy')!; if (Inp.joy.id >= 0) { j.style.display = 'block'; j.style.left = Inp.joy.x0 - 60 + 'px'; j.style.top = Inp.joy.y0 - 60 + 'px'; const i = j.firstElementChild as HTMLElement; i.style.transform = `translate(${Math.max(-40, Math.min(40, Inp.joy.x - Inp.joy.x0))}px,${Math.max(-40, Math.min(40, Inp.joy.y - Inp.joy.y0))}px)`; } else j.style.display = 'none';
   },
-  update(s: { money: number; bank: number; level: number; xpk: number; hour: number; weather: string; wanted: number; health: number; speed: number | null; gear: number; fuel: number; flash: boolean }) {
+  update(s: { money: number; bank: number; level: number; xpk: number; hour: number; weather: string; wanted: number; health: number; speed: number | null; gear: number; fuel: number; flash: boolean; needs?: { food: number; water: number; energy: number } }) {
     const e = this.el;
     e.money.textContent = fmtMoney(s.money); e.bank.textContent = '💳 ' + fmtMoney(s.bank); e.clock.textContent = fmtTime(s.hour); e.wx.textContent = s.weather;
     e.lvl.textContent = String(s.level); e.xp.style.width = (s.xpk * 100).toFixed(1) + '%'; e.hp.style.width = s.health + '%';
     const st = Array.from({ length: 6 }, (_, i) => `<span class="${i < s.wanted ? 'on' : ''}">★</span>`).join(''); if (e.stars.innerHTML !== st) e.stars.innerHTML = st; e.stars.classList.toggle('flash', s.flash);
+    if (s.needs) for (const [id, v] of [['nf', s.needs.food], ['nw', s.needs.water], ['ne', s.needs.energy]] as [string, number][]) { e[id].style.width = v.toFixed(0) + '%'; e[id].classList.toggle('low', v < 20); }
     e.speedo.classList.toggle('on', s.speed !== null);
     if (s.speed !== null) { e.spd.textContent = String(Math.round(Math.abs(s.speed) * 3.6)); e.gear.textContent = s.gear < 0 ? 'R' : s.speed < .3 && s.speed > -.3 ? 'N' : String(s.gear); e.fuel.style.width = s.fuel * 100 + '%'; }
   },

@@ -1,7 +1,7 @@
 // Ввод: клавиатура + мышь (pointer lock), геймпад, сенсорный экран (джойстик и кнопки)
 import { clamp, damp } from './util';
 
-type Btn = 'jump' | 'sprint' | 'use' | 'enter' | 'hb' | 'horn' | 'cam' | 'phone' | 'map' | 'lights' | 'nitro' | 'attack';
+type Btn = 'jump' | 'sprint' | 'use' | 'enter' | 'hb' | 'horn' | 'cam' | 'phone' | 'map' | 'lights' | 'nitro' | 'attack' | 'inv';
 export const Inp = {
   keys: new Set<string>(),
   pressed: new Set<string>(),
@@ -13,7 +13,7 @@ export const Inp = {
   joy: { id: -1, x0: 0, y0: 0, x: 0, y: 0 }, look: { id: -1, x: 0, y: 0 },
   tb: {} as Record<string, boolean>,
 };
-const KEYMAP: Record<string, Btn> = { Space: 'jump', ShiftLeft: 'sprint', ShiftRight: 'sprint', KeyE: 'use', KeyF: 'enter', KeyH: 'horn', KeyC: 'cam', KeyP: 'phone', KeyM: 'map', KeyL: 'lights', KeyN: 'nitro' };
+const KEYMAP: Record<string, Btn> = { Space: 'jump', ShiftLeft: 'sprint', ShiftRight: 'sprint', KeyE: 'use', KeyF: 'enter', KeyH: 'horn', KeyC: 'cam', KeyP: 'phone', KeyM: 'map', KeyL: 'lights', KeyN: 'nitro', KeyI: 'inv', Tab: 'inv' };
 
 export function initInput(canvas: HTMLCanvasElement) {
   addEventListener('keydown', e => {
@@ -56,7 +56,7 @@ export function pollInput(dt: number) {
   const btn = Inp.btn, tap = Inp.tap;
   for (const b of Object.values(KEYMAP)) { btn[b] = false; tap[b] = false; }
   for (const [code, b] of Object.entries(KEYMAP)) { if (k.has(code)) btn[b] = true; if (Inp.pressed.has(code)) tap[b] = true; }
-  for (const b of ['jump', 'sprint', 'use', 'enter', 'hb', 'horn', 'cam', 'phone', 'map', 'lights', 'nitro', 'attack'] as Btn[]) { if (tb[b]) btn[b] = true; if (Inp.pressed.has('T_' + b)) tap[b] = true; }
+  for (const b of ['jump', 'sprint', 'use', 'enter', 'hb', 'horn', 'cam', 'phone', 'map', 'lights', 'nitro', 'attack', 'inv'] as Btn[]) { if (tb[b]) btn[b] = true; if (Inp.pressed.has('T_' + b)) tap[b] = true; }
   if (Inp.pressed.has('Mouse0')) tap.attack = true;
   btn.hb = btn.hb || k.has('Space');
   let gas = my > 0 ? my : 0, brake = my < 0 ? -my : 0, steer = mx;

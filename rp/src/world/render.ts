@@ -13,7 +13,7 @@ export const R = {
   sun: new THREE.DirectionalLight(0xffffff, 3), hemi: new THREE.HemisphereLight(0xbfd8ff, 0x3a3a30, 1), sky: null as unknown as Sky,
   composer: null as EffectComposer | null, bloom: null as UnrealBloomPass | null, quality: 'high' as Quality,
   // общие униформы для шейдеров города
-  U: { uNight: { value: 0 }, uTime: { value: 0 }, uWet: { value: 0 }, uSkyCol: { value: new THREE.Color() }, uSnow: { value: 0 }, uWind: { value: .15 } }, flash: 0,
+  U: { uNight: { value: 0 }, uTime: { value: 0 }, uWet: { value: 0 }, uSkyCol: { value: new THREE.Color() }, uSnow: { value: 0 }, uWind: { value: .15 }, uNear: { value: new THREE.Vector4() } }, flash: 0,
   night: 0, stars: null as THREE.Points | null, moon: null as THREE.Mesh | null, clouds: null as THREE.Mesh | null,
 };
 

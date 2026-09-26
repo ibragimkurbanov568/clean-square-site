@@ -167,10 +167,20 @@ export function facadeMaterial() {
   return m;
 }
 // ветер для деревьев
-export function windMaterial(base: THREE.MeshStandardMaterial) {
+// hideNear: 'z' — процедурное дерево, 'w' — процедурный фонарь; прячутся в радиусе, где стоят настоящие модели (props.ts)
+export const NEAR_HIDE = (ch: 'z' | 'w') => `
+      #ifdef USE_INSTANCING
+      if (uNear.${ch} > 0. && distance(vec2(instanceMatrix[3][0], instanceMatrix[3][2]), uNear.xy) < uNear.${ch}) transformed = vec3(0.);
+      #endif`;
+export function hideNearMaterial<T extends THREE.Material>(m: T, ch: 'z' | 'w') {
+  m.onBeforeCompile = sh => { sh.uniforms.uNear = R.U.uNear; sh.vertexShader = 'uniform vec4 uNear;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>' + NEAR_HIDE(ch)); };
+  m.customProgramCacheKey = () => 'near' + ch; return m;
+}
+export function windMaterial(base: THREE.MeshStandardMaterial, hideNear = false) {
+  base.customProgramCacheKey = () => hideNear ? 'wind-near' : 'wind';
   base.onBeforeCompile = sh => {
-    sh.uniforms.uTime = R.U.uTime; sh.uniforms.uWind = R.U.uWind;
-    sh.vertexShader = 'uniform float uTime, uWind;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+    sh.uniforms.uTime = R.U.uTime; sh.uniforms.uWind = R.U.uWind; sh.uniforms.uNear = R.U.uNear;
+    sh.vertexShader = 'uniform float uTime, uWind; uniform vec4 uNear;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>${hideNear ? NEAR_HIDE('z') : ''}
       #ifdef USE_INSTANCING
       vec3 ip = vec3(instanceMatrix[3][0], 0., instanceMatrix[3][2]);
       #else

@@ -4,7 +4,8 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { R } from './render';
 import { City, Building, CITY, HALF, PITCH, roadLine, RIVER, blockRect } from './citygen';
-import { groundMaterial, facadeMaterial, districtTexture, windMaterial } from './materials';
+import { groundMaterial, facadeMaterial, districtTexture, windMaterial, hideNearMaterial } from './materials';
+import { isClassicLamp } from './props';
 import { mulberry32 } from '../core/util';
 
 const CHUNK = 4; // город режется на 4×4 куска для отсечения
@@ -115,6 +116,10 @@ function treeGeo(kind: number) {
   const c = [0, 1, 2].map(k => colGeo(at(new THREE.ConeGeometry(2.4 - k * .6, 3.2, 8), 0, 3.4 + k * 1.9, 0), 0x2f5a32, .25, 8 + k));
   return mergeGeometries([t, ...c]);
 }
+// классический торшер (вдали — упрощённая копия модели Poly Haven)
+function classicLampGeo() {
+  return mergeGeometries([colGeo(at(new THREE.CylinderGeometry(.07, .16, 7.4, 8), 0, 3.7, 0), 0x1f2624), colGeo(at(new THREE.CylinderGeometry(.24, .2, .9, 6), 0, 7.9, 0), 0x2a302e)]);
+}
 function lampGeo() {
   const pole = colGeo(at(new THREE.CylinderGeometry(.08, .12, 8, 8), 0, 4, 0), 0x5b6066);
   const arm = colGeo(at(new THREE.BoxGeometry(.08, .08, 2.2), 0, 7.9, 1.05), 0x5b6066);
@@ -157,24 +162,33 @@ export function buildCity(city: City): CityMeshes {
       curbs.push(colGeo(at(new THREE.BoxGeometry(w, .14, d), x, .07, z), 0xa8aca8, .05));
   }
   // деревья-инстансы по кускам и по видам + лес за городом
-  const rng = mulberry32(99), trees = [...city.trees];
+  const rng = mulberry32(99), trees: (City['trees'][number] & { forest?: boolean })[] = [...city.trees];
   for (let k = 0; k < (q === 'low' ? 700 : 1600); k++) { const a = rng() * Math.PI * 2, rr = HALF + 60 + rng() * 520, x = Math.cos(a) * rr, z = Math.sin(a) * rr;
-    if (z > RIVER.z0 - 10 && z < RIVER.z1 + 10) continue; if (Math.abs(z - roadLine(6)) < 14 && x > 0) continue; if (Math.abs(x - roadLine(6)) < 14 && z < 0) continue; trees.push({ x, z, s: .9 + rng() * .6, kind: rng() < .5 ? 2 : rng() < .5 ? 0 : 1 }); }
-  const tg = [0, 1, 2].map(treeGeo), tm = windMaterial(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .9 }));
+    if (z > RIVER.z0 - 10 && z < RIVER.z1 + 10) continue; if (Math.abs(z - roadLine(6)) < 14 && x > 0) continue; if (Math.abs(x - roadLine(6)) < 14 && z < 0) continue; trees.push({ x, z, s: .9 + rng() * .6, kind: rng() < .5 ? 2 : rng() < .5 ? 0 : 1, forest: true }); }
+  const tg = [0, 1, 2].map(treeGeo), tmForest = windMaterial(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .9 }));
+  const tm = windMaterial(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .9 }), true); // городские: рядом заменяются настоящими
   const buckets = new Map<string, typeof trees>();
-  for (const t of trees) { const key = `${chunkOf(t.x, t.z)}:${t.kind}`; if (!buckets.has(key)) buckets.set(key, []); buckets.get(key)!.push(t); }
+  for (const t of trees) { const key = `${chunkOf(t.x, t.z)}:${t.kind}:${t.forest ? 1 : 0}`; if (!buckets.has(key)) buckets.set(key, []); buckets.get(key)!.push(t); }
   const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3(), Y = new THREE.Vector3(0, 1, 0);
   for (const [key, list] of buckets) {
-    const [ch, kind] = key.split(':').map(Number), im = new THREE.InstancedMesh(tg[kind], tm, list.length);
+    const [ch, kind, forest] = key.split(':').map(Number), im = new THREE.InstancedMesh(tg[kind], forest ? tmForest : tm, list.length);
     list.forEach((t, i) => { M.compose(P.set(t.x, 0, t.z), Q.setFromAxisAngle(Y, (t.x * 13 + t.z) % 6.28), S.setScalar(t.s)); im.setMatrixAt(i, M); });
     im.castShadow = q === 'high'; im.receiveShadow = false; im.computeBoundingSphere(); root.add(im); chunks[ch].push(im);
   }
   // фонари
   const lg = lampGeo(), lampMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .5, metalness: .6 });
   const headMat = new THREE.MeshStandardMaterial({ color: 0x333333, emissive: 0xffc87a, emissiveIntensity: 0 });
-  const lampHeads: THREE.InstancedMesh[] = [], lampPos: THREE.Vector3[] = [], lb = new Map<number, typeof city.lamps>();
-  for (const l of city.lamps) { const k = chunkOf(l.x, l.z); if (!lb.has(k)) lb.set(k, []); lb.get(k)!.push(l); }
+  const lampHeads: THREE.InstancedMesh[] = [], lampPos: THREE.Vector3[] = [], lb = new Map<number, typeof city.lamps>(), cb = new Map<number, typeof city.lamps>();
+  for (const l of city.lamps) { const k = chunkOf(l.x, l.z), m = isClassicLamp(city, l.x, l.z) ? cb : lb; if (!m.has(k)) m.set(k, []); m.get(k)!.push(l); }
   const glowPos: number[] = [];
+  // классические: настоящая модель рядом, упрощённая вдали; голова фонаря по центру столба
+  const clg = classicLampGeo(), clMat = hideNearMaterial(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .5, metalness: .6 }), 'w');
+  const chMat = hideNearMaterial(new THREE.MeshStandardMaterial({ color: 0x333333, emissive: 0xffc87a, emissiveIntensity: 0 }), 'w');
+  for (const [k, list] of cb) {
+    const im = new THREE.InstancedMesh(clg, clMat, list.length), hm = new THREE.InstancedMesh(new THREE.CylinderGeometry(.2, .2, .5, 6), chMat, list.length);
+    list.forEach((l, i) => { M.compose(P.set(l.x, 0, l.z), Q.identity(), S.setScalar(1)); im.setMatrixAt(i, M); M.compose(P.set(l.x, 7.85, l.z), Q, S); hm.setMatrixAt(i, M); lampPos.push(new THREE.Vector3(l.x, 7.6, l.z)); glowPos.push(l.x, 7.9, l.z); });
+    im.castShadow = q === 'high'; root.add(im, hm); chunks[k].push(im, hm); lampHeads.push(hm);
+  }
   for (const [k, list] of lb) {
     const im = new THREE.InstancedMesh(lg, lampMat, list.length), hm = new THREE.InstancedMesh(new THREE.BoxGeometry(.5, .15, .9), headMat, list.length);
     list.forEach((l, i) => { Q.setFromAxisAngle(Y, l.rot); M.compose(P.set(l.x, 0, l.z), Q, S.setScalar(1)); im.setMatrixAt(i, M); const hx = l.x + Math.sin(l.rot) * 2.1, hz = l.z + Math.cos(l.rot) * 2.1; M.compose(P.set(hx, 7.85, hz), Q, S.setScalar(1)); hm.setMatrixAt(i, M); lampPos.push(new THREE.Vector3(hx, 7.6, hz)); glowPos.push(hx, 7.7, hz); });

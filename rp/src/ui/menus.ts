@@ -4,13 +4,14 @@ import { HAIRS, HAIRCOLS, TOPS, BOTTOMS, SHOES, Look, randomLook } from '../acto
 import { CARS } from '../vehicles/carModel';
 import { JOBS } from '../sim/jobs';
 import { mapImg, MAP_EXT, POI_ICON } from './hud';
-import type { GameState } from '../sim/state';
+import { ITEMS, xpForLevel, type GameState } from '../sim/state';
 import { Snd } from '../core/audio';
 
 export interface MenuHost {
   state: GameState; hasSave: boolean; newGame(look: Look, name: string): void; continueGame(): void; resume(): void; save(): void;
   setLook(look: Look): void; buyCar(model: string, color: number, price: number): void; startJob(id: string): void; quitJob(): void; activeJob(): string | null;
   setRoute(x: number, z: number): void; bank(op: 'dep' | 'wd', amount: number): void; refuel(): void; locateCar(id: string): void; setQuality(q: string): void; setVol(v: number): void;
+  useItem(id: string): void; buyItem(id: string): void; medCard(): void;
   toMenu(): void; pois: { kind: string; name: string; door: [number, number] }[]; player: { x: number; z: number }; license(): void;
 }
 let H: MenuHost;
@@ -43,6 +44,10 @@ export const Menu = {
       case 'q': H.setQuality(d.v!); this.phone('set'); break;
       case 'lic': H.license(); this.close(); break;
       case 'x': this.close(); H.resume(); break;
+      case 'ch': this.character(d.t!); break;
+      case 'use': H.useItem(d.id!); this.character('inv'); break;
+      case 'kbuy': H.buyItem(d.id!); this.kiosk(); break;
+      case 'med': H.medCard(); this.close(); break;
       case 'dcol': this.dealerColor = +d.v!; this.dealer(); break;
     }
   },
@@ -53,12 +58,20 @@ export const Menu = {
       ${H.hasSave ? `<button class="btn primary" data-a="cont">Продолжить <small>${esc(H.state.name)} · ${H.state.level} ур.</small></button>` : ''}
       <button class="btn ${H.hasSave ? '' : 'primary'}" data-a="new">Новая игра <small>создать персонажа</small></button>
       <button class="btn" disabled>Онлайн-сервера <small>скоро</small></button>
-      <button class="btn" data-a="credits">Титры и лицензии <small>CC0-ресурсы</small></button>
-      <p class="muted small" style="margin-top:12px">ПК: WASD — ходьба, мышь — камера, F — сесть/выйти, E — действие, P — телефон, M — карта, Shift — бег, Пробел — прыжок/ручник, H — сигнал. На телефоне — экранные кнопки.</p></div>`, 'dim');
+      <button class="btn" data-a="credits">Титры и лицензии <small>авторы моделей и звуков</small></button>
+      <p class="muted small" style="margin-top:12px">ПК: WASD — ходьба, мышь — камера, F — сесть/выйти, E — действие, P — телефон, M — карта, I — персонаж и рюкзак, Shift — бег, Пробел — прыжок/ручник, H — сигнал. На телефоне — экранные кнопки.</p></div>`, 'dim');
   },
-  credits() {
-    this.show(`<div class="win panel"><h2>Титры</h2><p>Игра «КРАЙ» — вымышленный город и марки. Код, город, машины и интерфейс созданы для этой игры.</p>
-      <h3>Ресурсы (CC0 — общественное достояние)</h3><ul style="padding-left:18px"><li>Персонажи и анимации: Quaternius — Universal Base Characters, Universal Animation Library</li><li>Текстуры: ambientCG — асфальт, бетон, плитка, трава, кирпич, штукатурка</li><li>Three.js (MIT), Rapier (Apache-2.0)</li></ul>
+  async credits() {
+    const base = (import.meta.env.BASE_URL || './') + 'assets/', get = async (p: string) => { try { return await (await fetch(base + p)).json(); } catch { return null; } };
+    const [cars, props, snd] = await Promise.all([get('cars/catalog.json'), get('props/catalog.json'), get('snd/credits.json')]);
+    const a = (u: string, t: string) => u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>` : esc(t);
+    this.show(`<div class="win panel char"><h2>Титры и лицензии</h2><div class="pane small">
+      <p>Игра «КРАЙ» — вымышленный город; марки машин показаны под вымышленными названиями. Код, город и интерфейс созданы для этой игры.</p>
+      <h3>Персонажи и текстуры (CC0)</h3><p>Quaternius — Universal Base Characters, Universal Animation Library · ambientCG — асфальт, бетон, плитка, трава, кирпич, штукатурка</p>
+      <h3>Машины (CC-BY 4.0, Sketchfab)</h3><ul style="padding-left:18px">${(cars || []).map((c: any) => `<li>${esc(c.brand + ' ' + c.name)} — ${a(c.url, c.title)}, автор ${esc(c.author)}</li>`).join('')}</ul>
+      <h3>Деревья и предметы улицы</h3><ul style="padding-left:18px">${(props || []).map((p: any) => `<li>${p.url ? a(p.url, p.title) : 'Poly Haven'} — ${esc(p.author)} (${esc(p.license)})</li>`).join('')}</ul>
+      <h3>Звуки (CC0, Freesound)</h3><ul style="padding-left:18px">${Object.values(snd || {}).map((s: any) => `<li>${a(s.url, s.title)} — ${esc(s.user)}</li>`).join('')}</ul>
+      <p>Three.js (MIT), Rapier (Apache-2.0), meshoptimizer (MIT).</p></div>
       <button class="btn" data-a="main">Назад</button></div>`);
   },
   // ---------- создание персонажа ----------
@@ -79,6 +92,48 @@ export const Menu = {
       <h3>Имя в городе</h3><input type="text" id="nm" placeholder="Иван_Петров" value="${esc(H.state.name || '')}" maxlength="24"><div id="nmErr" class="small" style="color:#ff8a7a"></div>
       <div class="row"><button class="btn" data-a="rnd">Случайно</button><button class="btn primary" data-a="create">Начать жизнь ▶</button></div></div></div>`, '');
     const sk = document.getElementById('skin') as HTMLInputElement; sk.oninput = () => { L.skin = +sk.value; H.setLook(L); };
+  },
+  // ---------- персонаж (I / Tab) ----------
+  charTab: 'me' as string,
+  character(tab?: string) {
+    tab = tab || this.charTab;
+    this.open = 'char'; this.charTab = tab; const s = H.state, L = s.look;
+    const tabs: [string, string][] = [['me', '👤 Персонаж'], ['needs', '❤ Состояние'], ['inv', '🎒 Рюкзак'], ['skills', '📈 Навыки'], ['docs', '🪪 Документы'], ['prop', '🏠 Имущество'], ['stats', '📊 Статистика']];
+    const bar = (v: number, col = 'var(--red)') => `<div class="bar"><i style="width:${Math.max(0, Math.min(100, v)).toFixed(0)}%;background:${col}"></i></div>`;
+    const hex = (c: number) => '#' + c.toString(16).padStart(6, '0');
+    let body = '';
+    if (tab === 'me') body = `<div class="kv"><span>Имя</span><b>${esc(s.name.replace('_', ' '))}</b></div><div class="kv"><span>Уровень</span><b>${s.level} · ${s.xp}/${xpForLevel(s.level)} опыта</b></div>${bar(s.xp / xpForLevel(s.level) * 100, 'var(--yellow)')}
+      <div class="kv"><span>Пол</span><b>${L?.sex === 'female' ? 'женский' : 'мужской'}</b></div>
+      <div class="kv"><span>Одежда</span><b><span class="sw" style="display:inline-block;width:16px;height:16px;background:${hex(L?.top || 0)}"></span> верх · <span class="sw" style="display:inline-block;width:16px;height:16px;background:${hex(L?.bottom || 0)}"></span> низ · <span class="sw" style="display:inline-block;width:16px;height:16px;background:${hex(L?.shoes || 0)}"></span> обувь</b></div>
+      <div class="kv"><span>Работа</span><b>${H.activeJob() ? esc(JOBS[H.activeJob()!].name) : 'безработный'}</b></div><div class="kv"><span>Розыск</span><b>${s.wanted ? '★'.repeat(s.wanted) : 'чист перед законом'}</b></div>
+      <p class="small muted">Сменить одежду можно в магазине «Галерея» (в центре) — примерочная появится в следующей версии.</p>`;
+    if (tab === 'needs') { const N = s.needs, st = (v: number) => v < 10 ? '<span style="color:#ff6a5a">критично</span>' : v < 30 ? '<span style="color:#ffb44a">низко</span>' : 'норма';
+      body = `<div class="kv"><span>❤ Здоровье</span><b>${Math.round(s.health)}</b></div>${bar(s.health)}
+      <div class="kv"><span>🍞 Сытость</span><b>${Math.round(N.food)} · ${st(N.food)}</b></div>${bar(N.food, '#8fd16a')}
+      <div class="kv"><span>💧 Жажда</span><b>${Math.round(N.water)} · ${st(N.water)}</b></div>${bar(N.water, '#4aa8ff')}
+      <div class="kv"><span>⚡ Бодрость</span><b>${Math.round(N.energy)} · ${st(N.energy)}</b></div>${bar(N.energy, '#f5c518')}
+      <p class="small muted">Еда и вода — в ларьках у остановок, выспаться — в гостинице «Край». Голод и жажда на нуле отнимают здоровье, без бодрости нельзя бежать.</p>`; }
+    if (tab === 'inv') { const it = Object.entries(s.inv).filter(([, n]) => n > 0);
+      body = it.length ? `<div class="grid">${it.map(([id, n]) => { const I = ITEMS[id]; return I ? `<div class="card"><b>${I.icon} ${I.name} ×${n}</b><span class="small muted">${I.desc}</span><button class="btn" data-a="use" data-id="${id}">Использовать</button></div>` : ''; }).join('')}</div>` : '<p class="muted">Рюкзак пуст. Купить еду и воду можно в ларьках.</p>';
+      body += `<p class="small muted">Вещей: ${it.reduce((a, [, n]) => a + n, 0)}/20 · Наличные: ${fmtMoney(s.money)}</p>`; }
+    if (tab === 'skills') { const sk: [string, number, string][] = [['🚗 Вождение', s.skills.drive, 'Растёт от пройденных за рулём километров. Уменьшает повреждения машины при ударах (до −30%).'], ['🏃 Выносливость', s.skills.stamina, 'Растёт от бега. Ускоряет бег (до +12%) и медленнее тратит бодрость.']];
+      body = sk.map(([n, v, d]) => `<div class="doc"><div class="kv"><span>${n}</span><b>${v.toFixed(1)} / 100</b></div>${bar(v, 'var(--green)')}<span class="small muted">${d}</span></div>`).join(''); }
+    if (tab === 'docs') body = `<div class="doc"><b>🪪 Паспорт гражданина</b><span class="small">${esc(s.name.replace('_', ' '))} · г. Новоозёрск · прописка: общежитие № 3</span></div>
+      <div class="doc"><b>🚗 Водительское удостоверение</b><span class="small">${s.licenses.B ? 'Категория B — действует' : 'Нет. Получить — в мэрии (15 000 ₽)'}</span></div>
+      <div class="doc"><b>🩺 Медицинская карта</b><span class="small">${s.docs.med ? 'Оформлена — годен' : 'Нет. Оформить — в больнице (1 500 ₽), нужна для работы в такси в будущих версиях'}</span></div>`;
+    if (tab === 'prop') body = `<h3>Транспорт</h3>${s.cars.length ? s.cars.map(c => { const m = CARS.find(x => x.id === c.model); return `<div class="card"><b>${esc((m?.brand || '') + ' ' + (m?.name || c.model))}</b><span class="small">${esc(c.plate)} · топливо ${Math.round(c.fuel * 100)}% · повреждения ${Math.round(c.dmg)}%</span><button class="btn" data-a="loc" data-id="${c.id}">Показать на карте</button></div>`; }).join('') : '<p class="muted">Своих машин нет.</p>'}
+      <h3>Жильё и бизнес</h3><p class="muted">Комната в общежитии (бесплатно). Квартиры, дома и бизнесы — в следующих обновлениях.</p>`;
+    if (tab === 'stats') { const t = s.stats.playTime; body = `<div class="kv"><span>Заработано всего</span><b>${fmtMoney(s.stats.earned)}</b></div><div class="kv"><span>Проехано</span><b>${(s.stats.distance / 1000).toFixed(1)} км</b></div><div class="kv"><span>Задержаний</span><b>${s.stats.arrests}</b></div><div class="kv"><span>В игре</span><b>${Math.floor(t / 3600)} ч ${Math.floor(t / 60) % 60} мин</b></div><div class="kv"><span>Игровой день</span><b>${s.day}</b></div>`
+      + Object.entries(JOBS).map(([id, j]) => `<div class="kv"><span>${j.name}</span><b>${s.job.done[id] || 0} заданий</b></div>`).join(''); }
+    this.show(`<div class="char panel win"><div class="row" style="justify-content:space-between;align-items:center"><h2 style="margin:0">${esc(s.name.replace('_', ' '))}</h2><button class="btn" data-a="x">Закрыть [I]</button></div>
+      <div class="tabs">${tabs.map(([id, n]) => `<button class="btn ${id === tab ? 'primary' : ''}" data-a="ch" data-t="${id}">${n}</button>`).join('')}</div><div class="pane">${body}</div></div>`);
+  },
+  // ---------- ларёк ----------
+  kiosk() {
+    this.open = 'kiosk'; const s = H.state, list = ['shawarma', 'hotdog', 'pie', 'water', 'kvas', 'coffee', 'energy', 'bandage'];
+    this.show(`<div class="char panel win" style="max-width:520px"><h2 style="margin:0">Ларёк «Продукты 24»</h2><p class="small muted">Наличные: ${fmtMoney(s.money)} · в рюкзаке ${Object.values(s.inv).reduce((a, b) => a + b, 0)}/20</p>
+      <div class="list">${list.map(id => { const I = ITEMS[id]; return `<div class="kv"><span>${I.icon} ${I.name} <span class="small muted">${I.desc}</span></span><button class="btn" data-a="kbuy" data-id="${id}">${fmtMoney(I.price)}</button></div>`; }).join('')}</div>
+      <button class="btn" data-a="x">Уйти</button></div>`);
   },
   // ---------- телефон ----------
   phone(app = '') {

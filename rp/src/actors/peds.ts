@@ -11,8 +11,15 @@ const FIRST = ['Иван', 'Алексей', 'Дмитрий', 'Сергей', '
 const LAST = ['Смирнов', 'Кузнецов', 'Попов', 'Волков', 'Соколов', 'Морозов', 'Лебедев', 'Новиков', 'Орлов', 'Зайцев', 'Громов', 'Белов', 'Тихонов', 'Ершов', 'Фомин', 'Жуков'];
 export function rpName(female: boolean) { const f = pick(FIRST.slice(female ? 12 : 0, female ? FIRST.length : 12)), l = pick(LAST); return `${f}_${l}${female ? 'а' : ''}`; }
 
+// зонт: купол на восьми спицах и ручка; появляется у прохожих в дождь
+let UMB: THREE.Group | null = null;
+function umbrella(col: number) {
+  if (!UMB) { UMB = new THREE.Group(); const c = new THREE.Mesh(new THREE.ConeGeometry(.55, .28, 8, 1, true), new THREE.MeshStandardMaterial({ color: 0x222222, roughness: .6, side: THREE.DoubleSide })); c.position.y = .78; const st = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .85, 5), new THREE.MeshStandardMaterial({ color: 0x333333, metalness: .6 })); st.position.y = .4; UMB.add(c, st); }
+  const u = UMB.clone(true); const m = ((u.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).clone(); m.color.setHex(col); (u.children[0] as THREE.Mesh).material = m; u.position.set(.18, 1.2, .1); u.rotation.z = -.08; return u;
+}
+const UMB_COLS = [0x1b1b1e, 0x1b1b1e, 0x2c3e66, 0x7a1e1e, 0x2f5d3a, 0x5a2a6b, 0xd8b21f];
 export interface Ped {
-  h: Human; x: number; z: number; heading: number; speed: number; state: 'walk' | 'wait' | 'cross' | 'flee' | 'down' | 'idle' | 'ride' | 'talk';
+  h: Human; x: number; z: number; heading: number; speed: number; state: 'walk' | 'wait' | 'cross' | 'flee' | 'down' | 'idle' | 'ride' | 'talk'; umb?: THREE.Object3D;
   // маршрут: квартал (bi,bj), позиция на периметре тротуара (0..4) и направление обхода
   bi: number; bj: number; u: number; dir: number; cross: { x0: number; z0: number; x1: number; z1: number; t: number; axis: 0 | 1; ni: number; nj: number } | null;
   timer: number; nick: string | null; tag: THREE.Sprite | null; id: number; fare?: boolean; hp: number;
@@ -32,7 +39,7 @@ function tagSprite(text: string, color = '#ffffff') {
 }
 
 export const Peds = {
-  list: [] as Ped[], target: 30, radius: 110, player: new THREE.Vector3(), nextId: 1, time: 0,
+  list: [] as Ped[], target: 30, rain: 0, radius: 110, player: new THREE.Vector3(), nextId: 1, time: 0,
   onHit: null as null | ((p: Ped, car: any) => void),
   spawn(near: THREE.Vector3, minD = 45) {
     for (let t = 0; t < 8; t++) {
@@ -58,6 +65,10 @@ export const Peds = {
       // дальних не анимируем каждый кадр
       if (d < 60 || Math.random() < .3) p.h.mixer.update(d < 60 ? dt : dt / .3);
       p.h.root.visible = d < 95 && p.state !== 'ride';
+      // в дождь почти все с зонтами (у кого нет — просто спешат)
+      const wantUmb = this.rain > .25 && (p.id % 5) !== 0 && p.state !== 'down' && p.state !== 'flee';
+      if (wantUmb && !p.umb && d < 80) { p.umb = umbrella(UMB_COLS[p.id % UMB_COLS.length]); p.h.root.add(p.umb); }
+      if (p.umb) p.umb.visible = wantUmb;
     }
   },
   step(p: Ped, dt: number, cars: { x: number; z: number; v: number; h: number }[]) {
@@ -83,8 +94,8 @@ export const Peds = {
         anim = 'Walk_Loop'; break;
       }
       case 'walk': {
-        p.timer -= dt; if (p.timer <= 0) { p.state = Math.random() < .3 ? 'talk' : 'idle'; p.timer = rand(3, 8); break; }
-        const du = p.speed * dt / (PERIM_LEN / 4) * p.dir, before = p.u; p.u += du;
+        p.timer -= dt; if (p.timer <= 0) { if (this.rain > .3) { p.timer = rand(20, 40); } else { p.state = Math.random() < .3 ? 'talk' : 'idle'; p.timer = rand(3, 8); break; } }
+        const du = p.speed * (1 + this.rain * .35) * dt / (PERIM_LEN / 4) * p.dir, before = p.u; p.u += du;
         // у угла квартала иногда переходим улицу
         const corner = Math.floor(before) !== Math.floor(p.u) || (p.u < 0 !== before < 0);
         if (corner && Math.random() < .5) { this.startCross(p); break; }

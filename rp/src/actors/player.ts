@@ -10,7 +10,7 @@ import { Snd } from '../core/audio';
 
 export const Player = {
   h: null as unknown as Human, ch: null as unknown as ReturnType<typeof createCharacter>,
-  pos: new THREE.Vector3(), heading: 0, vy: 0, grounded: true, speed: 0, inCar: null as Vehicle | null, busy: 0, animLock: 0,
+  pos: new THREE.Vector3(), heading: 0, vy: 0, grounded: true, speed: 0, inCar: null as Vehicle | null, busy: 0, animLock: 0, sprintK: 1,
   camYaw: 0, camPitch: .25, camDist: 4.4, camMode: 0, camIdle: 0, camPos: new THREE.Vector3(), camLook: new THREE.Vector3(),
   stepT: 0, frozen: false,
   init(look: Look, x: number, z: number, h: number) {
@@ -26,8 +26,8 @@ export const Player = {
     this.camYaw -= Inp.lookX * sens; this.camPitch = clamp(this.camPitch + Inp.lookY * sens, -.35, 1.1);
     if (this.frozen) { this.h.mixer.update(dt); return; }
     const mag = Math.min(1, Math.hypot(Inp.mx, Inp.my));
-    const sprint = Inp.btn.sprint || (Inp.touch && mag > .95);
-    const target = mag < .05 ? 0 : sprint ? 6.2 : mag > .6 ? 3.6 : 1.6;
+    const sprint = this.sprintK > 0 && (Inp.btn.sprint || (Inp.touch && mag > .95));
+    const target = mag < .05 ? 0 : sprint ? 6.2 * this.sprintK : mag > .6 ? 3.6 : 1.6;
     this.speed = damp(this.speed, target, 10, dt);
     if (mag > .05) {
       // направление относительно камеры

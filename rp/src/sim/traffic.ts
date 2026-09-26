@@ -23,7 +23,7 @@ export interface TCar {
   a: Node; b: Node; lane: number; s: number; L: number; v: number; vmax: number;
   turn: { p0: THREE.Vector3; p1: THREE.Vector3; p2: THREE.Vector3; len: number; t: number; to: [Node, Node] } | null;
   next: [Node, Node] | null; x: number; z: number; h: number; spin: number; steer: number; brake: boolean;
-  wait: number; honk: number; body: RAPIER.RigidBody | null; kind: 'civ' | 'police' | 'taxi' | 'bus'; id: number; flee?: number; police?: any; stolen?: boolean;
+  wait: number; honk: number; signal: number; dwell: number; served: number; body: RAPIER.RigidBody | null; kind: 'civ' | 'police' | 'taxi' | 'bus'; id: number; flee?: number; police?: any; stolen?: boolean;
 }
 const nodeValid = (n: Node) => n[0] >= 0 && n[1] >= 0 && n[0] <= CITY.N && n[1] <= CITY.N;
 const P = (n: Node) => new THREE.Vector3(roadLine(n[0]), 0, roadLine(n[1]));
@@ -36,7 +36,7 @@ function lanePoint(a: Node, b: Node, lane: number, s: number, out = new THREE.Ve
 const HR = CITY.ROAD / 2, STOP = HR + 5.4, ENTER = HR + 1;
 export const Traffic = {
   cars: [] as TCar[], t: 0, target: 40, nextId: 1,
-  radius: 220, player: new THREE.Vector3(), playerV: new THREE.Vector3(), obstacles: [] as { x: number; z: number; r: number }[],
+  radius: 220, stops: [] as { x: number; z: number }[], onBus: null as null | ((c: TCar, ev: 'brake' | 'door') => void), player: new THREE.Vector3(), playerV: new THREE.Vector3(), obstacles: [] as { x: number; z: number; r: number }[],
   init(target: number) { this.target = target; },
   spawnAt(a: Node, b: Node, lane: number, s: number, kind: TCar['kind'] = 'civ', model?: string, color?: number): TCar | null {
     // состав потока как в реальном городе: в основном легковые, иногда такси, автобусы, фургоны, грузовики, скорая, полиция
@@ -45,7 +45,7 @@ export const Traffic = {
     const col = color ?? (d.kind === 'police' ? 0xf4f4f4 : d.kind === 'taxi' ? 0xffd21f : d.kind === 'bus' ? 0xe8e0c8 : pick([0xf2f2f2, 0x1a1a1c, 0x8a8f96, 0xb3b7bc, 0x7a1e1e, 0x1f3a6b, 0x2f5d3a, 0xc9b28a, 0x5a3b2a, 0x9c2a2a, 0x3b4a5a, 0xd8d0b8, 0x274b8c, 0x6b6b30]));
     const slot = Fleet.alloc(mi, col); if (!slot) return null;
     const L = PITCH;
-    const c: TCar = { slot, model: mi, color: col, def: d, a, b, lane, s, L, v: 8, vmax: (d.kind === 'bus' || d.kind === 'truck' ? rand(10, 12) : rand(12.5, 16.5)), turn: null, next: null, x: 0, z: 0, h: 0, spin: 0, steer: 0, brake: false, wait: 0, honk: 0, body: null, kind: d.kind === 'police' ? 'police' : d.kind === 'taxi' ? 'taxi' : d.kind === 'bus' ? 'bus' : kind, id: this.nextId++ };
+    const c: TCar = { slot, model: mi, color: col, def: d, a, b, lane, s, L, v: 8, vmax: (d.kind === 'bus' || d.kind === 'truck' ? rand(10, 12) : rand(12.5, 16.5)), turn: null, next: null, x: 0, z: 0, h: 0, spin: 0, steer: 0, brake: false, wait: 0, honk: 0, signal: 0, dwell: 0, served: -1, body: null, kind: d.kind === 'police' ? 'police' : d.kind === 'taxi' ? 'taxi' : d.kind === 'bus' ? 'bus' : kind, id: this.nextId++ };
     c.body = createKinematicBox(d.W / 2, d.kind === 'bus' ? 1.3 : .65, d.L / 2);
     this.pose(c); c.body.setTranslation({ x: c.x, y: 0, z: c.z }, true); c.body.setRotation(quatY(c.h), true);
     this.cars.push(c); return c;
@@ -108,6 +108,19 @@ export const Traffic = {
     if (!c.turn) {
       const toStop = c.L - STOP - c.s;
       if (!c.next) c.next = this.pickNext(c);
+      // поворотник включается за ~35 м до перекрёстка (+1 — направо)
+      if (c.next && toStop < 35) { const [ax, az] = dirOf(c.a, c.b), [nx, nz] = dirOf(c.next[0], c.next[1]), cr = ax * nz - az * nx; c.signal = cr > 0 ? 1 : cr < 0 ? -1 : 0; } else if (toStop >= 35) c.signal = 0;
+      // автобус: остановка на своей стороне улицы (правый ряд), 7 секунд с открытыми дверями
+      if (c.kind === 'bus' && c.lane === 1) {
+        const [dx, dz] = dirOf(c.a, c.b);
+        for (let k = 0; k < this.stops.length; k++) {
+          if (k === c.served) continue; const st = this.stops[k], p = lanePoint(c.a, c.b, 1, 0), sAlong = (st.x - p.x) * dx + (st.z - p.z) * dz, side = Math.abs((st.x - p.x) * dz - (st.z - p.z) * dx);
+          const ds = sAlong - c.s; if (side > 5 || ds < -1 || ds > 40) continue;
+          if (ds < 1 && c.v < .4) { if (c.dwell <= 0) { c.dwell = 7; this.onBus?.(c, 'door'); } c.dwell -= dt; vt = 0; if (c.dwell <= 0) { c.served = k; c.dwell = 0; } }
+          else { vt = Math.min(vt, Math.max(.3, ds * .7)); if (ds < 14 && ds > 12 && c.v > 3) this.onBus?.(c, 'brake'); c.signal = c.v > .5 ? 1 : c.signal; }
+          break;
+        }
+      }
       const [dx] = dirOf(c.a, c.b), axis: 0 | 1 = dx !== 0 ? 0 : 1, st = lightState(c.b[0], c.b[1], axis, this.t);
       if (st !== 0 && toStop > -.5 && !(st === 1 && toStop < c.v * .6)) vt = Math.min(vt, Math.max(0, toStop * .9));
       if (!c.next && toStop < 12) vt = Math.min(vt, Math.max(0, toStop));
@@ -142,7 +155,7 @@ export const Traffic = {
     for (const c of this.cars) {
       const d2 = (c.x - cam.x) ** 2 + (c.z - cam.z) ** 2;
       if (d2 > 450 * 450) { Fleet.hide(c.slot); continue; }
-      Fleet.place(c.slot, c.x, 0, c.z, c.h, c.spin, c.steer, c.brake);
+      Fleet.place(c.slot, c.x, 0, c.z, c.h, c.spin, c.steer, c.brake, 0, true, c.turn ? (c.turn.t < .8 ? c.signal : 0) : c.signal);
     }
   },
   onHonk: null as null | ((c: TCar) => void),

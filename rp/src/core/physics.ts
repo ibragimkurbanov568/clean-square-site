@@ -1,6 +1,8 @@
 // Физика на Rapier: мир, статичные коллайдеры города, машина игрока (рейкаст-подвеска), контроллер персонажа
 import RAPIER from '@dimforge/rapier3d-compat';
 import { City, RIVER } from '../world/citygen';
+import type { Place } from '../world/props';
+import { SOLID } from '../world/props';
 
 export let PH: { world: RAPIER.World; R: typeof RAPIER; eq: RAPIER.EventQueue } = null as any;
 export async function initPhysics() {
@@ -12,7 +14,7 @@ export async function initPhysics() {
 export const GROUP_STATIC = 0x0001, GROUP_CAR = 0x0002, GROUP_CHAR = 0x0004, GROUP_TRAFFIC = 0x0008;
 const groups = (member: number, filter: number) => (member << 16) | filter;
 
-export function buildStaticColliders(city: City) {
+export function buildStaticColliders(city: City, places: Place[] = []) {
   const { world, R } = PH, fixed = world.createRigidBody(R.RigidBodyDesc.fixed());
   const add = (d: RAPIER.ColliderDesc) => world.createCollider(d.setCollisionGroups(groups(GROUP_STATIC, 0xffff)).setFriction(.9), fixed);
   // земля с руслом реки
@@ -30,6 +32,8 @@ export function buildStaticColliders(city: City) {
     if (p.kind === 'chimney') add(R.ColliderDesc.cylinder((p.s || 40) / 2, 2.4).setTranslation(p.x, (p.s || 40) / 2, p.z));
     if (p.kind === 'bus_stop') add(R.ColliderDesc.cuboid(2, 1.3, .1).setTranslation(p.x, 1.3, p.z).setRotation(quatY(p.rot)));
   }
+  // уличные предметы: урны, электрошкафы, бетонные блоки, кадки, столы
+  for (const p of places) { const h = SOLID[p.id]; if (h && p.y < .1) add(R.ColliderDesc.cuboid(h[0] * p.s, h[1] * p.s, h[2] * p.s).setTranslation(p.x, h[1] * p.s, p.z).setRotation(quatY(p.rot))); }
   // набережная: невысокий парапет, чтобы в реку можно было свалиться только постаравшись
   add(R.ColliderDesc.cuboid(2100, .5, .3).setTranslation(0, .5, RIVER.z0 - .5));
 }

@@ -5,6 +5,7 @@ import { initRender, R, updateSky, render, detectQuality, Quality } from './worl
 import { loadTextures } from './world/materials';
 import { generateCity, City, nearestNode, nodePos, routeGrid, blockAt, PITCH, HALF, RIVER, CITY } from './world/citygen';
 import { buildCity, updateCity, CityMeshes } from './world/cityBuild';
+import { Props, placeProps } from './world/props';
 import { loadHumans, play, Look, randomLook, createHuman } from './actors/human';
 import { initPhysics, PH, buildStaticColliders } from './core/physics';
 import { initInput, pollInput, endFrameInput, Inp } from './core/input';
@@ -26,7 +27,7 @@ import { clamp, damp, fmtMoney, rand, $ } from './core/util';
 const G = {
   s: newState() as GameState, mode: 'loading' as 'loading' | 'menu' | 'play' | 'pause', city: null as unknown as City, cm: null as unknown as CityMeshes,
   vehicles: [] as Vehicle[], tsim: 0, weather: { cloud: .2, rain: 0, target: 0, wet: 0, next: 3, wind: .15, windT: .15, fog: 0, fogT: 0, storm: false, bolt: 0, kind: 'Ясно', passT: 0, dogT: 20 }, route: null as THREE.Vector3[] | null, routeTarget: null as THREE.Vector3 | null,
-  saveT: 60, lightT: 0, rain: null as THREE.Points | null, carry: null as THREE.Mesh | null, menuT: 0, wantedFlash: 0, lastPosT: 0,
+  saveT: 60, needT: 30, baseTraffic: 26, basePeds: 18, lightT: 0, rain: null as THREE.Points | null, carry: null as THREE.Mesh | null, menuT: 0, wantedFlash: 0, lastPosT: 0,
 };
 (window as any).KRAI = { G, Player, Traffic, Peds, Police, Jobs, Markers, R, PH, Menu, HUD, Inp, dev: {} as any };
 
@@ -49,15 +50,18 @@ async function boot() {
   loading(.15, 'Текстуры');
   await loadTextures(k => loading(.15 + k * .2, 'Текстуры'));
   loading(.38, 'Строим Новоозёрск'); await new Promise(r => setTimeout(r, 30));
-  G.city = generateCity(); G.cm = buildCity(G.city); buildStaticColliders(G.city);
+  G.city = generateCity(); G.cm = buildCity(G.city); const places = placeProps(G.city); buildStaticColliders(G.city, places);
   loading(.55, 'Жители города');
   await loadHumans(k => loading(.55 + k * .2, 'Жители города'));
-  await loadCars(k => loading(.75 + k * .15, 'Машины'));
+  await loadCars(k => loading(.75 + k * .1, 'Машины'));
+  await Props.load(G.city, places, k => loading(.85 + k * .07, 'Деревья и улицы'));
   // машины: инстансы для трафика и припаркованных
   Fleet.init(Object.fromEntries(CARS.map(c => [c.id, c.kind === 'car' ? 14 : c.kind === 'taxi' ? 8 : 4])));
-  Traffic.init(q === 'low' ? 16 : q === 'mid' ? 26 : 40); Peds.target = q === 'low' ? 10 : q === 'mid' ? 18 : 28;
+  G.baseTraffic = q === 'low' ? 16 : q === 'mid' ? 26 : 40; G.basePeds = q === 'low' ? 10 : q === 'mid' ? 18 : 28; Traffic.init(G.baseTraffic); Peds.target = G.basePeds;
   drawMapImage(G.city); HUD.init();
   for (const p of G.city.pois) { const ic = POI_ICON[p.kind]; Markers.add('poi:' + p.id, p.door[0], p.door[1], parseInt((ic?.[1] || '#ffffff').slice(1), 16), p.name, ic?.[0] || '●', 'poi', 1.4, p); }
+  Traffic.stops = G.city.props.filter(p => p.kind === 'bus_stop').map(p => ({ x: p.x, z: p.z }));
+  Traffic.onBus = (c, ev) => { if (Math.hypot(c.x - R.cam.position.x, c.z - R.cam.position.z) > 70) return; if (ev === 'brake') Snd.sample('bus_brake', .7, c.x, c.z); else Snd.sample('bus_door', .8, c.x, c.z); };
   Traffic.onHonk = c => { if (Math.hypot(c.x - Player.pos.x, c.z - Player.pos.z) < 40) Snd.play('horn', .6); };
   Peds.onHit = (_p, car: any) => { if (car?.player) { Snd.play('hit', .6); crime(1, 'Наезд на пешехода'); } };
   Police.onBust = busted; Police.onDrop = w => { G.s.wanted = Math.max(0, w); if (w <= 0) { HUD.toast('Розыск снят'); Police.clear(); } else HUD.toast('Вас потеряли из виду: розыск снижен'); };
@@ -72,7 +76,7 @@ async function boot() {
   Menu.init(host);
   buildRain();
   G.mode = 'menu'; Menu.main();
-  addEventListener('keydown', e => { if (e.code === 'Escape' && G.mode === 'play' && !Menu.open) pause(); });
+  addEventListener('keydown', e => { if (e.code === 'Escape' && G.mode === 'play' && !Menu.open) pause(); if ((e.code === 'KeyI' || e.code === 'Tab' || e.code === 'Escape') && (Menu.open === 'char' || Menu.open === 'kiosk') && !e.repeat) { Menu.close(); host.resume(); } });
   document.addEventListener('pointerlockchange', () => { if (!document.pointerLockElement && G.mode === 'play' && !Menu.open && !Inp.touch && performance.now() - G.lastPosT > 400) pause(); });
   addEventListener('pointerdown', () => Snd.init());
   requestAnimationFrame(loop);
@@ -108,6 +112,9 @@ const host = {
   locateCar(id: string) { const v = G.vehicles.find(q => q.owned === id); if (v) setRoute(v.obj.position.x, v.obj.position.z); host.resume(); },
   setQuality(q: string) { G.s.settings.quality = q; persist(); },
   setVol(v: number) { G.s.settings.vol = v; Snd.setVol(v); },
+  useItem(id: string) { const r = cmd({ type: 'UseItem', item: id }); if (r.ok) { HUD.toast(r.msg!); Snd.play('click'); } },
+  buyItem(id: string) { const r = cmd({ type: 'BuyItem', item: id }); HUD.toast(r.msg || (r.ok ? 'Куплено' : 'Не получилось'), !r.ok); if (r.ok) Snd.play('money'); },
+  medCard() { const r = cmd({ type: 'MedCard' }); HUD.toast(r.ok ? 'Медкарта оформлена (−1 500 ₽)' : r.msg || 'Медкарта уже есть', !r.ok); host.resume(); },
   license() { const r = cmd({ type: 'Pay', amount: 15000, reason: 'license' }); if (!r.ok) { HUD.toast(r.msg || 'Не хватает денег', true); return; } cmd({ type: 'License', kind: 'B' }); HUD.toast('Права категории B получены!'); Snd.play('level'); host.resume(); },
 };
 function cmd(c: Cmd) { const r = apply(G.s, c); if (r.level) { Snd.play('level'); HUD.toast(`Новый уровень: ${r.level}!`); } return r; }
@@ -261,6 +268,9 @@ function tick(dt: number, draw: boolean) {
     Traffic.obstacles = Peds.list.filter(p => p.state === 'cross' || p.state === 'down').map(p => ({ x: p.x, z: p.z, r: .6 }));
     for (const v of G.vehicles) if (v !== Player.inCar) { const p = v.obj.position; Traffic.obstacles.push({ x: p.x, z: p.z, r: 1.2 }); }
     for (const c of Police.cops) { const p = c.v.obj.position; Traffic.obstacles.push({ x: p.x, z: p.z, r: 1.2 }); }
+    // жизнь по часам: утром и вечером — час пик, ночью улицы пустеют, в дождь людей меньше
+    const hr = G.s.hour, rush = Math.exp(-((hr - 8.5) ** 2) / 2) + Math.exp(-((hr - 18.5) ** 2) / 2.5), night = hr < 5.5 || hr > 23 ? 1 : hr < 7 ? (7 - hr) / 1.5 : hr > 21.5 ? (hr - 21.5) / 1.5 : 0;
+    Traffic.target = Math.round(G.baseTraffic * clamp(.75 + rush * .45 - night * .6, .2, 1.2)); Peds.target = Math.round(G.basePeds * clamp(.85 + rush * .35 - night * .7, .15, 1.2) * (1 - G.weather.rain * .45)); Peds.rain = G.weather.rain;
     Peds.update(dt, G.tsim, cars);
     for (const v of G.vehicles) if (v !== Player.inCar) { driveVehicle(v, dt, 0, 0, 0, true, false); syncVehicle(v, dt); }
   }
@@ -268,7 +278,7 @@ function tick(dt: number, draw: boolean) {
   G.lightT -= dt; if (G.lightT <= 0) { G.lightT = .25; updateBulbs(); streamParked(R.cam.position); }
   const night = R.U.uNight.value;
   updateSky(G.s.hour, G.weather.cloud, G.weather.rain, focus, G.weather.fog, dt); updateWeather(dt, gameDt);
-  updateCity(G.cm, R.cam.position, night); Fleet.setNight(night); Markers.update(G.tsim, R.cam.position);
+  updateCity(G.cm, R.cam.position, night); Props.update(R.cam.position); Props.setNight(night); Fleet.setNight(night); Markers.update(G.tsim, R.cam.position);
   render();
   endFrameInput();
 }
@@ -301,7 +311,7 @@ function handleContacts() {
   PH.eq.drainContactForceEvents(e => {
     const v = Player.inCar; if (!v) return; const h1 = e.collider1(), h2 = e.collider2(); if (h1 !== v.ph.col.handle && h2 !== v.ph.col.handle) return;
     const f = e.totalForceMagnitude() / v.def.mass; if (f < 30) return;
-    v.dmg = Math.min(100, v.dmg + f * .02); Snd.play('hit', Math.min(1, f / 150));
+    v.dmg = Math.min(100, v.dmg + f * .02 * (1 - G.s.skills.drive / 100 * .3)); Snd.play('hit', Math.min(1, f / 150));
     if (Police.cops.some(c => c.v.ph.col.handle === h1 || c.v.ph.col.handle === h2) && G.s.wanted === 0) crime(1, 'Таран полицейской машины');
   });
 }
@@ -312,6 +322,8 @@ function playStep(dt: number) {
   if (Menu.open) { if (Player.inCar) syncVehicle(Player.inCar, dt); else Player.h.mixer.update(dt); Player.updateCamera(dt); return; }
   if (Inp.tap.phone) { Menu.phone(); document.exitPointerLock?.(); return; }
   if (Inp.tap.map) { Menu.phone('map'); document.exitPointerLock?.(); return; }
+  if (Inp.tap.inv) { Menu.character(); document.exitPointerLock?.(); return; }
+  lifeTick(dt);
   if (Inp.tap.cam) Player.camMode = 1 - Player.camMode;
   if (Inp.tap.lights && Player.inCar) Player.inCar.lights = !Player.inCar.lights;
   if (Inp.tap.horn && Player.inCar) Snd.play('horn');
@@ -327,6 +339,8 @@ function playStep(dt: number) {
     const v = nearestVehicle(2.2), tc = v ? null : nearestTraffic(2.4);
     if (v) { hint = v.owned ? 'Сесть в свою машину' : v.job ? 'Сесть в такси таксопарка' : 'Сесть в машину'; key = 'F'; if (Inp.tap.enter) enterCar(v); }
     else if (tc) { hint = 'Угнать машину (розыск!)'; key = 'F'; if (Inp.tap.enter) carjack(tc); }
+    const kiosk = !hint && G.city.props.find(p => p.kind === 'kiosk' && Math.hypot(p.x - Player.pos.x, p.z - Player.pos.z) < 3.4);
+    if (kiosk) { hint = 'Ларёк — еда и вода'; if (Inp.tap.use) { document.exitPointerLock?.(); Menu.kiosk(); } }
     if (G.carry) { const hr = Player.h.root; G.carry.position.set(hr.position.x + Math.sin(Player.heading) * .45, 1.1, hr.position.z + Math.cos(Player.heading) * .45); G.carry.rotation.y = Player.heading; }
   }
   HUD.touchMode(!!Player.inCar);
@@ -345,11 +359,21 @@ function playStep(dt: number) {
   HUD.bust(Police.bust > .3 ? `ЗАДЕРЖАНИЕ… ${Math.ceil(3 - Police.bust)}` : '');
   if (!Player.inCar) Snd.engine(false, 0, 0);
   G.wantedFlash = Math.max(0, G.wantedFlash - dt);
-  HUD.update({ money: s.money, bank: s.bank, level: s.level, xpk: s.xp / xpForLevel(s.level), hour: s.hour, weather: G.weather.rain > .4 ? '🌧' : G.weather.cloud > .3 ? '☁' : R.U.uNight.value > .5 ? '🌙' : '☀', wanted: s.wanted, health: s.health, speed: Player.inCar ? Player.inCar.speed : null, gear: Player.inCar?.gear || 1, fuel: Player.inCar?.fuel || 0, flash: G.wantedFlash > 0 || Police.cops.length > 0 });
+  HUD.update({ money: s.money, bank: s.bank, level: s.level, xpk: s.xp / xpForLevel(s.level), hour: s.hour, weather: G.weather.rain > .4 ? '🌧' : G.weather.cloud > .3 ? '☁' : R.U.uNight.value > .5 ? '🌙' : '☀', wanted: s.wanted, health: s.health, speed: Player.inCar ? Player.inCar.speed : null, gear: Player.inCar?.gear || 1, fuel: Player.inCar?.fuel || 0, flash: G.wantedFlash > 0 || Police.cops.length > 0, needs: s.needs });
   if (G.route) G.route[0].copy(Player.pos);
   HUD.drawMini(Player.pos.x, Player.pos.z, Player.inCar ? vehicleHeading(Player.inCar) : Player.camYaw + Math.PI, G.city.pois, Police.cops.map(c => c.v.obj.position), G.vehicles.filter(v => v.owned).map(v => v.obj.position), G.route);
   HUD.chatTick(dt);
   G.saveT -= dt; if (G.saveT <= 0) { G.saveT = 60; persist(); }
+}
+// «реальная жизнь»: голод, жажда, усталость идут по игровому времени (1 игровой час = 2 минуты)
+function lifeTick(dt: number) {
+  const s = G.s, N = s.needs, h = dt / 120, running = !Player.inCar && Player.speed > 5, sk = s.skills;
+  N.food = Math.max(0, N.food - h * 3.5); N.water = Math.max(0, N.water - h * (5 + (running ? 6 : 0) + 0)); N.energy = Math.max(0, N.energy - h * (3 + (running ? 5 * (1 - sk.stamina / 200) : 0)));
+  if (running) sk.stamina = Math.min(100, sk.stamina + dt * .004);
+  if (Player.inCar) sk.drive = Math.min(100, sk.drive + Math.abs(Player.inCar.speed) * dt / 1000 * .4);
+  Player.sprintK = N.energy < 8 ? 0 : 1 + sk.stamina / 100 * .12;
+  if (N.food <= 0 || N.water <= 0) s.health = Math.max(1, s.health - h * 6);
+  G.needT -= dt; if (G.needT <= 0) { G.needT = 90; const w = N.water < 15 ? 'Хочется пить — купите воду в ларьке' : N.food < 15 ? 'Вы проголодались — ларьки у остановок' : N.energy < 10 ? 'Вы очень устали — выспитесь в гостинице' : ''; if (w) HUD.toast(w, true); }
 }
 function punch() {
   play(Player.h, Math.random() < .5 ? 'Punch_Jab' : 'Punch_Cross', .08); Player.animLock = .55;
@@ -367,7 +391,7 @@ function poiAction(kind: string) {
   else if (kind === 'loader') Menu.jobOffer('loader');
   else if (kind === 'hospital') { const r = cmd({ type: 'Pay', amount: 300, reason: 'heal' }); if (r.ok) { G.s.health = 100; HUD.toast('Вас подлечили: −300 ₽'); } }
   else if (kind === 'police') { if (G.s.wanted > 0) { const fine = G.s.wanted * 1500, r = cmd({ type: 'Pay', amount: fine, reason: 'fine' }); if (r.ok) { cmd({ type: 'ClearWanted' }); Police.clear(); HUD.toast(`Вы сдались и оплатили штраф ${fmtMoney(fine)}`); } else HUD.toast('Не хватает денег на штраф', true); } else HUD.toast('Дежурный: «Проходите, гражданин»'); }
-  else if (kind === 'hotel') { const r = cmd({ type: 'Pay', amount: 800, reason: 'hotel' }); if (r.ok) { G.s.hour = (G.s.hour + 8) % 24; persist(); HUD.toast('Вы выспались в гостинице (−800 ₽). Игра сохранена'); } }
+  else if (kind === 'hotel') { const r = cmd({ type: 'Pay', amount: 800, reason: 'hotel' }); if (r.ok) { G.s.hour = (G.s.hour + 8) % 24; G.s.needs.energy = 100; G.s.needs.food = Math.max(0, G.s.needs.food - 20); G.s.needs.water = Math.max(0, G.s.needs.water - 25); persist(); HUD.toast('Вы выспались в гостинице (−800 ₽). Игра сохранена'); } }
   else HUD.toast('Скоро откроется');
 }
 (window as any).KRAI.dev = { simulate: (sec: number, step = 1 / 30) => { for (let t = 0; t < sec; t += step) tick(step, false); }, spawn: (m: string, x: number, z: number, h: number) => { const v = spawnVehicle(m, 0x7a1e1e, x, z, h); G.vehicles.push(v); return v; }, enterCar: (v: Vehicle) => enterCar(v), exitCar: () => exitCar(), setRoute, crime, teleport };
