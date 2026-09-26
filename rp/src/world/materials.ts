@@ -83,7 +83,7 @@ diffuseColor.rgb *= col;
 vec3 n3 = tn*2. - 1.; gN = normalize(vec3(n3.x, n3.z, n3.y));
 `;
 export function groundMaterial(dist: THREE.Texture) {
-  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0 });
+  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0, envMapIntensity: .35 });
   m.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, R.U, {
       tAC: { value: TEX.asphalt_c }, tAN: { value: TEX.asphalt_n }, tAR: { value: TEX.asphalt_r }, tPC: { value: TEX.paving_c }, tPN: { value: TEX.paving_n },

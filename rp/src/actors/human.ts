@@ -5,13 +5,15 @@ import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { pick } from '../core/util';
 
 const BASE = import.meta.env.BASE_URL + 'assets/chars/';
+// для публикации как артефакт модели лежат в JSON-варианте glTF (VITE_CHAR_EXT=.json)
+const EXT = (import.meta.env.VITE_CHAR_EXT as string) || '.glb';
 const loader = new GLTFLoader();
 export const HUM = { male: null as GLTF | null, female: null as GLTF | null, hair: {} as Record<string, GLTF>, clips: {} as Record<string, THREE.AnimationClip>, height: 1.8 };
 export const HAIRS = { male: ['hair_buzzed', 'hair_simpleparted', 'hair_beard', ''], female: ['hair_long', 'hair_buns', 'hair_buzzedfemale'] };
 export async function loadHumans(onProgress: (k: number) => void) {
   const files = ['male', 'female', 'anims', 'eyebrows_regular', 'eyebrows_female', 'hair_buzzed', 'hair_simpleparted', 'hair_beard', 'hair_long', 'hair_buns', 'hair_buzzedfemale'];
   let done = 0; const res: Record<string, GLTF> = {};
-  await Promise.all(files.map(f => loader.loadAsync(BASE + f + '.glb').then(g => { res[f] = g; onProgress(++done / files.length); })));
+  await Promise.all(files.map(f => loader.loadAsync(BASE + f + EXT).then(g => { res[f] = g; onProgress(++done / files.length); })));
   HUM.male = res.male; HUM.female = res.female;
   for (const f of files.slice(3)) HUM.hair[f] = res[f];
   for (const c of res.anims.animations) HUM.clips[c.name] = c;
