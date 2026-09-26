@@ -3,6 +3,7 @@ import { City, CITY, HALF, roadLine, RIVER } from '../world/citygen';
 import { Markers } from '../world/markers';
 import { esc, fmtMoney, fmtTime, pick, $ } from '../core/util';
 import { touchBtn, Inp } from '../core/input';
+import { Screen } from '../core/screen';
 import { rpName } from '../actors/peds';
 
 export const MAP_EXT = 1150; // половина размера карты в метрах
@@ -38,18 +39,24 @@ export const HUD = {
     // сенсорные кнопки
     const t = $('#touch');
     const B = (id: string, label: string, css: string) => `<div class="tb" data-b="${id}" style="${css}">${label}</div>`;
+    // раскладка как в мобильных GTA: слева джойстик, справа — основные действия дугой, сверху — служебные кнопки
+    const R = (px: number) => `calc(${px}px + var(--sar))`, Bt = (px: number) => `calc(${px}px + var(--sab))`;
     t.innerHTML = `<div class="joy" id="joy"><i></i></div>` +
-      B('jump', 'ПРЫЖ', 'right:calc(24px + var(--sar));bottom:calc(120px + var(--sab));width:70px;height:70px') +
-      B('sprint', 'БЕГ', 'right:calc(104px + var(--sar));bottom:calc(40px + var(--sab));width:70px;height:70px') +
-      B('enter', 'СЕСТЬ', 'right:calc(24px + var(--sar));bottom:calc(210px + var(--sab));width:62px;height:62px;color:#f5c518') +
-      B('use', 'E', 'right:calc(104px + var(--sar));bottom:calc(130px + var(--sab));width:56px;height:56px') +
-      B('attack', '✊', 'right:calc(24px + var(--sar));bottom:calc(40px + var(--sab));width:70px;height:70px') +
-      B('gas', 'ГАЗ', 'right:calc(24px + var(--sar));bottom:calc(40px + var(--sab));width:84px;height:84px') +
-      B('brake', 'ТОРМ', 'right:calc(120px + var(--sar));bottom:calc(30px + var(--sab));width:66px;height:66px') +
-      B('hb', 'РУЧН', 'right:calc(120px + var(--sar));bottom:calc(110px + var(--sab));width:60px;height:60px') +
-      B('horn', '📯', 'right:calc(40px + var(--sar));bottom:calc(140px + var(--sab));width:52px;height:52px') +
-      B('phone', '📱', 'right:calc(24px + var(--sar));top:calc(210px + var(--sat));width:52px;height:52px') +
-      B('cam', '🎥', 'right:calc(84px + var(--sar));top:calc(210px + var(--sat));width:52px;height:52px');
+      // пешком
+      B('attack', '✊', `right:${R(26)};bottom:${Bt(28)};width:78px;height:78px;font-size:28px`) +
+      B('jump', 'ПРЫЖОК', `right:${R(118)};bottom:${Bt(20)};width:62px;height:62px`) +
+      B('sprint', 'БЕГ', `right:${R(34)};bottom:${Bt(120)};width:62px;height:62px`) +
+      B('use', 'E', `right:${R(112)};bottom:${Bt(96)};width:54px;height:54px;font-size:18px`) +
+      // в машине
+      B('gas', 'ГАЗ', `right:${R(22)};bottom:${Bt(26)};width:88px;height:88px;font-size:15px`) +
+      B('brake', 'ТОРМОЗ', `right:${R(122)};bottom:${Bt(18)};width:72px;height:72px`) +
+      B('hb', 'РУЧНИК', `right:${R(34)};bottom:${Bt(128)};width:62px;height:62px;font-size:11px`) +
+      B('horn', '📯', `right:${R(196)};bottom:${Bt(110)};width:52px;height:52px;font-size:20px`) +
+      // общее
+      B('enter', 'СЕСТЬ', `right:${R(206)};bottom:${Bt(26)};width:62px;height:62px;color:#f5c518;border-color:rgba(245,197,24,.6)`) +
+      `<div class="tbrow" style="position:absolute;top:calc(10px + var(--sat));right:calc(170px + var(--sar));display:flex;gap:8px">` +
+      ['phone:📱', 'map:🗺', 'inv:🎒', 'cam:🎥', 'lights:💡'].map(s => { const [id, l] = s.split(':'); return `<div class="tb sm" data-b="${id}" style="position:relative">${l}</div>`; }).join('') + `</div>`;
+    t.querySelector('[data-b=sprint]')!.classList.add('run');
     t.querySelectorAll<HTMLElement>('.tb').forEach(el => {
       const b = el.dataset.b!, on = (e: PointerEvent) => { e.preventDefault(); e.stopPropagation(); el.classList.add('on'); touchBtn(b, true); try { el.setPointerCapture(e.pointerId); } catch { /* ок */ } };
       const off = () => { el.classList.remove('on'); touchBtn(b, false); };
@@ -57,8 +64,14 @@ export const HUD = {
     });
   },
   touchMode(inCar: boolean) {
-    document.querySelectorAll<HTMLElement>('#touch .tb').forEach(el => { const b = el.dataset.b!, car = ['gas', 'brake', 'hb', 'horn'].includes(b), foot = ['jump', 'sprint', 'attack'].includes(b); el.classList.toggle('hide', inCar ? foot : car); if (b === 'enter') el.textContent = inCar ? 'ВЫЙТИ' : 'СЕСТЬ'; });
-    const j = document.getElementById('joy')!; if (Inp.joy.id >= 0) { j.style.display = 'block'; j.style.left = Inp.joy.x0 - 60 + 'px'; j.style.top = Inp.joy.y0 - 60 + 'px'; const i = j.firstElementChild as HTMLElement; i.style.transform = `translate(${Math.max(-40, Math.min(40, Inp.joy.x - Inp.joy.x0))}px,${Math.max(-40, Math.min(40, Inp.joy.y - Inp.joy.y0))}px)`; } else j.style.display = 'none';
+    document.querySelectorAll<HTMLElement>('#touch .tb').forEach(el => { const b = el.dataset.b!, car = ['gas', 'brake', 'hb', 'horn', 'lights'].includes(b), foot = ['jump', 'sprint', 'attack'].includes(b); el.classList.toggle('hide', inCar ? foot : car); if (b === 'enter') el.textContent = inCar ? 'ВЫЙТИ' : 'СЕСТЬ'; });
+    // джойстик виден всегда: в покое — в левом нижнем углу, при касании переезжает под палец
+    const j = document.getElementById('joy')!, i = j.firstElementChild as HTMLElement, on = Inp.joy.id >= 0;
+    const cx = on ? Inp.joy.x0 : 40 + 65, cy = on ? Inp.joy.y0 : Screen.h - 40 - 65;
+    j.style.left = cx - 65 + 'px'; j.style.top = cy - 65 + 'px'; j.classList.toggle('on', on);
+    let dx = on ? Inp.joy.x - Inp.joy.x0 : 0, dy = on ? Inp.joy.y - Inp.joy.y0 : 0; const m = Math.hypot(dx, dy); if (m > 48) { dx *= 48 / m; dy *= 48 / m; }
+    i.style.transform = `translate(${dx}px,${dy}px)`; j.classList.toggle('fast', on && (m > 52 || Inp.run));
+    document.querySelector('#touch .run')?.classList.toggle('lock', Inp.run);
   },
   update(s: { money: number; bank: number; level: number; xpk: number; hour: number; weather: string; wanted: number; health: number; speed: number | null; gear: number; fuel: number; flash: boolean; needs?: { food: number; water: number; energy: number } }) {
     const e = this.el;

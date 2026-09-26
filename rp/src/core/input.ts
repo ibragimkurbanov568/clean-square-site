@@ -1,5 +1,6 @@
 // Ввод: клавиатура + мышь (pointer lock), геймпад, сенсорный экран (джойстик и кнопки)
 import { clamp, damp } from './util';
+import { Screen } from './screen';
 
 type Btn = 'jump' | 'sprint' | 'use' | 'enter' | 'hb' | 'horn' | 'cam' | 'phone' | 'map' | 'lights' | 'nitro' | 'attack' | 'inv';
 export const Inp = {
@@ -9,7 +10,7 @@ export const Inp = {
   mx: 0, my: 0, lookX: 0, lookY: 0, steer: 0, gas: 0, brake: 0,
   btn: {} as Record<Btn, boolean>,
   tap: {} as Record<Btn, boolean>,
-  touch: false, locked: false, wheel: 0,
+  touch: false, locked: false, wheel: 0, run: false, // run — бег включён кнопкой (до остановки)
   joy: { id: -1, x0: 0, y0: 0, x: 0, y: 0 }, look: { id: -1, x: 0, y: 0 },
   tb: {} as Record<string, boolean>,
 };
@@ -32,16 +33,20 @@ export function initInput(canvas: HTMLCanvasElement) {
   addEventListener('contextmenu', e => e.preventDefault());
   addEventListener('touchstart', () => { if (!Inp.touch) { Inp.touch = true; document.body.classList.add('touch'); } }, { passive: true });
   // сенсорное управление: левая половина — джойстик, правая — обзор
+  // координаты касаний переводятся в систему «сцены» (при повороте экрана на 90° она не совпадает с экранной)
   canvas.addEventListener('pointerdown', e => {
-    if (e.pointerType !== 'touch') return;
-    if (e.clientX < innerWidth * .45 && Inp.joy.id < 0) { Inp.joy = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY }; }
-    else if (Inp.look.id < 0) Inp.look = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+    const [x, y] = Screen.toStage(e.clientX, e.clientY);
+    if (x < Screen.w * .42 && y > Screen.h * .3 && Inp.joy.id < 0) { Inp.joy = { id: e.pointerId, x0: x, y0: y, x, y }; }
+    else if (Inp.look.id < 0) Inp.look = { id: e.pointerId, x, y };
   });
   addEventListener('pointermove', e => {
-    if (e.pointerId === Inp.joy.id) { Inp.joy.x = e.clientX; Inp.joy.y = e.clientY; }
-    if (e.pointerId === Inp.look.id) { Inp.lookX += (e.clientX - Inp.look.x) * 1.6; Inp.lookY += (e.clientY - Inp.look.y) * 1.6; Inp.look.x = e.clientX; Inp.look.y = e.clientY; }
+    if (e.pointerId !== Inp.joy.id && e.pointerId !== Inp.look.id) return;
+    const [x, y] = Screen.toStage(e.clientX, e.clientY);
+    if (e.pointerId === Inp.joy.id) { Inp.joy.x = x; Inp.joy.y = y; }
+    if (e.pointerId === Inp.look.id) { Inp.lookX += (x - Inp.look.x) * 1.6; Inp.lookY += (y - Inp.look.y) * 1.6; Inp.look.x = x; Inp.look.y = y; }
   });
-  const up = (e: PointerEvent) => { if (e.pointerId === Inp.joy.id) Inp.joy.id = -1; if (e.pointerId === Inp.look.id) Inp.look.id = -1; };
+  const up = (e: PointerEvent) => { if (e.pointerId === Inp.joy.id) { Inp.joy.id = -1; Inp.run = false; } if (e.pointerId === Inp.look.id) Inp.look.id = -1; };
   addEventListener('pointerup', up); addEventListener('pointercancel', up);
 }
 // кнопки сенсорного интерфейса вызывают это
@@ -52,12 +57,15 @@ export function pollInput(dt: number) {
   const k = Inp.keys, tb = Inp.tb;
   let mx = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
   let my = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
-  if (Inp.joy.id >= 0) { const dx = Inp.joy.x - Inp.joy.x0, dy = Inp.joy.y - Inp.joy.y0, r = 55; mx = clamp(dx / r, -1, 1); my = clamp(-dy / r, -1, 1); }
+  if (Inp.joy.id >= 0) { const dx = Inp.joy.x - Inp.joy.x0, dy = Inp.joy.y - Inp.joy.y0, r = 55; mx = clamp(dx / r, -1, 1); my = clamp(-dy / r, -1, 1); const m = Math.hypot(mx, my); if (m > 1) { mx /= m; my /= m; } }
   const btn = Inp.btn, tap = Inp.tap;
   for (const b of Object.values(KEYMAP)) { btn[b] = false; tap[b] = false; }
   for (const [code, b] of Object.entries(KEYMAP)) { if (k.has(code)) btn[b] = true; if (Inp.pressed.has(code)) tap[b] = true; }
   for (const b of ['jump', 'sprint', 'use', 'enter', 'hb', 'horn', 'cam', 'phone', 'map', 'lights', 'nitro', 'attack', 'inv'] as Btn[]) { if (tb[b]) btn[b] = true; if (Inp.pressed.has('T_' + b)) tap[b] = true; }
   if (Inp.pressed.has('Mouse0')) tap.attack = true;
+  // сенсорный «БЕГ» — переключатель: включается касанием и выключается сам, когда палец отпустил джойстик
+  if (Inp.pressed.has('T_sprint')) Inp.run = !Inp.run;
+  if (Inp.run) btn.sprint = true;
   btn.hb = btn.hb || k.has('Space');
   let gas = my > 0 ? my : 0, brake = my < 0 ? -my : 0, steer = mx;
   if (tb.gas) gas = 1; if (tb.brake) brake = 1; if (tb.left) steer = -1; if (tb.right) steer = 1;

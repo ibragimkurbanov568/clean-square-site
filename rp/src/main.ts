@@ -6,6 +6,7 @@ import { loadTextures } from './world/materials';
 import { generateCity, City, nearestNode, nodePos, routeGrid, blockAt, PITCH, HALF, RIVER, CITY } from './world/citygen';
 import { buildCity, updateCity, CityMeshes } from './world/cityBuild';
 import { Props, placeProps } from './world/props';
+import { Screen } from './core/screen';
 import { loadHumans, play, Look, randomLook, createHuman } from './actors/human';
 import { initPhysics, PH, buildStaticColliders } from './core/physics';
 import { initInput, pollInput, endFrameInput, Inp } from './core/input';
@@ -43,6 +44,8 @@ async function boot() {
   const qParam = new URLSearchParams(location.search).get('q') as Quality | null;
   const q: Quality = qParam || (G.s.settings.quality !== 'auto' ? G.s.settings.quality as Quality : detectQuality());
   loading(.05, 'Запуск движка');
+  Screen.mode = (G.s.settings.orient as any) || 'auto'; Screen.init();
+  if (Screen.touch) { Inp.touch = true; document.body.classList.add('touch'); }
   initRender(canvas, q); initInput(canvas);
   try { await initPhysics(); } catch (e) {
     $('#ui').innerHTML = `<div class="screen" style="display:flex;align-items:center;justify-content:center"><div class="panel win" style="max-width:520px"><h2>Не удалось запустить физику</h2><p>Браузер заблокировал WebAssembly. Откройте игру в обычной вкладке Chrome, Firefox или Safari (или запустите локально: <code>npm run dev</code> в папке rp).</p><p class="small muted">${String(e)}</p></div></div>`; return;
@@ -111,6 +114,7 @@ const host = {
   refuel() { const v = Player.inCar; if (!v) return; const price = Math.round((1 - v.fuel) * 2500) + 50; const r = cmd({ type: 'Pay', amount: price, reason: 'fuel' }); if (r.ok) { v.fuel = 1; HUD.toast(`Заправлено: −${price} ₽`); } else HUD.toast(r.msg || '', true); host.resume(); },
   locateCar(id: string) { const v = G.vehicles.find(q => q.owned === id); if (v) setRoute(v.obj.position.x, v.obj.position.z); host.resume(); },
   setQuality(q: string) { G.s.settings.quality = q; persist(); },
+  setOrient(o: string) { G.s.settings.orient = o; Screen.set(o as any); persist(); },
   setVol(v: number) { G.s.settings.vol = v; Snd.setVol(v); },
   useItem(id: string) { const r = cmd({ type: 'UseItem', item: id }); if (r.ok) { HUD.toast(r.msg!); Snd.play('click'); } },
   buyItem(id: string) { const r = cmd({ type: 'BuyItem', item: id }); HUD.toast(r.msg || (r.ok ? 'Куплено' : 'Не получилось'), !r.ok); if (r.ok) Snd.play('money'); },
@@ -300,7 +304,7 @@ function updateBulbs() {
 function menuCamera(dt: number) {
   const c = R.cam;
   if (Menu.open === 'creator' && Player.h) {
-    const p = Player.pos; c.position.set(p.x + 1.6, 1.45, p.z + 3); c.lookAt(p.x + (innerWidth > 760 ? -.7 : 0), 1.05, p.z); c.fov = 45; c.updateProjectionMatrix();
+    const p = Player.pos; c.position.set(p.x + 1.6, 1.45, p.z + 3); c.lookAt(p.x + (Screen.w > 760 ? -.7 : 0), 1.05, p.z); c.fov = 45; c.updateProjectionMatrix();
     Player.h.root.position.copy(p); Player.h.root.rotation.y += dt * .5; Player.h.mixer.update(dt); play(Player.h, 'Idle_Loop');
     return;
   }

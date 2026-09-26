@@ -82,7 +82,10 @@ export function placeProps(city: City): Place[] {
   }
   // фонари: только «классические» — настоящая модель; советские консольные остаются процедурными
   for (const l of city.lamps) if (isClassicLamp(city, l.x, l.z)) add('lamp', l.x, l.z, l.rot + Math.PI / 2);
-  return out.filter(p => !(p.y < .5 && inside(city.buildings, p.x, p.z, .2)));
+  // ничего не ставим внутрь зданий и вплотную к столбам фонарей
+  const lampAt = new Set(city.lamps.map(l => `${Math.round(l.x / 4)},${Math.round(l.z / 4)}`));
+  const nearLamp = (p: Place) => { for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) if (lampAt.has(`${Math.round(p.x / 4) + a},${Math.round(p.z / 4) + b}`)) { if (city.lamps.some(l => Math.abs(l.x - p.x) < 1.4 && Math.abs(l.z - p.z) < 1.4)) return true; } return false; };
+  return out.filter(p => p.id === 'lamp' || !(p.y < .5 && (inside(city.buildings, p.x, p.z, .2) || nearLamp(p))));
 }
 function inside(bs: Building[], x: number, z: number, pad: number) { for (const b of bs) if (Math.abs(x - b.x) < b.w / 2 + pad && Math.abs(z - b.z) < b.d / 2 + pad) return true; return false; }
 // размеры для коллайдеров (полуоси), только то, во что реально можно упереться

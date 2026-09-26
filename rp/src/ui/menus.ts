@@ -10,7 +10,7 @@ import { Snd } from '../core/audio';
 export interface MenuHost {
   state: GameState; hasSave: boolean; newGame(look: Look, name: string): void; continueGame(): void; resume(): void; save(): void;
   setLook(look: Look): void; buyCar(model: string, color: number, price: number): void; startJob(id: string): void; quitJob(): void; activeJob(): string | null;
-  setRoute(x: number, z: number): void; bank(op: 'dep' | 'wd', amount: number): void; refuel(): void; locateCar(id: string): void; setQuality(q: string): void; setVol(v: number): void;
+  setRoute(x: number, z: number): void; bank(op: 'dep' | 'wd', amount: number): void; refuel(): void; locateCar(id: string): void; setQuality(q: string): void; setVol(v: number): void; setOrient(o: string): void;
   useItem(id: string): void; buyItem(id: string): void; medCard(): void;
   toMenu(): void; pois: { kind: string; name: string; door: [number, number] }[]; player: { x: number; z: number }; license(): void;
 }
@@ -42,6 +42,7 @@ export const Menu = {
       case 'gps': { const p = H.pois.find(q => q.kind === d.id); if (p) H.setRoute(p.door[0], p.door[1]); this.close(); break; }
       case 'loc': H.locateCar(d.id!); this.close(); break;
       case 'q': H.setQuality(d.v!); this.phone('set'); break;
+      case 'or': H.setOrient(d.v!); this.phone('set'); break;
       case 'lic': H.license(); this.close(); break;
       case 'x': this.close(); H.resume(); break;
       case 'ch': this.character(d.t!); break;
@@ -59,7 +60,7 @@ export const Menu = {
       <button class="btn ${H.hasSave ? '' : 'primary'}" data-a="new">Новая игра <small>создать персонажа</small></button>
       <button class="btn" disabled>Онлайн-сервера <small>скоро</small></button>
       <button class="btn" data-a="credits">Титры и лицензии <small>авторы моделей и звуков</small></button>
-      <p class="muted small" style="margin-top:12px">ПК: WASD — ходьба, мышь — камера, F — сесть/выйти, E — действие, P — телефон, M — карта, I — персонаж и рюкзак, Shift — бег, Пробел — прыжок/ручник, H — сигнал. На телефоне — экранные кнопки.</p></div>`, 'dim');
+      ${document.body.classList.contains('touch') ? `<p class="muted small" style="margin-top:12px">Телефон: джойстик слева — ходьба (до края — бег), правая половина экрана — камера, кнопки справа — удар, прыжок, бег, действие, сесть. Сверху — телефон, карта, рюкзак.</p>` : `<p class="muted small" style="margin-top:12px">ПК: WASD — ходьба, мышь — камера, F — сесть/выйти, E — действие, P — телефон, M — карта, I — персонаж и рюкзак, Shift — бег, Пробел — прыжок/ручник, H — сигнал. На телефоне — экранные кнопки.</p>`}</div>`, 'dim');
   },
   async credits() {
     const base = (import.meta.env.BASE_URL || './') + 'assets/', get = async (p: string) => { try { return await (await fetch(base + p)).json(); } catch { return null; } };
@@ -81,7 +82,7 @@ export const Menu = {
     this.open = 'creator'; const L = this.look;
     const sw = (k: string, list: number[], cur: number) => `<div class="row">${list.map((c, i) => `<button class="sw ${c === cur ? 'on' : ''}" style="background:#${c.toString(16).padStart(6, '0')}" data-a="lk" data-k="${k}" data-v="${c}" aria-label="цвет ${i + 1}"></button>`).join('')}</div>`;
     const hairNames: Record<string, string> = { hair_buzzed: 'Короткая', hair_simpleparted: 'С пробором', hair_beard: 'Борода', '': 'Лысый', hair_long: 'Длинные', hair_buns: 'Пучки', hair_buzzedfemale: 'Короткая' };
-    this.show(`<div class="creator"><div></div><div class="panel" style="display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 32px);overflow-y:auto">
+    this.show(`<div class="creator"><div></div><div class="panel" style="display:flex;flex-direction:column;gap:10px;max-height:calc(calc(100 * var(--vh)) - 32px);overflow-y:auto">
       <h2 class="h">Новый житель</h2>
       <h3>Пол</h3><div class="row"><button class="btn ${L.sex === 'male' ? 'primary' : ''}" data-a="lk" data-k="sex" data-v="male">Мужской</button><button class="btn ${L.sex === 'female' ? 'primary' : ''}" data-a="lk" data-k="sex" data-v="female">Женский</button></div>
       <h3>Кожа</h3><input type="range" min="0" max="1" step=".05" value="${L.skin}" id="skin">
@@ -148,7 +149,7 @@ export const Menu = {
     if (app === 'jobs') { const cur = H.activeJob(); body = `${cur ? `<div class="panel"><b>Сейчас: ${JOBS[cur].name}</b><button class="btn" data-a="quit" style="margin-top:8px;width:100%">Уволиться</button></div>` : ''}<div class="list" style="margin-top:8px">${Object.entries(JOBS).map(([id, j]) => `<div class="card"><b>${j.name}</b><span class="small muted">${j.desc}</span><span class="small">С ${j.minLevel} уровня · выполнено: ${s.job.done[id] || 0}</span><button class="btn" data-a="gps" data-id="${({ courier: 'courier', loader: 'loader', taxi: 'taxi' } as any)[id]}">Маршрут к работе</button></div>`).join('')}</div>`; }
     if (app === 'cars') body = s.cars.length ? `<div class="list">${s.cars.map(c => `<div class="card"><b>${esc(CARS.find(m => m.id === c.model)?.brand + ' ' + CARS.find(m => m.id === c.model)?.name)}</b><span class="small">${esc(c.plate)} · топливо ${Math.round(c.fuel * 100)}%</span><button class="btn" data-a="loc" data-id="${c.id}">Показать на карте</button></div>`).join('')}</div>` : '<p class="muted">Своих машин пока нет. Автосалон «Магистраль» — в центре, авторынок — на юго-востоке.</p>';
     if (app === 'stats') body = `<div class="kv"><span>Имя</span><b>${esc(s.name)}</b></div><div class="kv"><span>Уровень</span><b>${s.level}</b></div><div class="kv"><span>Заработано</span><b>${fmtMoney(s.stats.earned)}</b></div><div class="kv"><span>Права B</span><b>${s.licenses.B ? 'есть' : 'нет'}</b></div><div class="kv"><span>День</span><b>${s.day}</b></div>`;
-    if (app === 'set') body = `<h3>Графика</h3><div class="row">${[['low', 'Низкая'], ['mid', 'Средняя'], ['high', 'Высокая']].map(([v, n]) => `<button class="btn ${s.settings.quality === v ? 'primary' : ''}" data-a="q" data-v="${v}">${n}</button>`).join('')}</div><p class="small muted">Смена качества применится после перезагрузки страницы.</p><h3>Громкость</h3><input type="range" id="vol" min="0" max="1" step=".05" value="${s.settings.vol}">`;
+    if (app === 'set') body = `<h3>Графика</h3><div class="row">${[['low', 'Низкая'], ['mid', 'Средняя'], ['high', 'Высокая']].map(([v, n]) => `<button class="btn ${s.settings.quality === v ? 'primary' : ''}" data-a="q" data-v="${v}">${n}</button>`).join('')}</div><p class="small muted">Смена качества применится после перезагрузки страницы.</p><h3>Экран</h3><div class="row">${[['auto', 'Горизонтально'], ['free', 'Как держу']].map(([v, n]) => `<button class="btn ${(s.settings.orient || 'auto') === v ? 'primary' : ''}" data-a="or" data-v="${v}">${n}</button>`).join('')}</div><p class="small muted">«Горизонтально» — игра сама разворачивается, даже если телефон держите вертикально.</p><h3>Громкость</h3><input type="range" id="vol" min="0" max="1" step=".05" value="${s.settings.vol}">`;
     ui().innerHTML = `<div class="phone"><div class="bar"><span>${app ? `<button data-a="app" data-id="" style="background:none;border:0;color:#9cc8ff">‹ Назад</button>` : 'КрайТелеком'}</span><span>📶 🔋</span></div><div class="body">${body}</div><div class="home"><button data-a="x" aria-label="Закрыть"></button></div></div>`;
     if (app === 'map') this.drawBigMap();
     const vol = document.getElementById('vol') as HTMLInputElement | null; if (vol) vol.oninput = () => H.setVol(+vol.value);
@@ -158,7 +159,7 @@ export const Menu = {
     g.drawImage(mapImg, 0, 0, S, S); const P = (x: number, z: number) => [(x + MAP_EXT) / (2 * MAP_EXT) * S, (z + MAP_EXT) / (2 * MAP_EXT) * S];
     for (const p of H.pois) { const [x, y] = P(p.door[0], p.door[1]), ic = POI_ICON[p.kind]; g.fillStyle = ic?.[1] || '#fff'; g.beginPath(); g.arc(x, y, 9, 0, 7); g.fill(); g.font = '12px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#111'; g.fillText(ic?.[0] || '', x, y + 1); }
     const [px, py] = P(H.player.x, H.player.z); g.fillStyle = '#fff'; g.strokeStyle = '#d6352b'; g.lineWidth = 3; g.beginPath(); g.arc(px, py, 7, 0, 7); g.fill(); g.stroke();
-    c.onclick = e => { const r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 2 * MAP_EXT - MAP_EXT, z = (e.clientY - r.top) / r.height * 2 * MAP_EXT - MAP_EXT; H.setRoute(x, z); this.close(); H.resume(); };
+    c.onclick = e => { const x = e.offsetX / c.clientWidth * 2 * MAP_EXT - MAP_EXT, z = e.offsetY / c.clientHeight * 2 * MAP_EXT - MAP_EXT; H.setRoute(x, z); this.close(); H.resume(); };
     void k;
   },
   // ---------- автосалон ----------

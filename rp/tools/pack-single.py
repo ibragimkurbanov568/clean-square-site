@@ -32,6 +32,7 @@ Object.defineProperty(HTMLImageElement.prototype, 'src', { configurable: true, g
 body = re.search(r'<body>(.*)</body>', html, re.S).group(1)
 fonts = '\n'.join(re.findall(r'<link rel="(?:preconnect|stylesheet)" href="https://fonts[^>]*>', html))
 page = f"""<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>КРАЙ</title>
 <meta name="theme-color" content="#0d1726">
 {fonts}

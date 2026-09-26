@@ -14,6 +14,10 @@ describe('расстановка уличных предметов', () => {
     let bad = 0; for (const p of a) if (p.y < .5) for (const b of city.buildings) if (Math.abs(p.x - b.x) < b.w / 2 && Math.abs(p.z - b.z) < b.d / 2) bad++;
     expect(bad).toBe(0);
   });
+  it('предметы не стоят вплотную к фонарям', () => {
+    let bad = 0; for (const p of a) if (p.id !== 'lamp' && p.y < .5) for (const l of city.lamps) if (Math.abs(l.x - p.x) < 1.4 && Math.abs(l.z - p.z) < 1.4) bad++;
+    expect(bad).toBe(0);
+  });
   it('деревьев рядом с камерой не больше лимита', () => {
     let worst = 0;
     for (let x = -700; x <= 700; x += 100) for (let z = -700; z <= 700; z += 100) {

@@ -1,17 +1,36 @@
 // Рендер: WebGL, камера, небо со сменой суток, солнце/луна, туман, постобработка (свечение)
 import * as THREE from 'three';
+import { Screen } from '../core/screen';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+
+// цветокоррекция «как в кино»: S-кривая контраста, тёплый вечер, холодная синяя ночь, серый дождь, мягкая виньетка
+const GradeShader = {
+  uniforms: { tDiffuse: { value: null }, uWarm: { value: 0 }, uNight: { value: 0 }, uRain: { value: 0 }, uAspect: { value: 1.7 } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uWarm, uNight, uRain, uAspect; varying vec2 vUv;
+    void main(){
+      vec3 c = texture2D(tDiffuse, vUv).rgb;
+      float l = dot(c, vec3(.2126, .7152, .0722));
+      c = mix(vec3(l), c, 1.08 - uRain * .3);                       // насыщенность
+      c = mix(c, c * c * (3. - 2. * c), .22);                         // S-кривая
+      c *= mix(vec3(1.), vec3(1.07, .98, .88), uWarm);                // вечер — теплее
+      c = mix(c, c * vec3(.86, .94, 1.12) + vec3(.0, .006, .018), uNight); // ночь — синее, тени не в ноль
+      vec2 d = (vUv - .5) * vec2(uAspect, 1.); c *= 1. - smoothstep(.45, 1.25, length(d)) * (.32 + uNight * .15);
+      gl_FragColor = vec4(c, 1.);
+    }`,
+};
 import { clamp, lerp, smooth } from '../core/util';
 
 export type Quality = 'low' | 'mid' | 'high';
 export const R = {
   renderer: null as unknown as THREE.WebGLRenderer, scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(60, 1, .1, 2600),
   sun: new THREE.DirectionalLight(0xffffff, 3), hemi: new THREE.HemisphereLight(0xbfd8ff, 0x3a3a30, 1), sky: null as unknown as Sky,
-  composer: null as EffectComposer | null, bloom: null as UnrealBloomPass | null, quality: 'high' as Quality,
+  composer: null as EffectComposer | null, bloom: null as UnrealBloomPass | null, grade: null as ShaderPass | null, quality: 'high' as Quality,
   // общие униформы для шейдеров города
   U: { uNight: { value: 0 }, uTime: { value: 0 }, uWet: { value: 0 }, uSkyCol: { value: new THREE.Color() }, uSnow: { value: 0 }, uWind: { value: .15 }, uNear: { value: new THREE.Vector4() } }, flash: 0,
   night: 0, stars: null as THREE.Points | null, moon: null as THREE.Mesh | null, clouds: null as THREE.Mesh | null,
@@ -42,15 +61,16 @@ export function initRender(canvas: HTMLCanvasElement, q: Quality) {
   R.moon = new THREE.Mesh(new THREE.SphereGeometry(40, 16, 12), new THREE.MeshBasicMaterial({ color: 0xeef2ff, fog: false, transparent: true })); sc.add(R.moon);
   if (q !== 'low') {
     const comp = R.composer = new EffectComposer(r); comp.addPass(new RenderPass(sc, R.cam));
-    R.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), .5, .5, .92); comp.addPass(R.bloom); comp.addPass(new OutputPass());
+    R.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), .5, .5, .92); comp.addPass(R.bloom); comp.addPass(new OutputPass()); R.grade = new ShaderPass(GradeShader); comp.addPass(R.grade);
   }
-  resize(); addEventListener('resize', resize);
+  resize(); Screen.onChange(resize);
 }
 export function resize() {
   const q = R.quality, pr = Math.min(devicePixelRatio, q === 'high' ? 1.75 : q === 'mid' ? 1.25 : .9);
-  R.renderer.setPixelRatio(pr); R.renderer.setSize(innerWidth, innerHeight, false);
-  R.cam.aspect = innerWidth / innerHeight; R.cam.updateProjectionMatrix();
-  if (R.composer) { R.composer.setPixelRatio(pr); R.composer.setSize(innerWidth, innerHeight); R.bloom!.resolution.set(innerWidth / 2, innerHeight / 2); }
+  R.renderer.setPixelRatio(pr); const W = Screen.w, H = Screen.h;
+  R.renderer.setSize(W, H, false);
+  R.cam.aspect = W / H; R.cam.updateProjectionMatrix();
+  if (R.composer) { R.composer.setPixelRatio(pr); R.composer.setSize(W, H); R.bloom!.resolution.set(W / 2, H / 2); R.grade!.uniforms.uAspect.value = W / H; }
 }
 // время суток: 0..24; погода: облачность 0..1, дождь 0..1
 const sunCol = new THREE.Color(), tmp = new THREE.Color(), fogDay = new THREE.Color(0xa9bdd2), fogSet = new THREE.Color(0xd8a080), fogNight = new THREE.Color(0x0b1220), fogRain = new THREE.Color(0x7d8894);
@@ -79,6 +99,7 @@ export function updateSky(hour: number, cloud: number, rain: number, focus: THRE
   R.moon!.position.copy(focus).addScaledVector(moonDir, 1800); (R.moon!.material as THREE.MeshBasicMaterial).opacity = (1 - day) * (1 - cloud * .8);
   R.renderer.toneMappingExposure = lerp(1.05, .82, day) * lerp(1, .9, rain);
   // ночью сильнее свечение окон и фонарей
+  if (R.grade) { const g = R.grade.uniforms; g.uNight.value = 1 - day; g.uRain.value = rain; g.uWarm.value = sunset * (1 - rain); }
   if (R.bloom) { R.bloom.strength = lerp(.2, .45, 1 - day); R.bloom.threshold = lerp(.95, .82, 1 - day); }
   envTimer -= 1; if (envTimer <= 0) { envTimer = 600; updateEnv(); }
 }

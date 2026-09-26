@@ -1,5 +1,6 @@
 // Игрок: пешком (контроллер персонажа), в машине, посадка/угон, камера от третьего лица
 import * as THREE from 'three';
+import { Screen } from '../core/screen';
 import { Inp } from '../core/input';
 import { PH, createCharacter, GROUP_STATIC } from '../core/physics';
 import { createHuman, Human, play, Look } from './human';
@@ -26,7 +27,7 @@ export const Player = {
     this.camYaw -= Inp.lookX * sens; this.camPitch = clamp(this.camPitch + Inp.lookY * sens, -.35, 1.1);
     if (this.frozen) { this.h.mixer.update(dt); return; }
     const mag = Math.min(1, Math.hypot(Inp.mx, Inp.my));
-    const sprint = this.sprintK > 0 && (Inp.btn.sprint || (Inp.touch && mag > .95));
+    const sprint = this.sprintK > 0 && (Inp.btn.sprint || (Inp.touch && mag > .97));
     const target = mag < .05 ? 0 : sprint ? 6.2 * this.sprintK : mag > .6 ? 3.6 : 1.6;
     this.speed = damp(this.speed, target, 10, dt);
     if (mag > .05) {
@@ -88,7 +89,7 @@ export const Player = {
     this.camPos.lerp(want, 1 - Math.exp(-(car ? 10 : 18) * dt)); this.camLook.lerp(target, 1 - Math.exp(-20 * dt));
     if (this.camPos.distanceTo(want) > 30) { this.camPos.copy(want); this.camLook.copy(target); }
     cam.position.copy(this.camPos); cam.lookAt(this.camLook);
-    const fov = car ? 62 + Math.min(18, Math.abs(car.speed) * .35) : (innerWidth < innerHeight ? 70 : 60);
+    const fov = car ? 62 + Math.min(18, Math.abs(car.speed) * .35) : (Screen.w < Screen.h ? 70 : 60);
     cam.fov = lerp(cam.fov, fov, 1 - Math.exp(-3 * dt)); cam.updateProjectionMatrix();
   },
 };
