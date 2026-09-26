@@ -1,0 +1,29 @@
+{
+  "name": "krai",
+  "private": true,
+  "version": "0.1.0",
+  "description": "КРАЙ — ролевая игра с открытым миром в браузере",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "assets": "node tools/build-assets.mjs"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "0.19.3",
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "4.2.1",
+    "@gltf-transform/extensions": "4.2.1",
+    "@gltf-transform/functions": "4.2.1",
+    "@types/three": "0.180.0",
+    "meshoptimizer": "0.25.0",
+    "sharp": "0.34.4",
+    "typescript": "5.9.3",
+    "vite": "7.3.1",
+    "vitest": "3.2.4"
+  }
+}
