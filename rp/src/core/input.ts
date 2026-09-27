@@ -1,8 +1,9 @@
 // Ввод: клавиатура + мышь (pointer lock), геймпад, сенсорный экран (джойстик и кнопки)
 import { clamp, damp } from './util';
 import { Screen } from './screen';
+import { pickAt } from '../ui/tap';
 
-type Btn = 'jump' | 'sprint' | 'use' | 'enter' | 'hb' | 'horn' | 'cam' | 'phone' | 'map' | 'lights' | 'nitro' | 'attack' | 'inv';
+type Btn = 'jump' | 'sprint' | 'use' | 'enter' | 'hb' | 'horn' | 'cam' | 'phone' | 'map' | 'lights' | 'nitro' | 'attack' | 'inv' | 'emote' | 'radio';
 export const Inp = {
   keys: new Set<string>(),
   pressed: new Set<string>(),
@@ -14,7 +15,7 @@ export const Inp = {
   joy: { id: -1, x0: 0, y0: 0, x: 0, y: 0 }, look: { id: -1, x: 0, y: 0 },
   tb: {} as Record<string, boolean>,
 };
-const KEYMAP: Record<string, Btn> = { Space: 'jump', ShiftLeft: 'sprint', ShiftRight: 'sprint', KeyE: 'use', KeyF: 'enter', KeyH: 'horn', KeyC: 'cam', KeyP: 'phone', KeyM: 'map', KeyL: 'lights', KeyN: 'nitro', KeyI: 'inv', Tab: 'inv' };
+const KEYMAP: Record<string, Btn> = { Space: 'jump', ShiftLeft: 'sprint', ShiftRight: 'sprint', KeyE: 'use', KeyF: 'enter', KeyH: 'horn', KeyC: 'cam', KeyP: 'phone', KeyM: 'map', KeyL: 'lights', KeyN: 'nitro', KeyI: 'inv', Tab: 'inv', KeyG: 'emote', KeyR: 'radio' };
 
 export function initInput(canvas: HTMLCanvasElement) {
   addEventListener('keydown', e => {
@@ -34,8 +35,10 @@ export function initInput(canvas: HTMLCanvasElement) {
   addEventListener('touchstart', () => { if (!Inp.touch) { Inp.touch = true; document.body.classList.add('touch'); } }, { passive: true });
   // сенсорное управление: левая половина — джойстик, правая — обзор
   // координаты касаний переводятся в систему «сцены» (при повороте экрана на 90° она не совпадает с экранной)
-  canvas.addEventListener('pointerdown', e => {
+  // джойстик и обзор — касание в любом месте игрового экрана, где нет кнопки или окна (не полагаемся на цель события)
+  document.addEventListener('pointerdown', e => {
     if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+    if (!document.body.classList.contains('playing') || pickAt(e.clientX, e.clientY, '#touch .tb, #ui .screen, #ui .phone, #mini')) return;
     const [x, y] = Screen.toStage(e.clientX, e.clientY);
     if (x < Screen.w * .42 && y > Screen.h * .3 && Inp.joy.id < 0) { Inp.joy = { id: e.pointerId, x0: x, y0: y, x, y }; }
     else if (Inp.look.id < 0) Inp.look = { id: e.pointerId, x, y };
@@ -61,7 +64,7 @@ export function pollInput(dt: number) {
   const btn = Inp.btn, tap = Inp.tap;
   for (const b of Object.values(KEYMAP)) { btn[b] = false; tap[b] = false; }
   for (const [code, b] of Object.entries(KEYMAP)) { if (k.has(code)) btn[b] = true; if (Inp.pressed.has(code)) tap[b] = true; }
-  for (const b of ['jump', 'sprint', 'use', 'enter', 'hb', 'horn', 'cam', 'phone', 'map', 'lights', 'nitro', 'attack', 'inv'] as Btn[]) { if (tb[b]) btn[b] = true; if (Inp.pressed.has('T_' + b)) tap[b] = true; }
+  for (const b of ['jump', 'sprint', 'use', 'enter', 'hb', 'horn', 'cam', 'phone', 'map', 'lights', 'nitro', 'attack', 'inv', 'emote', 'radio'] as Btn[]) { if (tb[b]) btn[b] = true; if (Inp.pressed.has('T_' + b)) tap[b] = true; }
   if (Inp.pressed.has('Mouse0')) tap.attack = true;
   // сенсорный «БЕГ» — переключатель: включается касанием и выключается сам, когда палец отпустил джойстик
   if (Inp.pressed.has('T_sprint')) Inp.run = !Inp.run;

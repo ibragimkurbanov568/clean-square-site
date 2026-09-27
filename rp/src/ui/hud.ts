@@ -4,6 +4,7 @@ import { Markers } from '../world/markers';
 import { esc, fmtMoney, fmtTime, pick, $ } from '../core/util';
 import { touchBtn, Inp } from '../core/input';
 import { Screen } from '../core/screen';
+import { pickAt } from './tap';
 import { rpName } from '../actors/peds';
 
 export const MAP_EXT = 1150; // половина размера карты в метрах
@@ -26,16 +27,18 @@ export const POI_ICON: Record<string, [string, string]> = {
 };
 
 export const HUD = {
-  el: {} as Record<string, HTMLElement>, chatLines: [] as string[], chatT: 4, mini: null as unknown as CanvasRenderingContext2D,
+  el: {} as Record<string, HTMLElement>, miniZoom: 2.2, chatLines: [] as string[], chatT: 4, mini: null as unknown as CanvasRenderingContext2D,
   init() {
     const hud = $('#hud');
     hud.innerHTML = `<div class="chat" id="chat"></div><div class="objective" id="obj"></div>
       <div class="hud-tr"><div class="hud-clock"><span id="clock" class="num"></span><span id="wx"></span></div><div class="hud-money num" id="money"></div><div class="hud-bank num" id="bank"></div>
-      <div class="hud-lvl"><b id="lvl">1</b><div class="xp"><i id="xp"></i></div></div><div class="health"><i id="hp"></i></div><div class="needs"><span title="Сытость">🍞<b><i id="nf"></i></b></span><span title="Жажда">💧<b><i id="nw"></i></b></span><span title="Бодрость">⚡<b><i id="ne"></i></b></span></div><div class="stars" id="stars"></div></div>
-      <canvas id="mini" width="380" height="380"></canvas><div class="hint" id="hint"></div><div class="bust" id="bust"></div>
+      <div class="hud-lvl"><b id="lvl">1</b><div class="xp"><i id="xp"></i></div></div><div class="health"><i id="hp"></i></div><div class="needs"><span title="Сытость">🍞<b><i id="nf"></i></b></span><span title="Жажда">💧<b><i id="nw"></i></b></span><span title="Бодрость">⚡<b><i id="ne"></i></b></span><span title="Настроение">😊<b><i id="nm2"></i></b></span></div><div class="stars" id="stars"></div></div>
+      <canvas id="mini" width="380" height="380"></canvas><div id="fps"></div><div class="hint" id="hint"></div><div class="bust" id="bust"></div>
       <div class="speedo" id="speedo"><div><span class="v num" id="spd">0</span> <span class="u">КМ/Ч</span></div><div class="row"><span id="gear">1</span><span>⛽</span><div class="fuel"><i id="fuel"></i></div></div></div>`;
-    for (const id of ['chat', 'obj', 'clock', 'wx', 'money', 'bank', 'lvl', 'xp', 'hp', 'stars', 'hint', 'bust', 'speedo', 'spd', 'gear', 'fuel', 'nf', 'nw', 'ne']) this.el[id] = document.getElementById(id)!;
+    for (const id of ['chat', 'obj', 'clock', 'wx', 'money', 'bank', 'lvl', 'xp', 'hp', 'stars', 'hint', 'bust', 'speedo', 'spd', 'gear', 'fuel', 'nf', 'nw', 'ne', 'nm2']) this.el[id] = document.getElementById(id)!;
     this.mini = (document.getElementById('mini') as HTMLCanvasElement).getContext('2d')!;
+    // касание мини-карты — приблизить/отдалить
+    document.addEventListener('pointerdown', e => { if (pickAt(e.clientX, e.clientY, '#mini')) { e.stopPropagation(); this.miniZoom = this.miniZoom > 3 ? 1.2 : this.miniZoom > 2 ? 3.6 : 2.2; } }, true);
     // сенсорные кнопки
     const t = $('#touch');
     const B = (id: string, label: string, css: string) => `<div class="tb" data-b="${id}" style="${css}">${label}</div>`;
@@ -55,16 +58,20 @@ export const HUD = {
       // общее
       B('enter', 'СЕСТЬ', `right:${R(206)};bottom:${Bt(26)};width:62px;height:62px;color:#f5c518;border-color:rgba(245,197,24,.6)`) +
       `<div class="tbrow" style="position:absolute;top:calc(10px + var(--sat));right:calc(170px + var(--sar));display:flex;gap:8px">` +
-      ['phone:📱', 'map:🗺', 'inv:🎒', 'cam:🎥', 'lights:💡'].map(s => { const [id, l] = s.split(':'); return `<div class="tb sm" data-b="${id}" style="position:relative">${l}</div>`; }).join('') + `</div>`;
+      ['phone:📱', 'map:🗺', 'inv:🎒', 'emote:😀', 'cam:🎥', 'lights:💡', 'radio:📻'].map(s => { const [id, l] = s.split(':'); return `<div class="tb sm" data-b="${id}" style="position:relative">${l}</div>`; }).join('') + `</div>`;
     t.querySelector('[data-b=sprint]')!.classList.add('run');
-    t.querySelectorAll<HTMLElement>('.tb').forEach(el => {
-      const b = el.dataset.b!, on = (e: PointerEvent) => { e.preventDefault(); e.stopPropagation(); el.classList.add('on'); touchBtn(b, true); try { el.setPointerCapture(e.pointerId); } catch { /* ок */ } };
-      const off = () => { el.classList.remove('on'); touchBtn(b, false); };
-      el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('lostpointercapture', off);
-    });
+    // кнопки управления: элемент под пальцем определяем сами (надёжно и при повороте экрана), каждый палец — своя кнопка
+    const held = new Map<number, HTMLElement>();
+    document.addEventListener('pointerdown', e => {
+      if (!document.body.classList.contains('playing')) return;
+      const el = pickAt(e.clientX, e.clientY, '#touch .tb'); if (!el || el.classList.contains('hide')) return;
+      e.preventDefault(); e.stopPropagation(); held.set(e.pointerId, el); el.classList.add('on'); touchBtn(el.dataset.b!, true);
+    }, true);
+    const off = (e: PointerEvent) => { const el = held.get(e.pointerId); if (!el) return; held.delete(e.pointerId); if (![...held.values()].includes(el)) { el.classList.remove('on'); touchBtn(el.dataset.b!, false); } };
+    document.addEventListener('pointerup', off, true); document.addEventListener('pointercancel', off, true);
   },
   touchMode(inCar: boolean) {
-    document.querySelectorAll<HTMLElement>('#touch .tb').forEach(el => { const b = el.dataset.b!, car = ['gas', 'brake', 'hb', 'horn', 'lights'].includes(b), foot = ['jump', 'sprint', 'attack'].includes(b); el.classList.toggle('hide', inCar ? foot : car); if (b === 'enter') el.textContent = inCar ? 'ВЫЙТИ' : 'СЕСТЬ'; });
+    document.querySelectorAll<HTMLElement>('#touch .tb').forEach(el => { const b = el.dataset.b!, car = ['gas', 'brake', 'hb', 'horn', 'lights', 'radio'].includes(b), foot = ['jump', 'sprint', 'attack'].includes(b); el.classList.toggle('hide', inCar ? foot : car); if (b === 'enter') el.textContent = inCar ? 'ВЫЙТИ' : 'СЕСТЬ'; });
     // джойстик виден всегда: в покое — в левом нижнем углу, при касании переезжает под палец
     const j = document.getElementById('joy')!, i = j.firstElementChild as HTMLElement, on = Inp.joy.id >= 0;
     const cx = on ? Inp.joy.x0 : 40 + 65, cy = on ? Inp.joy.y0 : Screen.h - 40 - 65;
@@ -73,12 +80,12 @@ export const HUD = {
     i.style.transform = `translate(${dx}px,${dy}px)`; j.classList.toggle('fast', on && (m > 52 || Inp.run));
     document.querySelector('#touch .run')?.classList.toggle('lock', Inp.run);
   },
-  update(s: { money: number; bank: number; level: number; xpk: number; hour: number; weather: string; wanted: number; health: number; speed: number | null; gear: number; fuel: number; flash: boolean; needs?: { food: number; water: number; energy: number } }) {
+  update(s: { money: number; bank: number; level: number; xpk: number; hour: number; weather: string; wanted: number; health: number; speed: number | null; gear: number; fuel: number; flash: boolean; needs?: { food: number; water: number; energy: number; mood: number } }) {
     const e = this.el;
     e.money.textContent = fmtMoney(s.money); e.bank.textContent = '💳 ' + fmtMoney(s.bank); e.clock.textContent = fmtTime(s.hour); e.wx.textContent = s.weather;
     e.lvl.textContent = String(s.level); e.xp.style.width = (s.xpk * 100).toFixed(1) + '%'; e.hp.style.width = s.health + '%';
     const st = Array.from({ length: 6 }, (_, i) => `<span class="${i < s.wanted ? 'on' : ''}">★</span>`).join(''); if (e.stars.innerHTML !== st) e.stars.innerHTML = st; e.stars.classList.toggle('flash', s.flash);
-    if (s.needs) for (const [id, v] of [['nf', s.needs.food], ['nw', s.needs.water], ['ne', s.needs.energy]] as [string, number][]) { e[id].style.width = v.toFixed(0) + '%'; e[id].classList.toggle('low', v < 20); }
+    if (s.needs) for (const [id, v] of [['nf', s.needs.food], ['nw', s.needs.water], ['ne', s.needs.energy], ['nm2', s.needs.mood]] as [string, number][]) { e[id].style.width = v.toFixed(0) + '%'; e[id].classList.toggle('low', v < 20); }
     e.speedo.classList.toggle('on', s.speed !== null);
     if (s.speed !== null) { e.spd.textContent = String(Math.round(Math.abs(s.speed) * 3.6)); e.gear.textContent = s.gear < 0 ? 'R' : s.speed < .3 && s.speed > -.3 ? 'N' : String(s.gear); e.fuel.style.width = s.fuel * 100 + '%'; }
   },
@@ -98,7 +105,7 @@ export const HUD = {
   },
   drawMini(px: number, pz: number, heading: number, pois: City['pois'], cops: { x: number; z: number }[], owned: { x: number; z: number }[], route: { x: number; z: number }[] | null) {
     // вид сверху: x вправо, z вниз; поворачиваем так, чтобы направление движения было вверх
-    const g = this.mini, S = 380, zoom = 2.2, k = 1024 / (2 * MAP_EXT) * zoom, rot = heading - Math.PI;
+    const g = this.mini, S = 380, zoom = this.miniZoom, k = 1024 / (2 * MAP_EXT) * zoom, rot = heading - Math.PI;
     g.save(); g.clearRect(0, 0, S, S); g.beginPath(); g.arc(S / 2, S / 2, S / 2, 0, Math.PI * 2); g.clip();
     g.translate(S / 2, S / 2); g.rotate(rot);
     const sx = (px + MAP_EXT) / (2 * MAP_EXT) * 1024, sz = (pz + MAP_EXT) / (2 * MAP_EXT) * 1024;

@@ -1,12 +1,16 @@
 // КРАЙ — точка входа: загрузка, игровой цикл, связь систем (город, физика, игрок, трафик, пешеходы, полиция, работы, интерфейс)
 import './ui/style.css';
 import * as THREE from 'three';
-import { initRender, R, updateSky, render, detectQuality, Quality } from './world/render';
+import { initRender, R, updateSky, render, detectQuality, Quality, resize } from './world/render';
 import { loadTextures } from './world/materials';
 import { generateCity, City, nearestNode, nodePos, routeGrid, blockAt, PITCH, HALF, RIVER, CITY } from './world/citygen';
 import { buildCity, updateCity, CityMeshes } from './world/cityBuild';
 import { Props, placeProps } from './world/props';
 import { Screen } from './core/screen';
+import { Extras } from './game/extras';
+import { Music } from './core/music';
+import { ITEMS } from './sim/items';
+import { dailyProgress } from './sim/life';
 import { loadHumans, play, Look, randomLook, createHuman } from './actors/human';
 import { initPhysics, PH, buildStaticColliders } from './core/physics';
 import { initInput, pollInput, endFrameInput, Inp } from './core/input';
@@ -28,9 +32,9 @@ import { clamp, damp, fmtMoney, rand, $ } from './core/util';
 const G = {
   s: newState() as GameState, mode: 'loading' as 'loading' | 'menu' | 'play' | 'pause', city: null as unknown as City, cm: null as unknown as CityMeshes,
   vehicles: [] as Vehicle[], tsim: 0, weather: { cloud: .2, rain: 0, target: 0, wet: 0, next: 3, wind: .15, windT: .15, fog: 0, fogT: 0, storm: false, bolt: 0, kind: 'Ясно', passT: 0, dogT: 20 }, route: null as THREE.Vector3[] | null, routeTarget: null as THREE.Vector3 | null,
-  saveT: 60, needT: 30, baseTraffic: 26, basePeds: 18, lightT: 0, rain: null as THREE.Points | null, carry: null as THREE.Mesh | null, menuT: 0, wantedFlash: 0, lastPosT: 0,
+  saveT: 60, needT: 30, wasInCar: false, stops: [] as { x: number; z: number; name: string }[], lastDay: 0, fpsT: 0, fpsN: 0, fps: 60, dynT: 3, pr: 1, baseTraffic: 26, basePeds: 18, lightT: 0, rain: null as THREE.Points | null, carry: null as THREE.Mesh | null, menuT: 0, wantedFlash: 0, lastPosT: 0,
 };
-(window as any).KRAI = { G, Player, Traffic, Peds, Police, Jobs, Markers, R, PH, Menu, HUD, Inp, dev: {} as any };
+(window as any).KRAI = { G, Player, Traffic, Peds, Police, Jobs, Markers, R, PH, Menu, HUD, Inp, Extras, dev: {} as any };
 
 // ---------- загрузка ----------
 function loading(k: number, text: string) {
@@ -58,6 +62,10 @@ async function boot() {
   await loadHumans(k => loading(.55 + k * .2, 'Жители города'));
   await loadCars(k => loading(.75 + k * .1, 'Машины'));
   await Props.load(G.city, places, k => loading(.85 + k * .07, 'Деревья и улицы'));
+  // остановки: имя — по району и улице
+  const DN: Record<string, string> = { center: 'Центр', office: 'Деловой квартал', res: 'Спальный район', khrush: 'Хрущёвки', private: 'Частный сектор', industry: 'Промзона', park: 'Парк', plaza: 'Площадь' };
+  G.stops = G.city.props.filter(p => p.kind === 'bus_stop').map((p, i) => { const [bi, bj] = blockAt(p.x, p.z), d = G.city.districts[Math.min(CITY.N - 1, Math.max(0, bi))]?.[Math.min(CITY.N - 1, Math.max(0, bj))]; return { x: p.x, z: p.z, name: `№${i + 1} · ${DN[d] || 'Город'}` }; });
+  Extras.init({ get s() { return G.s; }, city: G.city, get vehicles() { return G.vehicles; }, get rain() { return G.weather.rain; }, get night() { return R.U.uNight.value; }, cmd, toast: (m, b) => HUD.toast(m, b), chat: h => HUD.chat(h), teleport, fade: () => fade(() => {}) } as any);
   // машины: инстансы для трафика и припаркованных
   Fleet.init(Object.fromEntries(CARS.map(c => [c.id, c.kind === 'car' ? 14 : c.kind === 'taxi' ? 8 : 4])));
   G.baseTraffic = q === 'low' ? 16 : q === 'mid' ? 26 : 40; G.basePeds = q === 'low' ? 10 : q === 'mid' ? 18 : 28; Traffic.init(G.baseTraffic); Peds.target = G.basePeds;
@@ -83,7 +91,9 @@ async function boot() {
   Menu.init(host);
   buildRain();
   G.mode = 'menu'; Menu.main();
-  addEventListener('keydown', e => { if (e.code === 'Escape' && G.mode === 'play' && !Menu.open) pause(); if ((e.code === 'KeyI' || e.code === 'Tab' || e.code === 'Escape') && (Menu.open === 'char' || Menu.open === 'kiosk') && !e.repeat) { Menu.close(); host.resume(); } });
+  addEventListener('keydown', e => { if (e.code === 'Escape' && G.mode === 'play' && !Menu.open) pause(); if ((e.code === 'KeyI' || e.code === 'Tab' || e.code === 'Escape') && ['char', 'kiosk', 'emo', 'bus', 'bench', 'hosp'].includes(Menu.open) && !e.repeat) { Menu.close(); host.resume(); } });
+  // фоторежим: любое касание или клик — выход
+  addEventListener('pointerdown', () => { if (Extras.photo) setTimeout(() => Extras.setPhoto(false), 50); }, true);
   document.addEventListener('pointerlockchange', () => { if (!document.pointerLockElement && G.mode === 'play' && !Menu.open && !Inp.touch && performance.now() - G.lastPosT > 400) pause(); });
   addEventListener('pointerdown', () => Snd.init());
   requestAnimationFrame(loop);
@@ -120,8 +130,41 @@ const host = {
   setQuality(q: string) { G.s.settings.quality = q; persist(); },
   setOrient(o: string) { G.s.settings.orient = o; Screen.set(o as any); persist(); },
   setVol(v: number) { G.s.settings.vol = v; Snd.setVol(v); },
-  useItem(id: string) { const r = cmd({ type: 'UseItem', item: id }); if (r.ok) { HUD.toast(r.msg!); Snd.play('click'); } },
-  buyItem(id: string) { const r = cmd({ type: 'BuyItem', item: id }); HUD.toast(r.msg || (r.ok ? 'Куплено' : 'Не получилось'), !r.ok); if (r.ok) Snd.play('money'); },
+  useItem(id: string) {
+    if (ITEMS[id]?.special && Extras.useSpecial(id)) { if (ITEMS[id].special === 'camera') host.resume(); return; }
+    const food = !!ITEMS[id]?.food, r = cmd({ type: 'UseItem', item: id }); if (r.ok) { HUD.toast(r.msg!); Snd.play('click'); if (food) Extras.daily('eat'); }
+  },
+  buyItem(id: string) { const r = cmd({ type: 'BuyItem', item: id }); HUD.toast(r.msg || (r.ok ? 'Куплено' : 'Не получилось'), !r.ok); if (r.ok) { Snd.play('money'); Extras.daily('buy'); } },
+  sellItem(id: string) { const r = cmd({ type: 'SellItem', item: id }); if (r.ok) { Snd.play('money'); HUD.toast(r.msg!); } },
+  emote(id: string) { Extras.doEmote(id); },
+  taxiTo(kind: string) {
+    const p = G.city.pois.find(q => q.kind === kind); if (!p) return; if (Player.inCar) { HUD.toast('Вы уже за рулём', true); return; }
+    const price = Math.max(150, Math.round(Math.hypot(p.door[0] - Player.pos.x, p.door[1] - Player.pos.z) / 100 * 15)), r = cmd({ type: 'Pay', amount: price, reason: 'taxi' });
+    if (!r.ok) { HUD.toast(r.msg || 'Не хватает денег', true); return; }
+    host.resume(); fade(() => { teleport(p.door[0], p.door[1] + 2.5, Math.PI); G.s.hour = (G.s.hour + .3) % 24; HUD.toast(`🚕 Приехали: ${p.name} (−${price} ₽)`); });
+  },
+  sos() { const r = cmd({ type: 'Pay', amount: 500, reason: 'sos' }); if (!r.ok) { HUD.toast(r.msg || 'Не хватает денег', true); return; } host.resume(); fade(() => { G.s.health = 100; HUD.toast('🚑 Врачи вас подлечили (−500 ₽)'); }); },
+  heal() { const r = cmd({ type: 'Pay', amount: 300, reason: 'heal' }); if (r.ok) { G.s.health = 100; HUD.toast('Вас подлечили: −300 ₽'); } else HUD.toast(r.msg || '', true); host.resume(); },
+  casino(bet: number) {
+    const r = cmd({ type: 'Pay', amount: bet, reason: 'casino' }); if (!r.ok) { HUD.toast(r.msg || 'Не хватает денег', true); return '💸💸💸'; }
+    const sym = ['🍒', '🍋', '🔔', '⭐', '🍀', '7️⃣'], roll = () => sym[Math.floor(Math.random() ** 1.25 * sym.length)], a = [roll(), roll(), roll()];
+    const win = a[0] === a[1] && a[1] === a[2] ? bet * (a[0] === '🍀' ? 50 : 10) : a[0] === a[1] || a[1] === a[2] || a[0] === a[2] ? bet * 2 : 0;
+    if (win) { G.s.money += win; G.s.stats.bigWin = Math.max(G.s.stats.bigWin, win - bet); Snd.play('money'); HUD.toast(`🎰 Выигрыш ${fmtMoney(win)}`); } else Snd.play('bad');
+    return a.join('');
+  },
+  radio() { const n = Music.cycle(); Music.muffle(!!Player.inCar); return n; },
+  busTo(i: number) {
+    const st = host.stops[i]; if (!st) return; const r = cmd({ type: 'Pay', amount: 40, reason: 'bus' }); if (!r.ok) { HUD.toast(r.msg || 'Не хватает денег', true); return; }
+    host.resume(); fade(() => { teleport(st.x + 1.5, st.z, -Math.PI / 2); G.s.hour = (G.s.hour + .4) % 24; Snd.play('bus_door'); HUD.toast(`🚌 Вы доехали: ${st.name}`); });
+  },
+  bench(sleep: boolean) {
+    host.resume(); if (!sleep) { Extras.doEmote('sit'); return; }
+    fade(() => { G.s.hour = 6.5; G.s.needs.energy = Math.min(100, G.s.needs.energy + 45); G.s.needs.mood = Math.max(0, G.s.needs.mood - 10);
+      if (Math.random() < .2 && G.s.money > 0) { const lost = Math.round(G.s.money * .15); G.s.money -= lost; HUD.toast(`Пока вы спали, вас обокрали: −${fmtMoney(lost)}`, true); } else HUD.toast('Вы поспали на лавочке. Спина болит, но бодрость вернулась'); });
+  },
+  setOpt(k: string, v: any) { (G.s.settings as any)[k] = v; applySettings(); persist(); },
+  weather() { const w = G.weather, t = Math.round((G.s.hour > 6 && G.s.hour < 20 ? 17 : 11) - w.rain * 5 - w.wind * 3); return { now: w.kind, next: w.target > .4 ? 'дождь' : w.target > .1 ? 'облачно' : 'ясно', temp: t }; },
+  get stops() { return G.stops; },
   medCard() { const r = cmd({ type: 'MedCard' }); HUD.toast(r.ok ? 'Медкарта оформлена (−1 500 ₽)' : r.msg || 'Медкарта уже есть', !r.ok); host.resume(); },
   license() { const r = cmd({ type: 'Pay', amount: 15000, reason: 'license' }); if (!r.ok) { HUD.toast(r.msg || 'Не хватает денег', true); return; } cmd({ type: 'License', kind: 'B' }); HUD.toast('Права категории B получены!'); Snd.play('level'); host.resume(); },
 };
@@ -133,7 +176,7 @@ function persist() {
   saveState(G.s);
 }
 function startPlay() {
-  Menu.close(); Snd.init(); Snd.setVol(G.s.settings.vol);
+  Menu.close(); Snd.init(); Snd.setVol(G.s.settings.vol); applySettings(); G.lastDay = G.s.day;
   const look = G.s.look || randomLook();
   if (Player.h) Player.h.root.removeFromParent();
   Player.init(look, G.s.pos.x, G.s.pos.z, G.s.pos.h); Player.frozen = false;
@@ -252,13 +295,25 @@ function loop(now: number) {
   requestAnimationFrame(loop);
   const dt = Math.min(.1, (now - last) / 1000); last = now;
   tick(dt, true);
+  perf(dt);
+}
+// оптимизация на лету: счётчик FPS, динамическое разрешение, плотность толпы по производительности
+function perf(dt: number) {
+  G.fpsN++; G.fpsT += dt; if (G.fpsT < 1) return;
+  G.fps = G.fpsN / G.fpsT; G.fpsN = 0; G.fpsT = 0;
+  const el = document.getElementById('fps'); if (el) el.textContent = `${Math.round(G.fps)} FPS · ${Math.round(R.prScale * 100)}%`;
+  if (G.mode !== 'play') return;
+  G.dynT--; if (G.dynT > 0) return;
+  if (G.fps < 26 && R.prScale > .55) { R.prScale = Math.max(.55, R.prScale - .1); resize(); G.dynT = 3; }
+  else if (G.fps < 22 && R.prScale <= .55 && G.baseTraffic > 8) { G.baseTraffic = Math.round(G.baseTraffic * .85); G.basePeds = Math.max(6, Math.round(G.basePeds * .85)); G.dynT = 5; }
+  else if (G.fps > 52 && R.prScale < 1) { R.prScale = Math.min(1, R.prScale + .05); resize(); G.dynT = 4; }
 }
 function tick(dt: number, draw: boolean) {
   R.U.uTime.value += dt;
   pollInput(dt);
   if (G.mode === 'loading') { endFrameInput(); return; }
   const playing = G.mode === 'play';
-  const gameDt = playing ? dt / 120 : dt / 400; G.s.hour = (G.s.hour + gameDt) % 24; if (G.s.hour < gameDt) G.s.day++;
+  const gameDt = playing ? dt * 24 / ((G.s.settings.dayLen || 48) * 60) : dt / 400; G.s.hour = (G.s.hour + gameDt) % 24; if (G.s.hour < gameDt) G.s.day++;
   if (G.mode !== 'pause') G.tsim += dt;
   if (G.mode === 'menu') menuCamera(dt);
   if (playing) playStep(dt);
@@ -308,7 +363,8 @@ function updateBulbs() {
 function menuCamera(dt: number) {
   const c = R.cam;
   if (Menu.open === 'creator' && Player.h) {
-    const p = Player.pos; c.position.set(p.x + 1.6, 1.45, p.z + 3); c.lookAt(p.x + (Screen.w > 760 ? -.7 : 0), 1.05, p.z); c.fov = 45; c.updateProjectionMatrix();
+    const p = Player.pos; // панель справа (или снизу на узком экране) — персонаж должен стоять в свободной части кадра
+    const narrow = Screen.w < 700; c.position.set(p.x + 1.2, 1.35, p.z + 3.1); c.lookAt(p.x + (narrow ? 0 : .95), narrow ? .55 : 1.0, p.z); c.fov = 45; c.updateProjectionMatrix();
     Player.h.root.position.copy(p); Player.h.root.rotation.y += dt * .5; Player.h.mixer.update(dt); play(Player.h, 'Idle_Loop');
     return;
   }
@@ -332,9 +388,20 @@ function playStep(dt: number) {
   if (Inp.tap.map) { Menu.phone('map'); document.exitPointerLock?.(); return; }
   if (Inp.tap.inv) { Menu.character(); document.exitPointerLock?.(); return; }
   lifeTick(dt);
+  if (Inp.tap.emote) { Menu.emotes(); document.exitPointerLock?.(); return; }
+  Extras.update(dt);
+  // новый игровой день: проценты по вкладу, пособие новичкам, свежие задания дня
+  if (G.lastDay && s.day !== G.lastDay) {
+    const pct = Math.min(5000, Math.round(s.bank * .01)), ben = s.level < 4 ? 300 : 0; s.bank += pct; s.money += ben; dailyProgress(s, 'eat', 0);
+    HUD.toast(`📅 День ${s.day}. ${pct ? `Проценты по вкладу: +${fmtMoney(pct)}. ` : ''}${ben ? `Пособие: +${fmtMoney(ben)}. ` : ''}Новые задания дня в телефоне`);
+  }
+  G.lastDay = s.day;
   if (Inp.tap.cam) Player.camMode = 1 - Player.camMode;
   if (Inp.tap.lights && Player.inCar) Player.inCar.lights = !Player.inCar.lights;
   if (Inp.tap.horn && Player.inCar) Snd.play('horn');
+  if (Inp.tap.radio && Player.inCar) HUD.toast('📻 ' + host.radio());
+  // вышли из машины — радио в салоне замолкает (если не в наушниках)
+  if (G.wasInCar && !Player.inCar && Music.on && !Extras.headphones) Music.stop(); if (G.wasInCar !== !!Player.inCar) Music.muffle(!!Player.inCar); G.wasInCar = !!Player.inCar;
   let hint = '', key = 'E';
   if (Player.inCar) {
     Player.updateCar(dt);
@@ -347,8 +414,13 @@ function playStep(dt: number) {
     const v = nearestVehicle(2.2), tc = v ? null : nearestTraffic(2.4);
     if (v) { hint = v.owned ? 'Сесть в свою машину' : v.job ? 'Сесть в такси таксопарка' : 'Сесть в машину'; key = 'F'; if (Inp.tap.enter) enterCar(v); }
     else if (tc) { hint = 'Угнать машину (розыск!)'; key = 'F'; if (Inp.tap.enter) carjack(tc); }
-    const kiosk = !hint && G.city.props.find(p => p.kind === 'kiosk' && Math.hypot(p.x - Player.pos.x, p.z - Player.pos.z) < 3.4);
-    if (kiosk) { hint = 'Ларёк — еда и вода'; if (Inp.tap.use) { document.exitPointerLock?.(); Menu.kiosk(); } }
+    const near = (k: string, r: number) => G.city.props.find(p => p.kind === k && Math.hypot(p.x - Player.pos.x, p.z - Player.pos.z) < r);
+    const fishing = Extras.fishTick(dt);
+    if (fishing) { hint = fishing; key = 'E'; }
+    else if (!hint && near('kiosk', 3.4)) { hint = 'Ларёк — еда, вода, лотерея, сдать улов'; if (Inp.tap.use) { document.exitPointerLock?.(); Menu.shop('kiosk'); } }
+    else if (!hint && near('bus_stop', 3)) { const i = G.stops.findIndex(st => Math.hypot(st.x - Player.pos.x, st.z - Player.pos.z) < 3); hint = 'Остановка — поехать на автобусе (40 ₽)'; if (Inp.tap.use) { document.exitPointerLock?.(); Menu.bus(i); } }
+    else if (!hint && near('bench', 1.8)) { hint = 'Лавочка — присесть или поспать'; if (Inp.tap.use) { document.exitPointerLock?.(); Menu.benchMenu(G.s.hour > 22 || G.s.hour < 5); } }
+    else if (!hint && Extras.canFish() && G.s.inv.rod) { hint = 'Река — забросить удочку'; if (Inp.tap.use) Extras.castRod(); }
     if (G.carry) { const hr = Player.h.root; G.carry.position.set(hr.position.x + Math.sin(Player.heading) * .45, 1.1, hr.position.z + Math.cos(Player.heading) * .45); G.carry.rotation.y = Player.heading; }
   }
   HUD.touchMode(!!Player.inCar);
@@ -374,8 +446,17 @@ function playStep(dt: number) {
   G.saveT -= dt; if (G.saveT <= 0) { G.saveT = 60; persist(); }
 }
 // «реальная жизнь»: голод, жажда, усталость идут по игровому времени (1 игровой час = 2 минуты)
+// затемнение экрана на время «переезда» (такси, автобус, сон)
+function fade(mid: () => void) {
+  let f = document.getElementById('fade'); if (!f) { f = document.createElement('div'); f.id = 'fade'; document.body.appendChild(f); }
+  f.classList.add('on'); setTimeout(() => { mid(); setTimeout(() => f!.classList.remove('on'), 250); }, 550);
+}
+function applySettings() {
+  const st = G.s.settings; Player.sensK = st.sens || 1; Player.invY = !!st.invert; Player.fovK = (st.fov || 62) / 62;
+  document.documentElement.style.setProperty('--hud', String(st.hud || 1)); document.body.classList.toggle('showfps', !!st.fps);
+}
 function lifeTick(dt: number) {
-  const s = G.s, N = s.needs, h = dt / 120, running = !Player.inCar && Player.speed > 5, sk = s.skills;
+  const s = G.s, N = s.needs, h = dt * 24 / ((s.settings.dayLen || 48) * 60), running = !Player.inCar && Player.speed > 5, sk = s.skills;
   N.food = Math.max(0, N.food - h * 3.5); N.water = Math.max(0, N.water - h * (5 + (running ? 6 : 0) + 0)); N.energy = Math.max(0, N.energy - h * (3 + (running ? 5 * (1 - sk.stamina / 200) : 0)));
   if (running) sk.stamina = Math.min(100, sk.stamina + dt * .004);
   if (Player.inCar) sk.drive = Math.min(100, sk.drive + Math.abs(Player.inCar.speed) * dt / 1000 * .4);
@@ -392,12 +473,13 @@ function poiAction(kind: string) {
   document.exitPointerLock?.();
   if (kind === 'bank') Menu.bank();
   else if (kind === 'dealer' || kind === 'used') Menu.dealer(kind);
-  else if (kind === 'gas') { if (Player.inCar) Menu.gas(Math.round((1 - Player.inCar.fuel) * 2500) + 50); else HUD.toast('Подъезжайте на машине'); }
+  else if (kind === 'gas') { if (Player.inCar) Menu.gas(Math.round((1 - Player.inCar.fuel) * 2500) + 50); else Menu.shop('gas'); }
   else if (kind === 'cityhall') Menu.cityhall();
   else if (kind === 'taxi') Menu.jobOffer('taxi');
   else if (kind === 'courier') Menu.jobOffer('courier');
   else if (kind === 'loader') Menu.jobOffer('loader');
-  else if (kind === 'hospital') { const r = cmd({ type: 'Pay', amount: 300, reason: 'heal' }); if (r.ok) { G.s.health = 100; HUD.toast('Вас подлечили: −300 ₽'); } }
+  else if (kind === 'hospital') Menu.hospital();
+  else if (kind === 'clothes') Menu.shop('market');
   else if (kind === 'police') { if (G.s.wanted > 0) { const fine = G.s.wanted * 1500, r = cmd({ type: 'Pay', amount: fine, reason: 'fine' }); if (r.ok) { cmd({ type: 'ClearWanted' }); Police.clear(); HUD.toast(`Вы сдались и оплатили штраф ${fmtMoney(fine)}`); } else HUD.toast('Не хватает денег на штраф', true); } else HUD.toast('Дежурный: «Проходите, гражданин»'); }
   else if (kind === 'hotel') { const r = cmd({ type: 'Pay', amount: 800, reason: 'hotel' }); if (r.ok) { G.s.hour = (G.s.hour + 8) % 24; G.s.needs.energy = 100; G.s.needs.food = Math.max(0, G.s.needs.food - 20); G.s.needs.water = Math.max(0, G.s.needs.water - 25); persist(); HUD.toast('Вы выспались в гостинице (−800 ₽). Игра сохранена'); } }
   else HUD.toast('Скоро откроется');

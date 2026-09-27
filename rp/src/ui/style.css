@@ -123,3 +123,14 @@ html.short .logo{font-size:84px}html.short .menu p.small{font-size:11px;margin-t
 .char .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 .char .bar{height:8px;background:rgba(255,255,255,.12);border-radius:4px;overflow:hidden}.char .bar i{display:block;height:100%;background:var(--red)}
 .char .doc{border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:4px}
+
+/* мини-карта нажимается (масштаб), счётчик FPS, затемнение при переездах, фоторежим, размер интерфейса */
+#mini{pointer-events:auto;cursor:zoom-in}
+#fps{position:absolute;left:50%;top:calc(4px + var(--sat));transform:translateX(-50%);font:11px var(--body);color:#9fe39f;background:rgba(0,0,0,.45);padding:1px 6px;border-radius:4px;display:none}
+body.showfps #fps{display:block}
+#fade{position:fixed;inset:0;background:#05080e;opacity:0;pointer-events:none;transition:opacity .45s;z-index:20}#fade.on{opacity:1}
+body.photo #hud,body.photo #touch{display:none!important}
+:root{--hud:1}.hud-tr{zoom:var(--hud)}#touch .tb{zoom:var(--hud)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.bar{height:8px;background:rgba(255,255,255,.12);border-radius:4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--red)}

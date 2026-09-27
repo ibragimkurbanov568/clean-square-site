@@ -11,7 +11,7 @@ import { Snd } from '../core/audio';
 
 export const Player = {
   h: null as unknown as Human, ch: null as unknown as ReturnType<typeof createCharacter>,
-  pos: new THREE.Vector3(), heading: 0, vy: 0, grounded: true, speed: 0, inCar: null as Vehicle | null, busy: 0, animLock: 0, sprintK: 1,
+  pos: new THREE.Vector3(), heading: 0, vy: 0, grounded: true, speed: 0, inCar: null as Vehicle | null, busy: 0, animLock: 0, sprintK: 1, emote: '' as string, sensK: 1, invY: false, fovK: 1,
   camYaw: 0, camPitch: .25, camDist: 4.4, camMode: 0, camIdle: 0, camPos: new THREE.Vector3(), camLook: new THREE.Vector3(),
   stepT: 0, frozen: false,
   init(look: Look, x: number, z: number, h: number) {
@@ -23,8 +23,8 @@ export const Player = {
   setLook(look: Look) { const p = this.pos.clone(); this.h.root.removeFromParent(); this.h = createHuman(look); R.scene.add(this.h.root); this.h.root.position.copy(p); },
   // ---------- пешком ----------
   updateFoot(dt: number) {
-    const sens = .0035;
-    this.camYaw -= Inp.lookX * sens; this.camPitch = clamp(this.camPitch + Inp.lookY * sens, -.35, 1.1);
+    const sens = .0035 * this.sensK;
+    this.camYaw -= Inp.lookX * sens; this.camPitch = clamp(this.camPitch + Inp.lookY * sens * (this.invY ? -1 : 1), -.35, 1.1);
     if (this.frozen) { this.h.mixer.update(dt); return; }
     const mag = Math.min(1, Math.hypot(Inp.mx, Inp.my));
     const sprint = this.sprintK > 0 && (Inp.btn.sprint || (Inp.touch && mag > .97));
@@ -48,7 +48,7 @@ export const Player = {
     this.animLock -= dt;
     if (this.animLock <= 0) {
       if (!this.grounded && this.vy < -2) play(this.h, 'Jump_Loop', .15);
-      else if (this.speed < .2) play(this.h, 'Idle_Loop', .25);
+      else if (this.speed < .2) play(this.h, this.emote || 'Idle_Loop', .25); // эмоция (танец, сесть…) держится, пока стоим
       else if (this.speed < 2.4) play(this.h, 'Walk_Loop', .25, this.speed / 1.5);
       else if (this.speed < 5) play(this.h, 'Jog_Fwd_Loop', .25, this.speed / 3.6);
       else play(this.h, 'Sprint_Loop', .25, this.speed / 6.2);
@@ -64,7 +64,7 @@ export const Player = {
     const p = v.ph.body.translation(); this.pos.set(p.x, p.y, p.z); this.heading = vehicleHeading(v);
     // камера: свободный обзор мышью, возвращается за машину
     const moved = Math.abs(Inp.lookX) + Math.abs(Inp.lookY) > 0;
-    if (moved) { this.camYaw -= Inp.lookX * .0035; this.camPitch = clamp(this.camPitch + Inp.lookY * .0035, -.2, 1.1); this.camIdle = 1.6; }
+    if (moved) { this.camYaw -= Inp.lookX * .0035 * this.sensK; this.camPitch = clamp(this.camPitch + Inp.lookY * .0035 * this.sensK * (this.invY ? -1 : 1), -.2, 1.1); this.camIdle = 1.6; }
     this.camIdle -= dt;
     if (this.camIdle <= 0 && Math.abs(v.speed) > 2) { const back = this.heading + Math.PI + (v.speed < -1 ? Math.PI : 0); this.camYaw += angDiff(this.camYaw, back) * Math.min(1, dt * 2.2); this.camPitch = damp(this.camPitch, .22, 1.5, dt); }
     const slip = wheelSlip(v); v.slip = slip; Snd.tire(slip * Math.min(1, Math.abs(v.speed) / 8));
@@ -89,7 +89,7 @@ export const Player = {
     this.camPos.lerp(want, 1 - Math.exp(-(car ? 10 : 18) * dt)); this.camLook.lerp(target, 1 - Math.exp(-20 * dt));
     if (this.camPos.distanceTo(want) > 30) { this.camPos.copy(want); this.camLook.copy(target); }
     cam.position.copy(this.camPos); cam.lookAt(this.camLook);
-    const fov = car ? 62 + Math.min(18, Math.abs(car.speed) * .35) : (Screen.w < Screen.h ? 70 : 60);
+    const fov = (car ? 62 + Math.min(18, Math.abs(car.speed) * .35) : (Screen.w < Screen.h ? 70 : 60)) * this.fovK;
     cam.fov = lerp(cam.fov, fov, 1 - Math.exp(-3 * dt)); cam.updateProjectionMatrix();
   },
 };

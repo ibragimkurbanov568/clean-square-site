@@ -30,7 +30,7 @@ export type Quality = 'low' | 'mid' | 'high';
 export const R = {
   renderer: null as unknown as THREE.WebGLRenderer, scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(60, 1, .1, 2600),
   sun: new THREE.DirectionalLight(0xffffff, 3), hemi: new THREE.HemisphereLight(0xbfd8ff, 0x3a3a30, 1), sky: null as unknown as Sky,
-  composer: null as EffectComposer | null, bloom: null as UnrealBloomPass | null, grade: null as ShaderPass | null, quality: 'high' as Quality,
+  composer: null as EffectComposer | null, bloom: null as UnrealBloomPass | null, grade: null as ShaderPass | null, prScale: 1, quality: 'high' as Quality,
   // общие униформы для шейдеров города
   U: { uNight: { value: 0 }, uTime: { value: 0 }, uWet: { value: 0 }, uSkyCol: { value: new THREE.Color() }, uSnow: { value: 0 }, uWind: { value: .15 }, uNear: { value: new THREE.Vector4() } }, flash: 0,
   night: 0, stars: null as THREE.Points | null, moon: null as THREE.Mesh | null, clouds: null as THREE.Mesh | null,
@@ -60,18 +60,20 @@ export function initRender(canvas: HTMLCanvasElement, q: Quality) {
   const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3));
   R.stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0, fog: false, depthWrite: false })); sc.add(R.stars);
   R.moon = new THREE.Mesh(new THREE.SphereGeometry(40, 16, 12), new THREE.MeshBasicMaterial({ color: 0xeef2ff, fog: false, transparent: true })); sc.add(R.moon);
-  if (q !== 'low') {
+  // постобработка: на «Низком» — только цветокоррекция (один дешёвый проход), выше — ещё и свечение
+  {
     const comp = R.composer = new EffectComposer(r); comp.addPass(new RenderPass(sc, R.cam));
-    R.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), .5, .5, .92); comp.addPass(R.bloom); comp.addPass(new OutputPass()); R.grade = new ShaderPass(GradeShader); comp.addPass(R.grade);
+    if (q !== 'low') { R.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), .5, .5, .92); comp.addPass(R.bloom); }
+    comp.addPass(new OutputPass()); R.grade = new ShaderPass(GradeShader); comp.addPass(R.grade);
   }
   resize(); Screen.onChange(resize);
 }
 export function resize() {
-  const q = R.quality, pr = Math.min(devicePixelRatio, q === 'high' ? 1.75 : q === 'mid' ? 1.25 : .9);
+  const q = R.quality, pr = Math.min(devicePixelRatio, q === 'high' ? 1.75 : q === 'mid' ? 1.25 : .9) * R.prScale;
   R.renderer.setPixelRatio(pr); const W = Screen.w, H = Screen.h;
   R.renderer.setSize(W, H, false);
   R.cam.aspect = W / H; R.cam.updateProjectionMatrix();
-  if (R.composer) { R.composer.setPixelRatio(pr); R.composer.setSize(W, H); R.bloom!.resolution.set(W / 2, H / 2); R.grade!.uniforms.uAspect.value = W / H; }
+  if (R.composer) { R.composer.setPixelRatio(pr); R.composer.setSize(W, H); R.bloom?.resolution.set(W / 2, H / 2); R.grade!.uniforms.uAspect.value = W / H; }
 }
 // время суток: 0..24; погода: облачность 0..1, дождь 0..1
 const sunCol = new THREE.Color(), tmp = new THREE.Color(), fogDay = new THREE.Color(0xa9bdd2), fogSet = new THREE.Color(0xd8a080), fogNight = new THREE.Color(0x0b1220), fogRain = new THREE.Color(0x7d8894);
