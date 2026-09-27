@@ -11,7 +11,7 @@ export const Screen = {
     this.rot = portrait && this.touch && this.mode !== 'free';
     this.w = this.rot ? H : W; this.h = this.rot ? W : H;
     const s = document.documentElement.style; s.setProperty('--sw', W + 'px'); s.setProperty('--sh', H + 'px'); s.setProperty('--vw', this.w / 100 + 'px'); s.setProperty('--vh', this.h / 100 + 'px');
-    document.documentElement.classList.toggle('rot', this.rot);
+    const c = document.documentElement.classList; c.toggle('rot', this.rot); c.toggle('narrow', this.w < 700); c.toggle('short', this.h < 520);
     for (const f of this.listeners) f();
   },
   // координаты касания (экран) → координаты сцены

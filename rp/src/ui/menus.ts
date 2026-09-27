@@ -6,6 +6,7 @@ import { JOBS } from '../sim/jobs';
 import { mapImg, MAP_EXT, POI_ICON } from './hud';
 import { ITEMS, xpForLevel, type GameState } from '../sim/state';
 import { Snd } from '../core/audio';
+import { rpName } from '../actors/peds';
 
 export interface MenuHost {
   state: GameState; hasSave: boolean; newGame(look: Look, name: string): void; continueGame(): void; resume(): void; save(): void;
@@ -29,9 +30,9 @@ export const Menu = {
       case 'save': H.save(); break;
       case 'credits': this.credits(); break;
       case 'main': H.toMenu(); this.main(); break;
-      case 'lk': { const k = d.k!, v = d.v!; (this.look as any)[k] = k === 'sex' ? v : k === 'hair' ? v : k === 'sleeves' ? v === '1' : +v; if (k === 'sex') this.look.hair = HAIRS[this.look.sex][0]; H.setLook(this.look); this.creator(); break; }
-      case 'rnd': this.look = randomLook(); H.setLook(this.look); this.creator(); break;
-      case 'create': { const n = (document.getElementById('nm') as HTMLInputElement).value.trim(); if (!/^[А-ЯЁA-Z][а-яёa-z]+_[А-ЯЁA-Z][а-яёa-z]+$/.test(n)) { const e = document.getElementById('nmErr')!; e.textContent = 'Формат: Имя_Фамилия (например, Иван_Петров)'; return; } H.newGame(this.look, n); break; }
+      case 'lk': { this.nameDraft = (document.getElementById('nm') as HTMLInputElement | null)?.value ?? this.nameDraft; const k = d.k!, v = d.v!; (this.look as any)[k] = k === 'sex' ? v : k === 'hair' ? v : k === 'sleeves' ? v === '1' : +v; if (k === 'sex') this.look.hair = HAIRS[this.look.sex][0]; H.setLook(this.look); this.creator(); break; }
+      case 'rnd': this.nameDraft = ''; this.look = randomLook(); H.setLook(this.look); this.creator(); break;
+      case 'create': { const n = (document.getElementById('nm') as HTMLInputElement).value.trim().replace(/\s+/g, '_'); if (!/^[А-ЯЁA-Z][а-яёa-z]+_[А-ЯЁA-Z][а-яёa-z]+$/.test(n)) { const e = document.getElementById('nmErr')!; e.textContent = 'Нужно имя и фамилия с большой буквы, например: Иван Петров'; return; } H.newGame(this.look, n); break; }
       case 'app': this.phone(d.id!); break;
       case 'buy': H.buyCar(d.id!, +d.c!, +d.p!); break;
       case 'job': H.startJob(d.id!); this.close(); break;
@@ -43,6 +44,7 @@ export const Menu = {
       case 'loc': H.locateCar(d.id!); this.close(); break;
       case 'q': H.setQuality(d.v!); this.phone('set'); break;
       case 'or': H.setOrient(d.v!); this.phone('set'); break;
+      case 'rot': H.setOrient((H.state.settings.orient || 'auto') === 'auto' ? 'free' : 'auto'); this.main(); break;
       case 'lic': H.license(); this.close(); break;
       case 'x': this.close(); H.resume(); break;
       case 'ch': this.character(d.t!); break;
@@ -55,12 +57,13 @@ export const Menu = {
   // ---------- главное меню ----------
   main() {
     this.open = 'main';
-    this.show(`<div class="menu"><div class="logo">КР<span>А</span>Й</div><div class="tag">Новоозёрск · жизнь с нуля</div>
+    const touch = document.body.classList.contains('touch');
+    this.show(`${touch ? '<button class="btn rotbtn" data-a="rot">⟳ Повернуть экран</button>' : ''}<div class="menu"><div class="menu-brand"><div class="logo">КР<span>А</span>Й</div><div class="tag">Новоозёрск · жизнь с нуля</div></div><div class="menu-btns">
       ${H.hasSave ? `<button class="btn primary" data-a="cont">Продолжить <small>${esc(H.state.name)} · ${H.state.level} ур.</small></button>` : ''}
       <button class="btn ${H.hasSave ? '' : 'primary'}" data-a="new">Новая игра <small>создать персонажа</small></button>
       <button class="btn" disabled>Онлайн-сервера <small>скоро</small></button>
       <button class="btn" data-a="credits">Титры и лицензии <small>авторы моделей и звуков</small></button>
-      ${document.body.classList.contains('touch') ? `<p class="muted small" style="margin-top:12px">Телефон: джойстик слева — ходьба (до края — бег), правая половина экрана — камера, кнопки справа — удар, прыжок, бег, действие, сесть. Сверху — телефон, карта, рюкзак.</p>` : `<p class="muted small" style="margin-top:12px">ПК: WASD — ходьба, мышь — камера, F — сесть/выйти, E — действие, P — телефон, M — карта, I — персонаж и рюкзак, Shift — бег, Пробел — прыжок/ручник, H — сигнал. На телефоне — экранные кнопки.</p>`}</div>`, 'dim');
+      ${touch ? `<p class="muted small" style="margin-top:12px">Телефон: джойстик слева — ходьба (до края — бег), правая половина экрана — камера, кнопки справа — удар, прыжок, бег, действие, сесть. Сверху — телефон, карта, рюкзак.</p>` : `<p class="muted small" style="margin-top:12px">ПК: WASD — ходьба, мышь — камера, F — сесть/выйти, E — действие, P — телефон, M — карта, I — персонаж и рюкзак, Shift — бег, Пробел — прыжок/ручник, H — сигнал. На телефоне — экранные кнопки.</p>`}</div></div>`, 'dim');
   },
   async credits() {
     const base = (import.meta.env.BASE_URL || './') + 'assets/', get = async (p: string) => { try { return await (await fetch(base + p)).json(); } catch { return null; } };
@@ -76,22 +79,27 @@ export const Menu = {
       <button class="btn" data-a="main">Назад</button></div>`);
   },
   // ---------- создание персонажа ----------
-  look: randomLook() as Look,
+  look: randomLook() as Look, nameDraft: '',
   creator() {
     if (this.open !== 'creator') H.setLook(this.look);
     this.open = 'creator'; const L = this.look;
     const sw = (k: string, list: number[], cur: number) => `<div class="row">${list.map((c, i) => `<button class="sw ${c === cur ? 'on' : ''}" style="background:#${c.toString(16).padStart(6, '0')}" data-a="lk" data-k="${k}" data-v="${c}" aria-label="цвет ${i + 1}"></button>`).join('')}</div>`;
     const hairNames: Record<string, string> = { hair_buzzed: 'Короткая', hair_simpleparted: 'С пробором', hair_beard: 'Борода', '': 'Лысый', hair_long: 'Длинные', hair_buns: 'Пучки', hair_buzzedfemale: 'Короткая' };
-    this.show(`<div class="creator"><div></div><div class="panel" style="display:flex;flex-direction:column;gap:10px;max-height:calc(calc(100 * var(--vh)) - 32px);overflow-y:auto">
-      <h2 class="h">Новый житель</h2>
-      <h3>Пол</h3><div class="row"><button class="btn ${L.sex === 'male' ? 'primary' : ''}" data-a="lk" data-k="sex" data-v="male">Мужской</button><button class="btn ${L.sex === 'female' ? 'primary' : ''}" data-a="lk" data-k="sex" data-v="female">Женский</button></div>
-      <h3>Кожа</h3><input type="range" min="0" max="1" step=".05" value="${L.skin}" id="skin">
-      <h3>Причёска</h3><div class="row">${HAIRS[L.sex].map(h => `<button class="btn ${h === L.hair ? 'primary' : ''}" data-a="lk" data-k="hair" data-v="${h}">${hairNames[h]}</button>`).join('')}</div>
-      <h3>Цвет волос</h3>${sw('hairCol', HAIRCOLS, L.hairCol)}
-      <h3>Верх</h3>${sw('top', TOPS, L.top)}<div class="row"><button class="btn ${L.sleeves ? 'primary' : ''}" data-a="lk" data-k="sleeves" data-v="1">Длинный рукав</button><button class="btn ${!L.sleeves ? 'primary' : ''}" data-a="lk" data-k="sleeves" data-v="0">Футболка</button></div>
-      <h3>Низ</h3>${sw('bottom', BOTTOMS, L.bottom)}<h3>Обувь</h3>${sw('shoes', SHOES, L.shoes)}
-      <h3>Имя в городе</h3><input type="text" id="nm" placeholder="Иван_Петров" value="${esc(H.state.name || '')}" maxlength="24"><div id="nmErr" class="small" style="color:#ff8a7a"></div>
-      <div class="row"><button class="btn" data-a="rnd">Случайно</button><button class="btn primary" data-a="create">Начать жизнь ▶</button></div></div></div>`, '');
+    // слева — сам персонаж (камера смотрит на него), справа — компактная панель: настройки прокручиваются,
+    // имя и кнопка «Начать» закреплены внизу и видны всегда, на любом экране
+    this.show(`<div class="creator"><div class="cr-view"></div><div class="panel cr-panel">
+      <div class="cr-head"><h2 class="h">Новый житель</h2><button class="btn" data-a="rnd">🎲 Случайно</button></div>
+      <div class="cr-opts">
+        <div><h3>Пол</h3><div class="row"><button class="btn ${L.sex === 'male' ? 'primary' : ''}" data-a="lk" data-k="sex" data-v="male">Мужской</button><button class="btn ${L.sex === 'female' ? 'primary' : ''}" data-a="lk" data-k="sex" data-v="female">Женский</button></div></div>
+        <div><h3>Кожа</h3><input type="range" min="0" max="1" step=".05" value="${L.skin}" id="skin"></div>
+        <div><h3>Причёска</h3><div class="row">${HAIRS[L.sex].map(h => `<button class="btn ${h === L.hair ? 'primary' : ''}" data-a="lk" data-k="hair" data-v="${h}">${hairNames[h]}</button>`).join('')}</div></div>
+        <div><h3>Цвет волос</h3>${sw('hairCol', HAIRCOLS, L.hairCol)}</div>
+        <div><h3>Верх</h3>${sw('top', TOPS, L.top)}<div class="row" style="margin-top:6px"><button class="btn ${L.sleeves ? 'primary' : ''}" data-a="lk" data-k="sleeves" data-v="1">Рукав</button><button class="btn ${!L.sleeves ? 'primary' : ''}" data-a="lk" data-k="sleeves" data-v="0">Футболка</button></div></div>
+        <div><h3>Низ</h3>${sw('bottom', BOTTOMS, L.bottom)}</div><div><h3>Обувь</h3>${sw('shoes', SHOES, L.shoes)}</div>
+      </div>
+      <div class="cr-foot"><input type="text" id="nm" placeholder="Имя Фамилия" value="${esc(this.nameDraft || H.state.name || rpName(L.sex === 'female').replace('_', ' '))}" maxlength="24" aria-label="Имя в городе">
+        <button class="btn primary" data-a="create">Начать ▶</button></div><div id="nmErr" class="small" style="color:#ff8a7a"></div></div></div>`, '');
+    const nm = document.getElementById('nm') as HTMLInputElement; nm.oninput = () => { this.nameDraft = nm.value; };
     const sk = document.getElementById('skin') as HTMLInputElement; sk.oninput = () => { L.skin = +sk.value; H.setLook(L); };
   },
   // ---------- персонаж (I / Tab) ----------
