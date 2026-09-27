@@ -11,7 +11,7 @@ export interface GameState {
   wanted: number; jail: number; health: number;
   licenses: { B: boolean }; cars: OwnedCar[]; job: { id: string | null; rank: Record<string, number>; done: Record<string, number> };
   stats: { earned: number; distance: number; arrests: number; playTime: number; walked: number; fish: number; pike: number; bigWin: number; bought: number; dailyDone: number; eaten: number };
-  settings: { quality: string; vol: number; lang: string; sens: number; cam: number; orient?: string; fps?: boolean; invert?: boolean; fov?: number; dayLen?: number; hud?: number; music?: boolean };
+  settings: { quality: string; vol: number; lang: string; sens: number; cam: number; orient?: string; fps?: boolean; invert?: boolean; fov?: number; dayLen?: number; hud?: number; music?: boolean; debug?: boolean };
   tutorial: number;
   // «реальная жизнь»: потребности 0…100, вещи, навыки (опыт 0…100), документы
   needs: { food: number; water: number; energy: number; mood: number };

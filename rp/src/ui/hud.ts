@@ -5,6 +5,7 @@ import { esc, fmtMoney, fmtTime, pick, $ } from '../core/util';
 import { touchBtn, Inp } from '../core/input';
 import { Screen } from '../core/screen';
 import { pickAt } from './tap';
+import { Touchpad } from './touchpad';
 import { rpName } from '../actors/peds';
 
 export const MAP_EXT = 1150; // половина размера карты в метрах
@@ -38,7 +39,8 @@ export const HUD = {
     for (const id of ['chat', 'obj', 'clock', 'wx', 'money', 'bank', 'lvl', 'xp', 'hp', 'stars', 'hint', 'bust', 'speedo', 'spd', 'gear', 'fuel', 'nf', 'nw', 'ne', 'nm2']) this.el[id] = document.getElementById(id)!;
     this.mini = (document.getElementById('mini') as HTMLCanvasElement).getContext('2d')!;
     // касание мини-карты — приблизить/отдалить
-    document.addEventListener('pointerdown', e => { if (pickAt(e.clientX, e.clientY, '#mini')) { e.stopPropagation(); this.miniZoom = this.miniZoom > 3 ? 1.2 : this.miniZoom > 2 ? 3.6 : 2.2; } }, true);
+    const zoom = () => { this.miniZoom = this.miniZoom > 3 ? 1.2 : this.miniZoom > 2 ? 3.6 : 2.2; }; Touchpad.onMini = zoom;
+    document.addEventListener('pointerdown', e => { if (Inp.touchEvents && e.pointerType === 'touch') return; if (pickAt(e.clientX, e.clientY, '#mini')) { e.stopPropagation(); this.miniZoom = this.miniZoom > 3 ? 1.2 : this.miniZoom > 2 ? 3.6 : 2.2; } }, true);
     // сенсорные кнопки
     const t = $('#touch');
     const B = (id: string, label: string, css: string) => `<div class="tb" data-b="${id}" style="${css}">${label}</div>`;
@@ -63,7 +65,7 @@ export const HUD = {
     // кнопки управления: элемент под пальцем определяем сами (надёжно и при повороте экрана), каждый палец — своя кнопка
     const held = new Map<number, HTMLElement>();
     document.addEventListener('pointerdown', e => {
-      if (!document.body.classList.contains('playing')) return;
+      if (!document.body.classList.contains('playing') || (Inp.touchEvents && e.pointerType === 'touch')) return;
       const el = pickAt(e.clientX, e.clientY, '#touch .tb'); if (!el || el.classList.contains('hide')) return;
       e.preventDefault(); e.stopPropagation(); held.set(e.pointerId, el); el.classList.add('on'); touchBtn(el.dataset.b!, true);
     }, true);

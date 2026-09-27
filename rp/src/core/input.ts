@@ -11,7 +11,8 @@ export const Inp = {
   mx: 0, my: 0, lookX: 0, lookY: 0, steer: 0, gas: 0, brake: 0,
   btn: {} as Record<Btn, boolean>,
   tap: {} as Record<Btn, boolean>,
-  touch: false, locked: false, wheel: 0, run: false, // run — бег включён кнопкой (до остановки)
+  touch: false, locked: false, wheel: 0, run: false, touchEvents: false, // touchEvents — касания ведёт ui/touchpad.ts
+  // run — бег включён кнопкой (до остановки)
   joy: { id: -1, x0: 0, y0: 0, x: 0, y: 0 }, look: { id: -1, x: 0, y: 0 },
   tb: {} as Record<string, boolean>,
 };
@@ -32,12 +33,12 @@ export function initInput(canvas: HTMLCanvasElement) {
   addEventListener('mousedown', e => { if (Inp.locked && e.button === 0) Inp.pressed.add('Mouse0'); });
   addEventListener('wheel', e => { Inp.wheel += Math.sign(e.deltaY); }, { passive: true });
   addEventListener('contextmenu', e => e.preventDefault());
-  addEventListener('touchstart', () => { if (!Inp.touch) { Inp.touch = true; document.body.classList.add('touch'); } }, { passive: true });
   // сенсорное управление: левая половина — джойстик, правая — обзор
   // координаты касаний переводятся в систему «сцены» (при повороте экрана на 90° она не совпадает с экранной)
   // джойстик и обзор — касание в любом месте игрового экрана, где нет кнопки или окна (не полагаемся на цель события)
   document.addEventListener('pointerdown', e => {
     if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+    if (Inp.touchEvents && e.pointerType === 'touch') return; // пальцы ведёт touchpad.ts
     if (!document.body.classList.contains('playing') || pickAt(e.clientX, e.clientY, '#touch .tb, #ui .screen, #ui .phone, #mini')) return;
     const [x, y] = Screen.toStage(e.clientX, e.clientY);
     if (x < Screen.w * .42 && y > Screen.h * .3 && Inp.joy.id < 0) { Inp.joy = { id: e.pointerId, x0: x, y0: y, x, y }; }

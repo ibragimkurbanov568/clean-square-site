@@ -7,6 +7,7 @@ import { generateCity, City, nearestNode, nodePos, routeGrid, blockAt, PITCH, HA
 import { buildCity, updateCity, CityMeshes } from './world/cityBuild';
 import { Props, placeProps } from './world/props';
 import { Screen } from './core/screen';
+import { Touchpad } from './ui/touchpad';
 import { Extras } from './game/extras';
 import { Music } from './core/music';
 import { ITEMS } from './sim/items';
@@ -50,7 +51,7 @@ async function boot() {
   loading(.05, 'Запуск движка');
   Screen.mode = (G.s.settings.orient as any) || 'auto'; Screen.init();
   if (Screen.touch) { Inp.touch = true; document.body.classList.add('touch'); }
-  initRender(canvas, q); initInput(canvas);
+  initRender(canvas, q); initInput(canvas); Touchpad.init();
   try { await initPhysics(); } catch (e) {
     $('#ui').innerHTML = `<div class="screen" style="display:flex;align-items:center;justify-content:center"><div class="panel win" style="max-width:520px"><h2>Не удалось запустить физику</h2><p>Браузер заблокировал WebAssembly. Откройте игру в обычной вкладке Chrome, Firefox или Safari (или запустите локально: <code>npm run dev</code> в папке rp).</p><p class="small muted">${String(e)}</p></div></div>`; return;
   }
@@ -301,7 +302,7 @@ function loop(now: number) {
 function perf(dt: number) {
   G.fpsN++; G.fpsT += dt; if (G.fpsT < 1) return;
   G.fps = G.fpsN / G.fpsT; G.fpsN = 0; G.fpsT = 0;
-  const el = document.getElementById('fps'); if (el) el.textContent = `${Math.round(G.fps)} FPS · ${Math.round(R.prScale * 100)}%`;
+  const el = document.getElementById('fps'); if (el) el.textContent = `${Math.round(G.fps)} FPS · ${Math.round(R.prScale * 100)}%` + (G.s.settings.debug ? ` · касаний ${Touchpad.events} · джойстик ${Inp.joy.id >= 0 ? 'да' : 'нет'} ${Inp.mx.toFixed(1)}/${Inp.my.toFixed(1)} · экран ${innerWidth}×${innerHeight}${Screen.rot ? ' ↻' : ''}` : '');
   if (G.mode !== 'play') return;
   G.dynT--; if (G.dynT > 0) return;
   if (G.fps < 26 && R.prScale > .55) { R.prScale = Math.max(.55, R.prScale - .1); resize(); G.dynT = 3; }
@@ -453,7 +454,7 @@ function fade(mid: () => void) {
 }
 function applySettings() {
   const st = G.s.settings; Player.sensK = st.sens || 1; Player.invY = !!st.invert; Player.fovK = (st.fov || 62) / 62;
-  document.documentElement.style.setProperty('--hud', String(st.hud || 1)); document.body.classList.toggle('showfps', !!st.fps);
+  document.documentElement.style.setProperty('--hud', String(st.hud || 1)); document.body.classList.toggle('showfps', !!st.fps || !!st.debug);
 }
 function lifeTick(dt: number) {
   const s = G.s, N = s.needs, h = dt * 24 / ((s.settings.dayLen || 48) * 60), running = !Player.inCar && Player.speed > 5, sk = s.skills;
